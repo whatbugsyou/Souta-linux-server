@@ -20,12 +20,14 @@ public class Socks5ServiceImpl implements Socks5Service {
     private final NamespaceService namespaceService;
     private final PPPOEService pppoeService;
     private static final Logger log = LoggerFactory.getLogger(Socks5ServiceImpl.class);
+
     static {
         File file = new File("/var/run/ss5");
-        if (!file.exists()){
+        if (!file.exists()) {
             file.mkdir();
         }
     }
+
     public Socks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService) {
         this.namespaceService = namespaceService;
         this.pppoeService = pppoeService;
@@ -33,7 +35,7 @@ public class Socks5ServiceImpl implements Socks5Service {
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = "ls /tmp/socks5/ |grep socks5-"+ id +".sh";
+        String cmd = "ls /tmp/socks5/ |grep socks5-" + id + ".sh";
         InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
         return hasOutput(inputStream);
     }
@@ -44,8 +46,8 @@ public class Socks5ServiceImpl implements Socks5Service {
             read = inputStream.read();
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
-            if (inputStream!=null){
+        } finally {
+            if (inputStream != null) {
                 try {
                     inputStream.close();
                 } catch (IOException e) {
@@ -59,7 +61,7 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public boolean isStart(String id) {
         PPPOE pppoe = pppoeService.getPPPOE(id);
-        if (pppoe!=null) {
+        if (pppoe != null) {
             String ip = pppoe.getOutIP();
             if (ip != null) {
                 String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
@@ -75,32 +77,31 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public Socks5 createSocks5(String id) {
         createConfigFile(id);
-        String cmd = String.format("useradd -u 10%s user%s",id,id);
-        namespaceService.exeCmdInNamespace("",cmd);
+        String cmd = String.format("useradd -u 10%s user%s", id, id);
+        namespaceService.exeCmdInNamespace("", cmd);
         return getSocks5(id);
     }
 
     private boolean createConfigFile(String id) {
-        //TODO CREATE FILE
         boolean dialUp = pppoeService.isDialUp(id);
-        String ip=null;
-        if (!dialUp){
+        String ip;
+        if (!dialUp) {
             return false;
-        }else {
+        } else {
             PPPOE pppoe = pppoeService.getPPPOE(id);
             ip = pppoe.getOutIP();
         }
         File dir = new File("/tmp/socks5");
-        if (!dir.exists()){
+        if (!dir.exists()) {
             dir.mkdir();
         }
-        File file = new File(dir, "socks5-"+id + ".sh");
+        File file = new File(dir, "socks5-" + id + ".sh");
         BufferedWriter cfgfileBufferedWriter = null;
         FileWriter fileWriter = null;
         try {
-            fileWriter=new FileWriter(file);
+            fileWriter = new FileWriter(file);
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
-            cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR="+ip+"\n");
+            cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR=" + ip + "\n");
             cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=10808\n");
             cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/tmp/ss5.conf\n");
             cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=/tmp/ss5.passwd\n");
@@ -110,7 +111,7 @@ public class Socks5ServiceImpl implements Socks5Service {
             cfgfileBufferedWriter.write(startCmd);
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             if (cfgfileBufferedWriter != null) {
                 try {
                     cfgfileBufferedWriter.close();
@@ -132,7 +133,7 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public Socks5 getSocks5(String id) {
         boolean exist = checkConfigFileExist(id);
-        if (!exist){
+        if (!exist) {
             return null;
         }
         Socks5 socks5 = new Socks5();
@@ -141,10 +142,10 @@ public class Socks5ServiceImpl implements Socks5Service {
         if (dialUp) {
             PPPOE pppoe = pppoeService.getPPPOE(id);
             ip = pppoe.getOutIP();
-            String namespaceName = "ns"+ id;
-            String cmd = "netstat -ln -tpe |grep 10808 |grep "+ ip;
+            String namespaceName = "ns" + id;
+            String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
             InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
-            String s= ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
+            String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
             Pattern compile = Pattern.compile(s);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             String line = null;
@@ -153,9 +154,9 @@ public class Socks5ServiceImpl implements Socks5Service {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if (line!=null) {
+            if (line != null) {
                 Matcher matcher = compile.matcher(line);
-                if (matcher.matches()){
+                if (matcher.matches()) {
                     String pid = matcher.group(3);
                     socks5.setPid(pid);
                 }
@@ -167,7 +168,7 @@ public class Socks5ServiceImpl implements Socks5Service {
         socks5.setUsername("test123");
         socks5.setPassword("test123");
         socks5.setPort(port);
-        socks5.setOwnerId("10"+id);
+        socks5.setOwnerId("10" + id);
         return socks5;
     }
 
@@ -179,17 +180,16 @@ public class Socks5ServiceImpl implements Socks5Service {
         String namespace = "ns" + id;
         InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        String line = null;
+        String line;
         try {
-            while((line=bufferedReader.readLine())!=null){
-                if (line != null) {
-                    Matcher matcher = compile.matcher(line);
-                    if (matcher.matches()) {
-                        String pid = matcher.group(3);
-                        String cmd2 = "kill -9 " + pid;
-                        namespaceService.exeCmdInNamespace("", cmd2);
-                    }
+            while ((line = bufferedReader.readLine()) != null) {
+                Matcher matcher = compile.matcher(line);
+                if (matcher.matches()) {
+                    String pid = matcher.group(3);
+                    String cmd2 = "kill -9 " + pid;
+                    namespaceService.exeCmdInNamespace("", cmd2);
                 }
+
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -199,9 +199,9 @@ public class Socks5ServiceImpl implements Socks5Service {
 
     @Override
     public boolean restartSocks5(String id) {
-        if (stopSocks5(id)){
+        if (stopSocks5(id)) {
             return startSocks5(id);
-        }else {
+        } else {
             return false;
         }
     }
@@ -209,13 +209,13 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public boolean startSocks5(String id) {
         boolean exist = checkConfigFileExist(id);
-        if (exist){
+        if (exist) {
             Socks5 socks5 = getSocks5(id);
-            String namespaceName = "ns"+ id;
+            String namespaceName = "ns" + id;
             String cmd = "sh /tmp/socks5/socks5-" + socks5.getId() + ".sh";
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
-        }else {
+        } else {
             return false;
         }
     }
@@ -223,16 +223,16 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public List<Socks5> getAllListenedSocks5() {
         String cmd = "ip -all netns exec netstat -ln -tpe |grep 10808";
-        String s= ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
-        String line = null;
+        String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
+        String line;
         Pattern compile = Pattern.compile(s);
         ArrayList<Socks5> socks5List = new ArrayList<>();
         InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         try {
-            while((line=bufferedReader.readLine())!=null){
+            while ((line = bufferedReader.readLine()) != null) {
                 Matcher matcher = compile.matcher(line);
-                if (matcher.matches()){
+                if (matcher.matches()) {
                     String ip = matcher.group(1);
                     String ownerId = matcher.group(2);
                     String pid = matcher.group(3);

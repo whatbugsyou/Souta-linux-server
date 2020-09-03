@@ -23,18 +23,18 @@ public class VethServiceImpl implements VethService {
     @Override
     public Veth createVeth(String physicalEthName, String vethName, String namespaceName) {
         Namespace namespace = namespaceService.getNameSpace(namespaceName);
-        Veth veth=null;
+        Veth veth;
         if (namespace==null){
             namespace = namespaceService.createNameSpace(namespaceName);
         }
-        boolean vethExistInNamespace = checkExist(vethName,namespaceName);
-        String macAddr = null;
+        boolean vethExistInNamespace = checkExist(vethName, namespaceName);
+        String macAddr;
         if (!vethExistInNamespace){
             if (checkExist(vethName,"")){
                 macAddr = getMacAddr(vethName, "");
             }else {
                 macAddr = createMacAddr();
-                String cmd = new String("ip link add link %s address %s %s type macvlan");
+                String cmd = "ip link add link %s address %s %s type macvlan";
                 cmd = String.format(cmd, physicalEthName,macAddr,vethName);
                 InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
                 if(inputStream!=null){
@@ -96,8 +96,7 @@ public class VethServiceImpl implements VethService {
             return null;
         }else {
            String macAddr = getMacAddr(vethName, namespaceName);
-            Veth veth = new Veth(null, vethName, macAddr, new Namespace(namespaceName));
-            return veth;
+            return new Veth(null, vethName, macAddr, new Namespace(namespaceName));
         }
     }
 
@@ -173,7 +172,6 @@ public class VethServiceImpl implements VethService {
         if (!exist){
             return true;
         }else {
-            //TODO delete
             String cmd = "ip addr del "+vethName;
             namespaceService.exeCmdInNamespace(new Namespace(namespaceName),cmd);
             return true;
@@ -184,7 +182,6 @@ public class VethServiceImpl implements VethService {
     public boolean upVeth(Veth veth) {
         boolean exist = checkExist(veth);
         if (exist){
-            // TODO up
             Namespace namespace =veth.getNamespace();
             String cmd ="ifconfig "+veth.getInterfaceName()+" up";
             namespaceService.exeCmdInNamespace(namespace, cmd);
@@ -198,7 +195,6 @@ public class VethServiceImpl implements VethService {
     public boolean downVeth(Veth veth) {
         boolean exist = checkExist(veth);
         if (exist){
-            // TODO down
             Namespace namespace =veth.getNamespace();
             String cmd ="ifconfig "+veth.getInterfaceName()+" down";
             namespaceService.exeCmdInNamespace(namespace, cmd);

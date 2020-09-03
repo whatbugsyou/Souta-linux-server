@@ -19,19 +19,20 @@ import java.util.regex.Pattern;
 @Service
 public class NamespaceServiceImpl implements NamespaceService {
     private static final Logger log = LoggerFactory.getLogger(NamespaceServiceImpl.class);
-    private  Runtime runtime = Runtime.getRuntime();
+    private Runtime runtime = Runtime.getRuntime();
+
     @Override
     public boolean checkExist(String name) {
         if (name.equals("")) return true;
-        String cmd = "ls /var/run/netns/ |grep "+name+"$";
-        InputStream inputStream = exeCmdInNamespace("",cmd);
+        String cmd = "ls /var/run/netns/ |grep " + name + "$";
+        InputStream inputStream = exeCmdInNamespace("", cmd);
         int read = 0;
         try {
             read = inputStream.read();
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
-            if (inputStream!=null){
+        } finally {
+            if (inputStream != null) {
                 try {
                     inputStream.close();
                 } catch (IOException e) {
@@ -39,18 +40,18 @@ public class NamespaceServiceImpl implements NamespaceService {
                 }
             }
         }
-        if (read!=-1){
+        if (read != -1) {
             return true;
-        }else {
+        } else {
             return false;
         }
     }
 
     @Override
     public boolean checkExist(Namespace namespace) {
-        if (namespace==null){
+        if (namespace == null) {
             return false;
-        }else {
+        } else {
             return checkExist(namespace.getName());
         }
 
@@ -66,7 +67,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         Pattern compile = Pattern.compile(pattern);
         ArrayList<Namespace> namespaces = new ArrayList<>();
         try {
-            while ((line=bufferedReader.readLine())!=null) {
+            while ((line = bufferedReader.readLine()) != null) {
                 Matcher matcher = compile.matcher(line);
                 if (matcher.matches()) {
                     Namespace namespace = new Namespace(matcher.group(1));
@@ -75,15 +76,15 @@ public class NamespaceServiceImpl implements NamespaceService {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
-            if (bufferedReader!=null){
+        } finally {
+            if (bufferedReader != null) {
                 try {
                     bufferedReader.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-            if (inputStream!=null){
+            if (inputStream != null) {
                 try {
                     inputStream.close();
                 } catch (IOException e) {
@@ -97,7 +98,7 @@ public class NamespaceServiceImpl implements NamespaceService {
     @Override
     public Namespace getNameSpace(String name) {
         boolean exist = checkExist(name);
-        if (exist){
+        if (exist) {
             return new Namespace(name);
         }
         return null;
@@ -106,38 +107,38 @@ public class NamespaceServiceImpl implements NamespaceService {
     @Override
     public Namespace createNameSpace(String name) {
         boolean exist = checkExist(name);
-        if (!exist){
-            String cmd = "ip netns add "+name;
-            exeCmdInNamespace(new Namespace(""),cmd);
+        if (!exist) {
+            String cmd = "ip netns add " + name;
+            exeCmdInNamespace(new Namespace(""), cmd);
         }
-        Namespace namespace =new Namespace(name);
+        Namespace namespace = new Namespace(name);
         return namespace;
     }
 
     @Override
     public boolean deleteNameSpace(String name) {
         boolean exist = checkExist(name);
-        if (exist){
-            String cmd = "ip netns del "+name;
-            exeCmdInNamespace(new Namespace(""),cmd);
+        if (exist) {
+            String cmd = "ip netns del " + name;
+            exeCmdInNamespace(new Namespace(""), cmd);
         }
         return true;
     }
 
     @Override
     public InputStream exeCmdInNamespace(Namespace namespace, String cmd) {
-        return exeCmdInNamespace(namespace.getName(),cmd);
+        return exeCmdInNamespace(namespace.getName(), cmd);
     }
 
     public InputStream exeCmdInNamespace(String namespace, String cmd) {
-        if (!namespace.equals("")){
-            if (!checkExist(namespace)){
+        if (!namespace.equals("")) {
+            if (!checkExist(namespace)) {
                 return null;
-            }else {
-                cmd = "ip netns exec "+namespace+" "+ cmd;
+            } else {
+                cmd = "ip netns exec " + namespace + " " + cmd;
             }
         }
-        String[] cmdprep = new String[] {"/bin/sh", "-c", cmd };
+        String[] cmdprep = new String[]{"/bin/sh", "-c", cmd};
         Process exec = null;
         try {
             exec = runtime.exec(cmdprep);
@@ -145,8 +146,7 @@ public class NamespaceServiceImpl implements NamespaceService {
             e.printStackTrace();
         }
         assert exec != null;
-        InputStream inputStream = exec.getInputStream();
-        return inputStream;
+        return exec.getInputStream();
     }
 
 }
