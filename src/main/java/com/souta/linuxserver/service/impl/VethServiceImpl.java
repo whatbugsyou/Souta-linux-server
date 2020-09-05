@@ -33,6 +33,7 @@ public class VethServiceImpl implements VethService {
                 log.error("detect physicalEthName error");
                 System.exit(1);
             }
+            log.info("auto get physicalEthName={}",physicalEthName);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -118,7 +119,7 @@ public class VethServiceImpl implements VethService {
             return null;
         }else {
            String macAddr = getMacAddr(vethName, namespaceName);
-            return new Veth(null, vethName, macAddr, new Namespace(namespaceName));
+            return new Veth(physicalEthName, vethName, macAddr, new Namespace(namespaceName));
         }
     }
 
