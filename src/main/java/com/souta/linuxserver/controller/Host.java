@@ -7,7 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.impl.NamespaceServiceImpl;
 import com.souta.linuxserver.util.FileUtil;
-import lombok.*;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +67,7 @@ public class Host {
     }
 
     private void initFirewall() {
-        String cmd = "iptables -I INPUT -p tcp --dport 8080 -j ACCEPT";
+        String cmd = String.format("iptables -I INPUT -p tcp --dport %s -j ACCEPT",port);
         namespaceService.exeCmdInNamespace("", cmd);
     }
 
