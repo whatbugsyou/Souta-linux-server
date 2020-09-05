@@ -20,6 +20,28 @@ public class VethServiceImpl implements VethService {
     private static final Logger log = LoggerFactory.getLogger(NamespaceServiceImpl.class);
     @Autowired
     private NamespaceService namespaceService;
+    private static String physicalEthName;
+    static {
+        String cmd = "ls /sys/class/net/|awk '{print $1}'|head -n 1";
+        NamespaceServiceImpl namespaceService1 = new NamespaceServiceImpl();
+        InputStream inputStream = namespaceService1.exeCmdInDefaultNamespace(cmd);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+        try {
+            physicalEthName = bufferedReader.readLine();
+            if (physicalEthName==null){
+                log.error("detect physicalEthName error");
+                System.exit(1);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    @Override
+    public Veth createVeth(String vthName, String namespaceName) {
+        return createVeth(physicalEthName,vthName,namespaceName);
+    }
+
     @Override
     public Veth createVeth(String physicalEthName, String vethName, String namespaceName) {
         Namespace namespace = namespaceService.getNameSpace(namespaceName);

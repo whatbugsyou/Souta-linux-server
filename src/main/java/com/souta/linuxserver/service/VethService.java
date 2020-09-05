@@ -4,6 +4,7 @@ import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Veth;
 
 public interface VethService {
+    Veth createVeth(String vthName,String namespaceName);
     Veth createVeth(String physicalEthName,String vthName,String namespaceName);
     boolean checkExist(String vethName,String namespaceName);
     boolean checkExist(Veth veth);
