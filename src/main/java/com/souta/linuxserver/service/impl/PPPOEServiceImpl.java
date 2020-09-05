@@ -6,7 +6,6 @@ import com.souta.linuxserver.entity.PPPOE;
 import com.souta.linuxserver.entity.Veth;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
-
 import com.souta.linuxserver.service.VethService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +26,11 @@ public class PPPOEServiceImpl implements PPPOEService {
     private NamespaceService namespaceService;
     @Autowired
     private VethService vethService;
-    private static List<ADSL> adslAccount;
-    private static HashMap<String, Integer> lastDialSecondGap;
+    private static final List<ADSL> adslAccount;
+    private static final HashMap<String, Integer> lastDialSecondGap;
     private static ScheduledExecutorService scheduler;
-    private static HashSet<String> isRecordInSecretFile;
-
+    private static final HashSet<String> isRecordInSecretFile;
+    private static final int dilaGapLimit =8;
     static {
         adslAccount = new ArrayList<>();
         File adslFile = new File(adslAccountFilePath);
@@ -41,7 +40,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             try {
                 fileReader = new FileReader(adslFile);
                 bufferedReader = new BufferedReader(fileReader);
-                String line = null;
+                String line ;
                 String reg = "(.*)----(.*)";
                 Pattern compile = Pattern.compile(reg);
                 while ((line = bufferedReader.readLine()) != null) {
@@ -97,7 +96,7 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public PPPOE createPPPOE(String pppoeId, Veth veth) {
-        PPPOE pppoe = null;
+        PPPOE pppoe ;
         ADSL adsl = adslAccount.get(Integer.parseInt(pppoeId) - 1);
         if (adsl != null) {
             String adslUser = adsl.getAdslUser();
@@ -154,7 +153,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             String line = null;
             try {
                 while ((line = bufferedReader.readLine()) != null) {
-                    pid.append(" " + line);
+                    pid.append(" ").append(line);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -409,52 +408,49 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public FutureTask<PPPOE> dialUp(PPPOE pppoe) {
-        Callable<PPPOE> callable = new Callable<PPPOE>() {
-            @Override
-            public PPPOE call() throws Exception {
-                boolean configFileExist = checkConfigFileExist(pppoe.getId());
-                boolean vethCorrect = vethService.checkExist(pppoe.getVeth().getInterfaceName(), "ns" + pppoe.getId());
-                if (!configFileExist || !vethCorrect) {
-                    return null;
+        Callable<PPPOE> callable = () -> {
+            boolean configFileExist = checkConfigFileExist(pppoe.getId());
+            boolean vethCorrect = vethService.checkExist(pppoe.getVeth().getInterfaceName(), "ns" + pppoe.getId());
+            if (!configFileExist || !vethCorrect) {
+                return null;
+            }
+            if (isDialUp(pppoe)) {
+                return getPPPOE(pppoe.getId());
+            } else {
+                if (!vethService.checkIsUp(pppoe.getVeth())) {
+                    vethService.upVeth(pppoe.getVeth());
                 }
-                if (isDialUp(pppoe)) {
-                    return getPPPOE(pppoe.getId());
-                } else {
-                    if (!vethService.checkIsUp(pppoe.getVeth())) {
-                        vethService.upVeth(pppoe.getVeth());
+                Namespace namespace = pppoe.getVeth().getNamespace();
+                String ifupCMD = "ifup " + "ppp" + pppoe.getId();
+                Integer integer;
+                synchronized (lastDialSecondGap) {
+                    while ((integer = lastDialSecondGap.get(pppoe.getId())) != null && integer < dilaGapLimit) {
+                        lastDialSecondGap.wait();
                     }
-                    Namespace namespace = pppoe.getVeth().getNamespace();
-                    String ifupCMD = "ifup " + "ppp" + pppoe.getId();
-                    Integer integer;
-                    synchronized (lastDialSecondGap) {
-                        while ((integer = lastDialSecondGap.get(pppoe.getId())) != null && integer < 10) {
-                            lastDialSecondGap.wait();
-                        }
-                    }
-                    log.info("ppp{} start dialing ...", pppoe.getId());
-                    namespaceService.exeCmdInNamespace(namespace, ifupCMD);
-                    int checkCount = 0;
-                    float costSec = 0;
-                    float sleepGapSec = 0.5f;
-                    int dialEndSec = 60;
-                    while (!isDialUp(pppoe)) {
-                        checkCount++;
-                        costSec = checkCount * sleepGapSec;
-                        if (costSec % 10 == 0) {
-                            log.info("ppp{} dialing {}s ...", pppoe.getId(), costSec);
-                        }
-                        if (costSec < dialEndSec) {
-                            TimeUnit.MILLISECONDS.sleep((long) (sleepGapSec * 1000));
-                        } else {
-                            log.info("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
-                            shutDown(pppoe.getId());
-                            break;
-                        }
-                    }
-                    lastDialSecondGap.put(pppoe.getId(), 0);
-                    log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
-                    return getPPPOE(pppoe.getId());
                 }
+                log.info("ppp{} start dialing ...", pppoe.getId());
+                namespaceService.exeCmdInNamespace(namespace, ifupCMD);
+                int checkCount = 0;
+                float costSec = 0;
+                float sleepGapSec = 0.5f;
+                int dialEndSec = 60;
+                while (!isDialUp(pppoe)) {
+                    checkCount++;
+                    costSec = checkCount * sleepGapSec;
+                    if (costSec % 10 == 0) {
+                        log.info("ppp{} dialing {}s ...", pppoe.getId(), costSec);
+                    }
+                    if (costSec < dialEndSec) {
+                        TimeUnit.MILLISECONDS.sleep((long) (sleepGapSec * 1000));
+                    } else {
+                        log.info("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
+                        shutDown(pppoe.getId());
+                        break;
+                    }
+                }
+                lastDialSecondGap.put(pppoe.getId(), 0);
+                log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
+                return getPPPOE(pppoe.getId());
             }
         };
         FutureTask<PPPOE> futureTask = new FutureTask(callable);
@@ -531,47 +527,4 @@ public class PPPOEServiceImpl implements PPPOEService {
         pppoe.setAdslUser(adslAccount.get(Integer.parseInt(pppoeId) - 1).getAdslUser());
         return pppoe;
     }
-
-    //deprecated
-    private void changePidFileForNamespaceEnviroment(String pppoeId) {
-        String toPidPath = "/var/run/ppp0.pid";
-        String fromPidPath = "/var/run/pppoe-adsl%s.pid.pppd";
-        fromPidPath = String.format(fromPidPath, pppoeId);
-        File toPidfile = new File(toPidPath);
-        File fromPidFile = new File(fromPidPath);
-        FileReader fileReader = null;
-        FileWriter fileWriter = null;
-        try {
-            fileReader = new FileReader(fromPidFile);
-            fileWriter = new FileWriter(toPidfile);
-            char buf[] = new char[10];
-            int len;
-            while ((len = fileReader.read(buf)) != -1) {
-                fileWriter.write(buf, 0, len);
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (fileReader != null) {
-                try {
-                    fileReader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (fileWriter != null) {
-                try {
-                    fileWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-
-    }
-
-
 }
