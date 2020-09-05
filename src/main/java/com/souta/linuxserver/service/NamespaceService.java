@@ -57,4 +57,8 @@ public interface NamespaceService {
      * @return an Objcet of InputStream , relating to the cmd exeuting output.
      */
     InputStream exeCmdInNamespace(String namespace, String cmd) ;
+
+    InputStream exeCmdInDefaultNamespace(String cmd) ;
+
+
 }

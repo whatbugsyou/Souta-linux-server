@@ -149,4 +149,9 @@ public class NamespaceServiceImpl implements NamespaceService {
         return exec.getInputStream();
     }
 
+    @Override
+    public InputStream exeCmdInDefaultNamespace(String cmd){
+        return exeCmdInNamespace("",cmd);
+    }
+
 }
