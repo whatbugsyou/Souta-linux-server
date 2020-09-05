@@ -60,15 +60,12 @@ public class Socks5ServiceImpl implements Socks5Service {
 
     @Override
     public boolean isStart(String id) {
-        PPPOE pppoe = pppoeService.getPPPOE(id);
-        if (pppoe != null) {
-            String ip = pppoe.getOutIP();
-            if (ip != null) {
-                String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
-                String namespaceName = "ns" + id;
-                InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
-                return hasOutput(inputStream);
-            }
+        String ip = pppoeService.getIP(id);
+        if (ip != null) {
+            String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
+            String namespaceName = "ns" + id;
+            InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            return hasOutput(inputStream);
         }
         return false;
 
@@ -83,9 +80,8 @@ public class Socks5ServiceImpl implements Socks5Service {
     }
 
     private boolean createConfigFile(String id) {
-        boolean dialUp = pppoeService.isDialUp(id);
-        String ip;
-        if (!dialUp) {
+        String ip = pppoeService.getIP(id);
+        if (ip==null) {
             return false;
         } else {
             PPPOE pppoe = pppoeService.getPPPOE(id);
@@ -138,10 +134,8 @@ public class Socks5ServiceImpl implements Socks5Service {
         }
         Socks5 socks5 = new Socks5();
         boolean dialUp = pppoeService.isDialUp(id);
-        String ip = null;
-        if (dialUp) {
-            PPPOE pppoe = pppoeService.getPPPOE(id);
-            ip = pppoe.getOutIP();
+        String ip = pppoeService.getIP(id);
+        if (ip !=null) {
             String namespaceName = "ns" + id;
             String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
             InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);

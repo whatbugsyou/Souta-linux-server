@@ -31,6 +31,7 @@ public class MainController {
     private static Set<String> dialingLines = new CopyOnWriteArraySet();
     private static HashMap<String, Integer> redialCheckMap = new HashMap<>();
     private static ExecutorService executorService = Executors.newCachedThreadPool();
+
     @PostConstruct
     public void init() {
         new Host().init();
@@ -41,7 +42,7 @@ public class MainController {
     private void monitorLines() {
         Runnable addOneDial = () -> {
             String lineID = GenerateLineID();
-            if (lineID!=null) {
+            if (lineID != null) {
                 dialingLines.add(lineID);
                 log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
                 try {
@@ -91,8 +92,8 @@ public class MainController {
 
     private boolean checkLineIsError(String lineId) {
         Integer integer = redialCheckMap.get(lineId);
-        if (integer!=null){
-            if (integer>=5){
+        if (integer != null) {
+            if (integer >= 5) {
                 return true;
             }
         }
@@ -103,7 +104,7 @@ public class MainController {
         log.info("initLineInfo....");
         HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
         ArrayList<Line> lines = getLines(lineIdSet);
-        log.info("total {} lines is ok",lines.size());
+        log.info("total {} lines is ok", lines.size());
         HttpRequest.delete(Host.java_server_host + "/v1.0/server/lines?" + "hostId=" + Host.id)
                 .execute().getStatus();
         sendLineInfo(lines);
@@ -119,7 +120,7 @@ public class MainController {
                     dialuppedId) {
                 lineMax.add(Integer.parseInt(id));
             }
-           return String.valueOf(lineMax.getMax());
+            return String.valueOf(lineMax.getMax());
         }
         return null;
     }
@@ -138,16 +139,12 @@ public class MainController {
             if (socks5Service.isStart(lineId) && shadowsocksService.isStart(lineId)) {
                 Socks5 socks5 = socks5Service.getSocks5(lineId);
                 Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId);
-                if (shadowsocks != null && socks5 != null) {
-                    log.info("Line {} is ok", lineId);
-                    Line line = new Line(lineId, socks5, shadowsocks);
-                    lines.add(line);
-                }
+                log.info("Line {} is ok", lineId);
+                Line line = new Line(lineId, socks5, shadowsocks);
+                lines.add(line);
             } else {
                 log.info("Line {} is not ok", lineId);
-                if (pppoeService.isDialUp(lineId)) {
-                    deleteLine(lineId);
-                }
+                deleteLine(lineId);
             }
         }
         return lines;
@@ -231,17 +228,23 @@ public class MainController {
                     } finally {
                         dialingLines.remove(pppoe.getId());
                     }
-                    shadowsocksService.createShadowsocks(lineId);
-                    shadowsocksService.startShadowsocks(lineId);
-                    socks5Service.createSocks5(lineId);
-                    socks5Service.startSocks5(lineId);
+                    startSocks(lineId);
                     sendLineInfo(lineId);
+
                 }
             };
             executorService.execute(dialHandle);
         }
         resultMap.put("status", "ok");
         return resultMap;
+    }
+
+    private void startSocks(String lineId) {
+        Shadowsocks shadowsocks = shadowsocksService.createShadowsocks(lineId);
+        shadowsocksService.startShadowsocks(lineId);
+        Socks5 socks5 = socks5Service.createSocks5(lineId);
+        socks5Service.startSocks5(lineId);
+
     }
 
     @PutMapping

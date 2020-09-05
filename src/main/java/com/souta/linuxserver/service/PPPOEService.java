@@ -25,9 +25,9 @@ public interface PPPOEService {
     PPPOE getPPPOE(String pppoeId);
     boolean isDialUp(PPPOE pppoe);
     boolean isDialUp(String pppoeId);
-
     boolean shutDown(String pppoeId);
     boolean reDialup(String pppoeId);
     HashSet<String > getDialuppedIdSet();
     List<ADSL> getADSLList();
+    String getIP(String pppoeId);
 }

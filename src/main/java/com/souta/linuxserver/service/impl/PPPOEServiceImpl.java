@@ -9,7 +9,6 @@ import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.VethService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -22,10 +21,8 @@ import java.util.regex.Pattern;
 public class PPPOEServiceImpl implements PPPOEService {
     private static final Logger log = LoggerFactory.getLogger(PPPOEService.class);
     private static final String adslAccountFilePath = "/tmp/adsl.txt";
-    @Autowired
-    private NamespaceService namespaceService;
-    @Autowired
-    private VethService vethService;
+    private final NamespaceService namespaceService;
+    private final VethService vethService;
     private static final List<ADSL> adslAccount;
     private static final HashMap<String, Integer> lastDialSecondGap;
     private static ScheduledExecutorService scheduler;
@@ -50,8 +47,6 @@ public class PPPOEServiceImpl implements PPPOEService {
                         adslAccount.add(adsl);
                     }
                 }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
@@ -92,6 +87,11 @@ public class PPPOEServiceImpl implements PPPOEService {
         };
         scheduler.scheduleAtFixedRate(refreshSecondGap, 0, 1, TimeUnit.SECONDS);
         isRecordInSecretFile = new HashSet<>();
+    }
+
+    public PPPOEServiceImpl(NamespaceService namespaceService, VethService vethService) {
+        this.namespaceService = namespaceService;
+        this.vethService = vethService;
     }
 
     @Override
@@ -150,7 +150,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         if (inputStream != null) {
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-            String line = null;
+            String line ;
             try {
                 while ((line = bufferedReader.readLine()) != null) {
                     pid.append(" ").append(line);
@@ -179,7 +179,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         if (inputStream != null) {
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-            String line = null;
+            String line ;
             try {
                 while ((line = bufferedReader.readLine()) != null) {
                     Matcher matcher = compile.matcher(line);
@@ -197,6 +197,26 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public List<ADSL> getADSLList() {
         return adslAccount;
+    }
+
+    @Override
+    public String getIP(String pppoeId) {
+        String cmd = "ip route";
+        InputStream inputStream = namespaceService.exeCmdInNamespace("ns" + pppoeId, cmd);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        String line ;
+        Pattern pattern2 = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
+        try {
+            while ((line = bufferedReader.readLine()) != null) {
+                Matcher matcher2 = pattern2.matcher(line);
+                if (matcher2.matches() != false) {
+                    return matcher2.group(3);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
@@ -226,25 +246,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public boolean checkConfigFileExist(String pppoeId) {
         String cmd = "ls /etc/sysconfig/network-scripts | grep ifcfg-ppp" + pppoeId + "$";
         InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
-        int read = 0;
-        try {
-            read = inputStream.read();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        if (read != -1) {
-            return true;
-        } else {
-            return false;
-        }
+        return hasOutput(inputStream);
     }
 
     @Override
@@ -264,7 +266,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         FileReader chapfileReader = null;
         FileWriter tmpfileWriter = null;
         FileWriter papfileWriter = null;
-        String line = null;
+        String line ;
         File chap = new File("/etc/ppp/chap-secrets");
         File tmp_file = new File("/etc/ppp/chap-secrets_test");
         File pap = new File("/etc/ppp/pap-secrets");
@@ -306,8 +308,9 @@ public class PPPOEServiceImpl implements PPPOEService {
                 tmpfileBufferedWriter.write(line);
                 papBufferedWriter.newLine();
             }
-            boolean delete = chap.delete();
-            boolean b = tmp_file.renameTo(chap);
+            chap.delete();
+            tmp_file.renameTo(chap);
+            isRecordInSecretFile.add(adslUser);
         } catch (IOException | SecurityException e) {
             e.printStackTrace();
         } finally {
@@ -357,15 +360,15 @@ public class PPPOEServiceImpl implements PPPOEService {
         }
     }
 
-    private boolean createMainConfigFile(String pppoeId, String adslUser) {
+    private void createMainConfigFile(String pppoeId, String adslUser) {
         if (checkConfigFileExist(pppoeId)) {
-            return true;
+            return;
         }
         String configFilePath = "/etc/sysconfig/network-scripts/ifcfg-ppp" + pppoeId;
         BufferedWriter cfgfileBufferedWriter = null;
         BufferedReader tmpbufferedReader = null;
         FileWriter fileWriter = null;
-        String line = null;
+        String line ;
         try {
             fileWriter = new FileWriter(new File(configFilePath));
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
@@ -403,7 +406,6 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
             }
         }
-        return false;
     }
 
     @Override
@@ -472,7 +474,7 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public PPPOE getPPPOE(String pppoeId) {
-        PPPOE pppoe = null;
+        PPPOE pppoe ;
         String vethName = "eth" + pppoeId;
         Veth veth = vethService.getVeth(vethName);
         if (veth == null) {
@@ -485,7 +487,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             String cmd = "ip route";
             InputStream inputStream = namespaceService.exeCmdInNamespace("ns" + pppoeId, cmd);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            String line = null;
+            String line ;
             Pattern pattern2 = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
             try {
                 while ((line = bufferedReader.readLine()) != null) {

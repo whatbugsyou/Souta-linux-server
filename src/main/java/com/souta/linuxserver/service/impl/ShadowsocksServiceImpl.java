@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,9 +40,8 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     private boolean createConfigFile(String id) {
-        String ip = null;
-        boolean dialUp = pppoeService.isDialUp(id);
-        if (!dialUp) {
+        String ip = pppoeService.getIP(id);
+        if (ip ==null) {
             return false;
         } else {
             PPPOE pppoe = pppoeService.getPPPOE(id);
@@ -167,15 +165,12 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
     @Override
     public boolean isStart(String id) {
-        PPPOE pppoe = pppoeService.getPPPOE(id);
-        if (pppoe != null) {
-            String ip = pppoe.getOutIP();
-            if (ip != null) {
-                String cmd = "netstat -ln -tpe |grep 10809 |grep " + ip;
-                String namespaceName = "ns" + id;
-                InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
-                return hasOutput(inputStream);
-            }
+        String ip = pppoeService.getIP(id);
+        if (ip != null) {
+            String cmd = "netstat -ln -tpe |grep 10809 |grep " + ip;
+            String namespaceName = "ns" + id;
+            InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            return hasOutput(inputStream);
         }
         return false;
     }
@@ -186,11 +181,8 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         boolean exist = checkConfigFileExist(id);
         if (exist) {
             shadowsocks = new Shadowsocks();
-            String ip = null;
-            boolean dialUp = pppoeService.isDialUp(id);
-            if (dialUp) {
-                PPPOE pppoe = pppoeService.getPPPOE(id);
-                ip = pppoe.getOutIP();
+            String ip = pppoeService.getIP(id);
+            if (ip!=null) {
                 String cmd = "netstat -ln -tpe |grep 10809 |grep " + ip;
                 String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
                 Pattern compile = Pattern.compile(s);
