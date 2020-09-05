@@ -36,7 +36,7 @@ public class Host {
 
 
     public void init() {
-        initIPRoute();
+//        initIPRoute();
         initDNS();
         initFirewall();
         initHostId();
@@ -44,6 +44,7 @@ public class Host {
     }
 
     private void initIPRoute() {
+        //TODO maching different origin network enviroment
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
             String line ;
