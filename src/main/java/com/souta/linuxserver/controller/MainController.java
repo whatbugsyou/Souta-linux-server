@@ -30,7 +30,7 @@ public class MainController {
     private static final int lineRedialWait = 2;
     private static Set<String> dialingLines = new CopyOnWriteArraySet();
     private static HashMap<String, Integer> redialCheckMap = new HashMap<>();
-
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
     @PostConstruct
     public void init() {
         new Host().init();
@@ -39,7 +39,6 @@ public class MainController {
     }
 
     private void monitorLines() {
-        ExecutorService executorService = Executors.newCachedThreadPool();
         Runnable addOneDial = () -> {
             String lineID = GenerateLineID();
             if (lineID!=null) {
@@ -209,7 +208,7 @@ public class MainController {
             PPPOE pppoe = pppoeService.createPPPOE(lineId, null);
             FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
             dialingLines.add(pppoe.getId());
-            new Thread(new Runnable() {
+            Runnable dialHandle = new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -222,7 +221,7 @@ public class MainController {
                             } else {
                                 redialCheckMap.put(pppoe.getId(), 1);
                             }
-                        }else {
+                        } else {
                             redialCheckMap.remove(pppoe.getId());
                         }
                     } catch (InterruptedException e) {
@@ -238,7 +237,8 @@ public class MainController {
                     socks5Service.startSocks5(lineId);
                     sendLineInfo(lineId);
                 }
-            }).start();
+            };
+            executorService.execute(dialHandle);
         }
         resultMap.put("status", "ok");
         return resultMap;
