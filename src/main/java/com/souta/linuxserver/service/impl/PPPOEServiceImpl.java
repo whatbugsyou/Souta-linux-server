@@ -30,6 +30,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static List<ADSL> adslAccount;
     private static HashMap<String, Integer> lastDialSecondGap;
     private static ScheduledExecutorService scheduler;
+    private static HashSet<String> isRecordInSecretFile;
 
     static {
         adslAccount = new ArrayList<>();
@@ -91,6 +92,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             }
         };
         scheduler.scheduleAtFixedRate(refreshSecondGap, 0, 1, TimeUnit.SECONDS);
+        isRecordInSecretFile = new HashSet<>();
     }
 
     @Override
@@ -108,7 +110,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         if (veth == null) {
             String vethName = "eth" + pppoeId;
             String namespaceName = "ns" + pppoeId;
-            veth = vethService.createVeth("ens33", vethName, namespaceName);
+            veth = vethService.createVeth(vethName, namespaceName);
 
         } else {
             boolean exist = vethService.checkExist(veth);
@@ -253,7 +255,10 @@ public class PPPOEServiceImpl implements PPPOEService {
         return true;
     }
 
-    private void refreshSecretConfig(String adslUser, String adslPassword) {
+    private synchronized void refreshSecretConfig(String adslUser, String adslPassword) {
+        if (isRecordInSecretFile.contains(adslUser)) {
+            return;
+        }
         BufferedWriter tmpfileBufferedWriter = null;
         BufferedWriter papBufferedWriter = null;
         BufferedReader chapbufferedReader = null;
@@ -354,6 +359,9 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     private boolean createMainConfigFile(String pppoeId, String adslUser) {
+        if (checkConfigFileExist(pppoeId)) {
+            return true;
+        }
         String configFilePath = "/etc/sysconfig/network-scripts/ifcfg-ppp" + pppoeId;
         BufferedWriter cfgfileBufferedWriter = null;
         BufferedReader tmpbufferedReader = null;
