@@ -39,20 +39,28 @@ public class MainController {
     }
 
     private void monitorLines() {
-        log.info("monitorLines starting...");
-        ScheduledExecutorService scheduler =
-                Executors.newScheduledThreadPool(100);
-        Runnable makeFullDial = () -> {
-            HashSet<String> newlineIdList = pppoeService.getDialuppedIdSet();
-            newlineIdList.addAll(dialingLines);
-            if (newlineIdList.size() < pppoeService.getADSLList().size()) {
-                log.info("LineMonitor is going to create line after {} seconds...",lineRedialWait);
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        Runnable addOneDial = () -> {
+            String lineID = GenerateLineID();
+            if (lineID!=null) {
+                dialingLines.add(lineID);
+                log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
                 try {
                     TimeUnit.SECONDS.sleep(lineRedialWait);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                createLine();
+                createLine(lineID);
+            }
+        };
+        log.info("monitorLines starting...");
+        ScheduledExecutorService scheduler =
+                Executors.newScheduledThreadPool(3);
+        Runnable checkFullDial = () -> {
+            HashSet<String> newlineIdList = pppoeService.getDialuppedIdSet();
+            newlineIdList.addAll(dialingLines);
+            if (newlineIdList.size() < pppoeService.getADSLList().size()) {
+                executorService.execute(addOneDial);
             }
         };
         Runnable checkDeadLine = () -> {
@@ -78,7 +86,7 @@ public class MainController {
                 }
             }
         };
-        scheduler.scheduleAtFixedRate(makeFullDial, 0, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
     }
 
