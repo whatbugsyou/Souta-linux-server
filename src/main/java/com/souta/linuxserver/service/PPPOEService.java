@@ -10,6 +10,7 @@ import java.util.concurrent.FutureTask;
 
 
 public interface PPPOEService {
+    PPPOE createPPPOE(String pppoeId);
     PPPOE createPPPOE(String pppoeId,Veth veth);
     boolean checkConfigFileExist(String pppoeId);
     boolean createConifgFile(String pppoeId,String adslUser,String adslPassword);

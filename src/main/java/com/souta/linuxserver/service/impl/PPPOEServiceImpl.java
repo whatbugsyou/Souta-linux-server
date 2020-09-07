@@ -95,6 +95,11 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     @Override
+    public PPPOE createPPPOE(String pppoeId) {
+       return createPPPOE(pppoeId,null);
+    }
+
+    @Override
     public PPPOE createPPPOE(String pppoeId, Veth veth) {
         PPPOE pppoe ;
         ADSL adsl = adslAccount.get(Integer.parseInt(pppoeId) - 1);
