@@ -210,8 +210,7 @@ public class MainController {
                 public void run() {
                     try {
                         PPPOE pppoe = futureTask.get();
-                        log.info(pppoe.toString());
-                        if (pppoe.getOutIP() == null) {
+                        if (pppoe!=null && pppoe.getOutIP() == null) {
                             Integer integer = redialCheckMap.get(pppoe.getId());
                             if (integer != null) {
                                 redialCheckMap.put(pppoe.getId(), integer + 1);
@@ -221,6 +220,8 @@ public class MainController {
                         } else {
                             redialCheckMap.remove(pppoe.getId());
                         }
+                        startSocks(lineId);
+                        sendLinesInfo(lineId);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } catch (ExecutionException e) {
@@ -228,9 +229,6 @@ public class MainController {
                     } finally {
                         dialingLines.remove(pppoe.getId());
                     }
-                    startSocks(lineId);
-                    sendLinesInfo(lineId);
-
                 }
             };
             executorService.execute(dialHandle);
