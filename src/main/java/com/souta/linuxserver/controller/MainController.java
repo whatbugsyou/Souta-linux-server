@@ -95,7 +95,7 @@ public class MainController {
     private boolean checkLineIsError(String lineId) {
         Integer integer = redialCheckMap.get(lineId);
         if (integer != null) {
-            if (integer >= 5) {
+            if (integer >= deadLineLimitTimes) {
                 return true;
             }
         }
@@ -206,30 +206,32 @@ public class MainController {
         } else {
             PPPOE pppoe = pppoeService.createPPPOE(lineId);
             FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
-            dialingLines.add(pppoe.getId());
+            dialingLines.add(lineId);
             Runnable dialHandle = new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        PPPOE pppoe = futureTask.get();
-                        if (pppoe!=null && pppoe.getOutIP() == null) {
-                            Integer integer = redialCheckMap.get(pppoe.getId());
-                            if (integer != null) {
-                                redialCheckMap.put(pppoe.getId(), integer + 1);
-                            } else {
-                                redialCheckMap.put(pppoe.getId(), 1);
+                        PPPOE pppoeR = futureTask.get();
+                        if (pppoeR!=null ) {
+                            if (pppoeR.getOutIP() == null){
+                                Integer integer = redialCheckMap.get(pppoeR.getId());
+                                if (integer != null) {
+                                    redialCheckMap.put(pppoeR.getId(), integer + 1);
+                                } else {
+                                    redialCheckMap.put(pppoeR.getId(), 1);
+                                }
+                            }else {
+                                startSocks(lineId);
+                                sendLinesInfo(lineId);
+                                redialCheckMap.remove(pppoeR.getId());
                             }
-                        } else {
-                            redialCheckMap.remove(pppoe.getId());
                         }
-                        startSocks(lineId);
-                        sendLinesInfo(lineId);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } catch (ExecutionException e) {
                         e.printStackTrace();
                     } finally {
-                        dialingLines.remove(pppoe.getId());
+                        dialingLines.remove(lineId);
                     }
                 }
             };
