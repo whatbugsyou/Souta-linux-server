@@ -138,7 +138,7 @@ public class MainController {
             String lineId = id.toString();
             Socks5 socks5 = socks5Service.getSocks5(lineId);
             Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId);
-            if (socks5 != null && socks5 != null) {
+            if (socks5.getIp() != null && shadowsocks.getIp() != null) {
                 log.info("Line {} is ok", lineId);
                 Line line = new Line(lineId, socks5, shadowsocks);
                 lines.add(line);
