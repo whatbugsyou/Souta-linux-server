@@ -84,6 +84,7 @@ public class MainController {
                     new Thread(() -> HttpRequest.post(Host.java_server_host + "/v1.0/deadLine")
                             .body(body)
                             .execute()).start();
+                    redialCheckMap.put(entry.getKey(),value+1);
                 }
             }
         };
