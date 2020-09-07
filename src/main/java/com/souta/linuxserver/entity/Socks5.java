@@ -1,6 +1,6 @@
 package com.souta.linuxserver.entity;
 
-import lombok.*;
+import lombok.Data;
 
 @Data
 public class Socks5 {
@@ -10,7 +10,6 @@ public class Socks5 {
     private String username;
     private String password;
     private String pid;
-    private String ownerId;
 
 
     public Socks5() {

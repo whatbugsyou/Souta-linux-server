@@ -7,7 +7,7 @@ import java.util.List;
 public interface Socks5Service {
     boolean checkConfigFileExist(String id);
     boolean isStart(String id);
-    Socks5 createSocks5(String id);
+    boolean createSocks5ConfigFile(String id);
     Socks5 getSocks5(String id);
     boolean stopSocks5(String id);
     boolean restartSocks5(String id);

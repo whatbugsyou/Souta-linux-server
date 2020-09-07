@@ -26,7 +26,7 @@ public class Socks5Controller {
     }
     @RequestMapping("create")
     public Socks5 create(String id){
-        socks5Service.createSocks5(id);
+        socks5Service.createSocks5ConfigFile(id);
         socks5Service.startSocks5(id);
         return socks5Service.getSocks5(id);
     }

@@ -72,11 +72,8 @@ public class Socks5ServiceImpl implements Socks5Service {
     }
 
     @Override
-    public Socks5 createSocks5(String id) {
-        createConfigFile(id);
-        String cmd = String.format("useradd -u 10%s user%s", id, id);
-        namespaceService.exeCmdInNamespace("", cmd);
-        return getSocks5(id);
+    public boolean createSocks5ConfigFile(String id) {
+        return createConfigFile(id);
     }
 
     private boolean createConfigFile(String id) {
@@ -133,7 +130,6 @@ public class Socks5ServiceImpl implements Socks5Service {
             return null;
         }
         Socks5 socks5 = new Socks5();
-        boolean dialUp = pppoeService.isDialUp(id);
         String ip = pppoeService.getIP(id);
         if (ip !=null) {
             String namespaceName = "ns" + id;
@@ -162,7 +158,6 @@ public class Socks5ServiceImpl implements Socks5Service {
         socks5.setUsername("test123");
         socks5.setPassword("test123");
         socks5.setPort(port);
-        socks5.setOwnerId("10" + id);
         return socks5;
     }
 
@@ -204,9 +199,8 @@ public class Socks5ServiceImpl implements Socks5Service {
     public boolean startSocks5(String id) {
         boolean exist = checkConfigFileExist(id);
         if (exist) {
-            Socks5 socks5 = getSocks5(id);
             String namespaceName = "ns" + id;
-            String cmd = "sh /tmp/socks5/socks5-" + socks5.getId() + ".sh";
+            String cmd = "sh /tmp/socks5/socks5-" + id + ".sh";
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
         } else {
@@ -237,7 +231,6 @@ public class Socks5ServiceImpl implements Socks5Service {
                     socks5.setPassword("test123");
                     socks5.setPid(pid);
                     socks5.setPort(port);
-                    socks5.setOwnerId(ownerId);
                     socks5.setId(ownerId.substring(2));
                     socks5List.add(socks5);
                 }

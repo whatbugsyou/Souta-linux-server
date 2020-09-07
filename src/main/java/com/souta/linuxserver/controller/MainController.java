@@ -107,7 +107,7 @@ public class MainController {
         log.info("total {} lines is ok", lines.size());
         HttpRequest.delete(Host.java_server_host + "/v1.0/server/lines?" + "hostId=" + Host.id)
                 .execute().getStatus();
-        sendLineInfo(lines);
+        sendLinesInfo(lines);
     }
 
     private String GenerateLineID() {
@@ -136,21 +136,21 @@ public class MainController {
         for (Integer id : integers
         ) {
             String lineId = id.toString();
-            if (socks5Service.isStart(lineId) && shadowsocksService.isStart(lineId)) {
-                Socks5 socks5 = socks5Service.getSocks5(lineId);
-                Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId);
+            Socks5 socks5 = socks5Service.getSocks5(lineId);
+            Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId);
+            if (socks5 != null && socks5 != null) {
                 log.info("Line {} is ok", lineId);
                 Line line = new Line(lineId, socks5, shadowsocks);
                 lines.add(line);
             } else {
-                log.info("Line {} is not ok", lineId);
+                log.error("Line {} is not ok", lineId);
                 deleteLine(lineId);
             }
         }
         return lines;
     }
 
-    private void sendLineInfo(ArrayList<Line> lines) {
+    private void sendLinesInfo(ArrayList<Line> lines) {
         if (!lines.isEmpty()) {
             HashMap<String, Object> data = new HashMap<>();
             data.put("hostId", Host.id);
@@ -169,15 +169,15 @@ public class MainController {
         }
     }
 
-    private void sendLineInfo(HashSet<String> lineIdSet) {
+    private void sendLinesInfo(HashSet<String> lineIdSet) {
         ArrayList<Line> lines = getLines(lineIdSet);
-        sendLineInfo(lines);
+        sendLinesInfo(lines);
     }
 
-    private void sendLineInfo(String lineId) {
+    private void sendLinesInfo(String lineId) {
         HashSet<String> lineIdSet = new HashSet<>();
         lineIdSet.add(lineId);
-        sendLineInfo(lineIdSet);
+        sendLinesInfo(lineIdSet);
     }
 
     @PostMapping
@@ -198,11 +198,11 @@ public class MainController {
         boolean start = shadowsocksService.isStart(lineId);
         boolean start1 = socks5Service.isStart(lineId);
         if (start1 && start) {
-            sendLineInfo(lineId);
+            sendLinesInfo(lineId);
             resultMap.put("status", "exist");
             return resultMap;
         } else {
-            PPPOE pppoe = pppoeService.createPPPOE(lineId, null);
+            PPPOE pppoe = pppoeService.createPPPOE(lineId);
             FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
             dialingLines.add(pppoe.getId());
             Runnable dialHandle = new Runnable() {
@@ -229,7 +229,7 @@ public class MainController {
                         dialingLines.remove(pppoe.getId());
                     }
                     startSocks(lineId);
-                    sendLineInfo(lineId);
+                    sendLinesInfo(lineId);
 
                 }
             };
@@ -240,9 +240,9 @@ public class MainController {
     }
 
     private void startSocks(String lineId) {
-        Shadowsocks shadowsocks = shadowsocksService.createShadowsocks(lineId);
+        shadowsocksService.createShadowsocksConfigfile(lineId);
         shadowsocksService.startShadowsocks(lineId);
-        Socks5 socks5 = socks5Service.createSocks5(lineId);
+        socks5Service.createSocks5ConfigFile(lineId);
         socks5Service.startSocks5(lineId);
 
     }
@@ -319,14 +319,14 @@ public class MainController {
         } else {
             log.info("proto change : line {} , {} ,{}", lineId, protoId, action);
             if (protoId.equals("socks5")) {
-                Socks5 socks5 = socks5Service.createSocks5(lineId);
+                socks5Service.createSocks5ConfigFile(lineId);
                 if (action.equals("on")) {
                     socks5Service.startSocks5(lineId);
                 } else if (action.equals("off")) {
                     socks5Service.stopSocks5(lineId);
                 }
             } else {
-                Shadowsocks shadowsocks = shadowsocksService.createShadowsocks(lineId);
+                shadowsocksService.createShadowsocksConfigfile(lineId);
                 if (action.equals("on")) {
                     shadowsocksService.startShadowsocks(lineId);
                 } else if (action.equals("off")) {

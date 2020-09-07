@@ -34,9 +34,8 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     @Override
-    public Shadowsocks createShadowsocks(String id) {
-        createConfigFile(id);
-        return getShadowsocks(id);
+    public boolean createShadowsocksConfigfile(String id) {
+        return createConfigFile(id);
     }
 
     private boolean createConfigFile(String id) {
@@ -96,7 +95,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         String namespace = "ns" + id;
         InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        String line = null;
+        String line ;
         try {
             while ((line = bufferedReader.readLine()) != null) {
                 if (line != null) {
@@ -130,33 +129,8 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         if (exist) {
             String cmd = "ssserver -c /tmp/shadowsocks/shadowsocks-%s.json";
             cmd = String.format(cmd, id, id);
-            File file = new File("/tmp/shadowsocks/shadowsocks.sh");
-            BufferedWriter cfgfileBufferedWriter = null;
-            FileWriter fileWriter = null;
-            try {
-                fileWriter = new FileWriter(file);
-                cfgfileBufferedWriter = new BufferedWriter(fileWriter);
-                cfgfileBufferedWriter.write(cmd);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                if (cfgfileBufferedWriter != null) {
-                    try {
-                        cfgfileBufferedWriter.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                if (fileWriter != null) {
-                    try {
-                        fileWriter.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
             String namespaceName = "ns" + id;
-            namespaceService.exeCmdInNamespace(namespaceName, "sh /tmp/shadowsocks/shadowsocks.sh");
+            namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
         } else {
             return false;
@@ -207,7 +181,6 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
             shadowsocks.setId(id);
             shadowsocks.setPassword("test123");
             shadowsocks.setPort("10809");
-            shadowsocks.setOwnerId("10" + id);
             shadowsocks.setEncryption("aes-256-cfb");
         }
         return shadowsocks;
@@ -235,7 +208,6 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
                     shadowsocks.setPassword("test123");
                     shadowsocks.setPid(pid);
                     shadowsocks.setPort(port);
-                    shadowsocks.setOwnerId(ownerId);
                     shadowsocks.setId(ownerId.substring(2));
                     shadowsocks5List.add(shadowsocks);
                 }
