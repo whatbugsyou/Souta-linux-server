@@ -28,6 +28,7 @@ public class MainController {
 
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
     private static final int lineRedialWait = 2;
+    private static final int deadLineLimitTimes = 3;
     private static Set<String> dialingLines = new CopyOnWriteArraySet();
     private static HashMap<String, Integer> redialCheckMap = new HashMap<>();
     private static ExecutorService executorService = Executors.newCachedThreadPool();
@@ -68,7 +69,7 @@ public class MainController {
             for (Map.Entry<String, Integer> entry : entries
             ) {
                 Integer value = entry.getValue();
-                if (value == 5) {
+                if (value == deadLineLimitTimes) {
                     HashMap<String, Object> data = new HashMap<>();
                     DeadLine deadLine = new DeadLine();
                     deadLine.setLineId(entry.getKey());
