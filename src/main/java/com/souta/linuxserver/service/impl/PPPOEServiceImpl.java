@@ -208,6 +208,9 @@ public class PPPOEServiceImpl implements PPPOEService {
     public String getIP(String pppoeId) {
         String cmd = "ip route";
         InputStream inputStream = namespaceService.exeCmdInNamespace("ns" + pppoeId, cmd);
+        if (inputStream==null){
+            return null;
+        }
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         String line ;
         Pattern pattern2 = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
