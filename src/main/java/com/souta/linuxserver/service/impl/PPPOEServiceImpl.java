@@ -151,7 +151,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public boolean shutDown(String pppoeId) {
         StringBuilder pid = new StringBuilder();
         String pidCheckCmd = String.format("ps ax|awk '/(ppp%s$)|(ppp%s )/{print $1}'", pppoeId, pppoeId);
-        InputStream inputStream = namespaceService.exeCmdInNamespace("", pidCheckCmd);
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(pidCheckCmd);
         if (inputStream != null) {
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
@@ -163,7 +163,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            namespaceService.exeCmdInNamespace("", "kill -9" + pid.toString());
+            namespaceService.exeCmdInDefaultNamespace("kill -9" + pid.toString());
         }
         return true;
     }
@@ -180,7 +180,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         HashSet<String> result = new HashSet<>();
         String cmd = "ps ax|awk '/ppp\\d/ {print $9}'";
         Pattern compile = Pattern.compile(".*?(\\d+).*");
-        InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         if (inputStream != null) {
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
@@ -233,27 +233,13 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     private boolean hasOutput(InputStream inputStream) {
-        int read = 0;
-        try {
-            read = inputStream.read();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return read != -1;
+        return Socks5ServiceImpl.hasOutput(inputStream);
     }
 
     @Override
     public boolean checkConfigFileExist(String pppoeId) {
         String cmd = "ls /etc/sysconfig/network-scripts | grep ifcfg-ppp" + pppoeId + "$";
-        InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
 

@@ -103,7 +103,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
                     if (matcher.matches()) {
                         String pid = matcher.group(3);
                         String cmd2 = "kill -9 " + pid;
-                        namespaceService.exeCmdInNamespace("", cmd2);
+                        namespaceService.exeCmdInDefaultNamespace(cmd);
                     }
                 }
             }
@@ -193,7 +193,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         String line = null;
         Pattern compile = Pattern.compile(s);
         ArrayList<Shadowsocks> shadowsocks5List = new ArrayList<>();
-        InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         try {
             while ((line = bufferedReader.readLine()) != null) {
@@ -219,20 +219,6 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     private boolean hasOutput(InputStream inputStream) {
-        int read = 0;
-        try {
-            read = inputStream.read();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return read != -1;
+        return Socks5ServiceImpl.hasOutput(inputStream);
     }
 }

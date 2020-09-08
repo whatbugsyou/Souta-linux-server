@@ -1,6 +1,5 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.controller.PPPOEController;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.service.NamespaceService;
 import org.slf4j.Logger;
@@ -25,7 +24,7 @@ public class NamespaceServiceImpl implements NamespaceService {
     public boolean checkExist(String name) {
         if (name.equals("")) return true;
         String cmd = "ls /var/run/netns/ |grep " + name + "$";
-        InputStream inputStream = exeCmdInNamespace("", cmd);
+        InputStream inputStream = exeCmdInDefaultNamespace(cmd);
         int read = 0;
         try {
             read = inputStream.read();
@@ -109,7 +108,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         boolean exist = checkExist(name);
         if (!exist) {
             String cmd = "ip netns add " + name;
-            exeCmdInNamespace(new Namespace(""), cmd);
+            exeCmdInDefaultNamespace(cmd);
         }
         Namespace namespace = new Namespace(name);
         return namespace;

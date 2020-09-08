@@ -57,10 +57,10 @@ public class Host {
             }
             if (!flag) {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
-                namespaceService.exeCmdInNamespace("", cmd);
+                namespaceService.exeCmdInDefaultNamespace(cmd);
             }
             String cmd = String.format("ip route add %s table %s", hostRoute, hostRouteTableName);
-            namespaceService.exeCmdInNamespace("", cmd);
+            namespaceService.exeCmdInDefaultNamespace(cmd);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -68,7 +68,7 @@ public class Host {
 
     private void initFirewall() {
         String cmd = String.format("iptables -I INPUT -p tcp --dport %s -j ACCEPT",port);
-        namespaceService.exeCmdInNamespace("", cmd);
+        namespaceService.exeCmdInDefaultNamespace(cmd);
     }
 
     private void initDNS() {
@@ -98,7 +98,7 @@ public class Host {
         Runnable beeper = () -> {
             if (id != null) {
                 String cmd = "curl members.3322.org/dyndns/getip";
-                InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
+                InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
                 String nowIp = null;
                 if (inputStream != null) {
                     try {

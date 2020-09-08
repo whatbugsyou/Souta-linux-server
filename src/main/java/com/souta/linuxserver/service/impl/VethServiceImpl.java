@@ -59,7 +59,7 @@ public class VethServiceImpl implements VethService {
                 macAddr = createMacAddr();
                 String cmd = "ip link add link %s address %s %s type macvlan";
                 cmd = String.format(cmd, physicalEthName,macAddr,vethName);
-                InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
+                InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
                 if(inputStream!=null){
                     try {
                         inputStream.close();

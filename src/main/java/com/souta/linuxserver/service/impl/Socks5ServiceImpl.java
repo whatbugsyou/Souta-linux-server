@@ -36,11 +36,11 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public boolean checkConfigFileExist(String id) {
         String cmd = "ls /tmp/socks5/ |grep socks5-" + id + ".sh";
-        InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
 
-    private boolean hasOutput(InputStream inputStream) {
+    static boolean hasOutput(InputStream inputStream) {
         int read = 0;
         try {
             read = inputStream.read();
@@ -176,7 +176,7 @@ public class Socks5ServiceImpl implements Socks5Service {
                 if (matcher.matches()) {
                     String pid = matcher.group(3);
                     String cmd2 = "kill -9 " + pid;
-                    namespaceService.exeCmdInNamespace("", cmd2);
+                    namespaceService.exeCmdInDefaultNamespace(cmd2);
                 }
 
             }
@@ -215,7 +215,7 @@ public class Socks5ServiceImpl implements Socks5Service {
         String line;
         Pattern compile = Pattern.compile(s);
         ArrayList<Socks5> socks5List = new ArrayList<>();
-        InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         try {
             while ((line = bufferedReader.readLine()) != null) {
