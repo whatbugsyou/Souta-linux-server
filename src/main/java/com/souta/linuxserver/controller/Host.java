@@ -27,30 +27,42 @@ public class Host {
     private static final Logger log = LoggerFactory.getLogger(Host.class);
     public static final String java_server_host = "http://106.55.13.147:8088";
     private static final String hostFilePath = "/tmp/host.json";
+    private static final String hostRouteFilePath = "/tmp/hostRoute";
     private static final String DNSFilePath = "/etc/resolv.conf";
     private static final String ipRouteTablePath = "/etc/iproute2/rt_tables";
     private static final String hostRouteTablePrio = "100";
     private static final String hostRouteTableName = "hostRouteTable";
-    private static final String hostRoute = "default via 192.168.44.2 dev ens37 proto dhcp metric 101";
+    private static String hostRoute ;
     private NamespaceService namespaceService = new NamespaceServiceImpl();
 
 
     public void init() {
-//        initIPRoute();
         initDNS();
         initFirewall();
+        initIPRoute();
         initHostId();
         monitorHostIp();
     }
 
     private void initIPRoute() {
         //TODO maching different origin network enviroment
+        File file = new File(hostRouteFilePath);
+        if (!file.exists()){
+            log.info("file not found : {}",hostRouteFilePath);
+            System.exit(1);
+        }
+
         try {
+            FileReader fileReader = new FileReader(hostRouteFilePath);
+            BufferedReader bufferedReader1 = new BufferedReader(fileReader);
+            hostRoute = bufferedReader1.readLine();
+            log.info("HostRoute: {}",hostRoute);
+
             BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
             String line ;
             boolean flag = false;
             while ((line = bufferedReader.readLine()) != null) {
-                if (line.equals(hostRouteTableName)) {
+                if (line.equals(String.format("%s %s",hostRouteTablePrio,hostRouteTableName))) {
                     flag = true;
                     break;
                 }
@@ -61,6 +73,8 @@ public class Host {
             }
             String cmd = String.format("ip route add %s table %s", hostRoute, hostRouteTableName);
             namespaceService.exeCmdInDefaultNamespace(cmd);
+            namespaceService.exeCmdInDefaultNamespace("ip rule add from all table "+hostRouteTableName);
+            namespaceService.exeCmdInDefaultNamespace("ip route flush table main");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -69,6 +83,7 @@ public class Host {
     private void initFirewall() {
         String cmd = String.format("iptables -I INPUT -p tcp --dport %s -j ACCEPT",port);
         namespaceService.exeCmdInDefaultNamespace(cmd);
+        namespaceService.exeCmdInDefaultNamespace("iptables -I INPUT -p tcp --dport 5005 -j ACCEPT");
     }
 
     private void initDNS() {
