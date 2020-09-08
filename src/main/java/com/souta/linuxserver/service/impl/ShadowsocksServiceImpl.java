@@ -28,8 +28,8 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = "ls /tmp/shadowsocks/ |grep shadowsocks-" + id + ".json";
-        InputStream inputStream = namespaceService.exeCmdInNamespace("", cmd);
+        String cmd = String.format("ls /tmp/shadowsocks/ |grep shadowsocks-%s.json",id);
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
 
@@ -51,7 +51,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         if (!dir.exists()) {
             dir.mkdir();
         }
-        File file = new File(dir, "shadowsocks-" + id + ".json");
+        File file = new File(dir, String.format("shadowsocks-%s.json",id));
         BufferedWriter cfgfileBufferedWriter = null;
         FileWriter fileWriter = null;
         try {
