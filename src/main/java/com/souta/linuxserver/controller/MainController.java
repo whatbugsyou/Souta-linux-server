@@ -145,7 +145,7 @@ public class MainController {
                 Line line = new Line(lineId, socks5, shadowsocks);
                 lines.add(line);
             } else {
-                log.error("Line {} is not ok", lineId);
+                log.warn("Line {} is not ok", lineId);
                 deleteLine(lineId);
             }
         }

@@ -439,7 +439,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                     if (costSec < dialEndSec) {
                         TimeUnit.MILLISECONDS.sleep((long) (sleepGapSec * 1000));
                     } else {
-                        log.info("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
+                        log.warn("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
                         shutDown(pppoe.getId());
                         break;
                     }

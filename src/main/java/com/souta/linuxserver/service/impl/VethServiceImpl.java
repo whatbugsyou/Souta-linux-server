@@ -70,7 +70,6 @@ public class VethServiceImpl implements VethService {
             }
             veth = new Veth(physicalEthName,vethName,macAddr,new Namespace(""));
             moveVethToNamespace(veth, namespace);
-            log.info(veth.toString());
         }else {
             macAddr = getMacAddr(vethName, namespaceName);
             veth = new Veth(physicalEthName,vethName,macAddr,new Namespace(namespaceName));
