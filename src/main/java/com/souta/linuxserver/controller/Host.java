@@ -27,12 +27,11 @@ public class Host {
     private static final Logger log = LoggerFactory.getLogger(Host.class);
     public static final String java_server_host = "http://106.55.13.147:8088";
     private static final String hostFilePath = "/tmp/host.json";
-    private static final String hostRouteFilePath = "/tmp/hostRoute";
+    private static final String hostRouteFilePath = "/tmp/hostRoute.sh";
     private static final String DNSFilePath = "/etc/resolv.conf";
     private static final String ipRouteTablePath = "/etc/iproute2/rt_tables";
     private static final String hostRouteTablePrio = "100";
     private static final String hostRouteTableName = "hostRouteTable";
-    private static String hostRoute ;
     private NamespaceService namespaceService = new NamespaceServiceImpl();
 
 
@@ -45,19 +44,13 @@ public class Host {
     }
 
     private void initIPRoute() {
-        //TODO maching different origin network enviroment
         File file = new File(hostRouteFilePath);
-        if (!file.exists()){
-            log.info("file not found : {}",hostRouteFilePath);
+        if (!file.exists()) {
+            log.info("file not found : {}", hostRouteFilePath);
             System.exit(1);
         }
 
         try {
-            FileReader fileReader = new FileReader(hostRouteFilePath);
-            BufferedReader bufferedReader1 = new BufferedReader(fileReader);
-            hostRoute = bufferedReader1.readLine();
-            log.info("HostRoute: {}",hostRoute);
-
             BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
             String line ;
             boolean flag = false;
@@ -71,19 +64,46 @@ public class Host {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
                 namespaceService.exeCmdInDefaultNamespace(cmd);
             }
-            String cmd = String.format("ip route add %s table %s", hostRoute, hostRouteTableName);
-            namespaceService.exeCmdInDefaultNamespace(cmd);
-            namespaceService.exeCmdInDefaultNamespace("ip rule add from all table "+hostRouteTableName);
-            namespaceService.exeCmdInDefaultNamespace("ip route flush table main");
+            namespaceService.exeCmdInDefaultNamespace("sh " + hostRouteFilePath);
+            namespaceService.exeCmdInDefaultNamespace("ip rule del from all table " + hostRouteTableName);
+            namespaceService.exeCmdInDefaultNamespace("ip rule add from all table " + hostRouteTableName);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+
     private void initFirewall() {
-        String cmd = String.format("iptables -I INPUT -p tcp --dport %s -j ACCEPT",port);
-        namespaceService.exeCmdInDefaultNamespace(cmd);
-        namespaceService.exeCmdInDefaultNamespace("iptables -I INPUT -p tcp --dport 5005 -j ACCEPT");
+        String startFirewalldService = "service firewalld start";
+        String openWebservicePort = String.format("firewall-cmd --zone=public --add-port=%s/tcp --permanent", port);
+        String openRemoteDebugPort = String.format("firewall-cmd --zone=public --add-port=%s/tcp --permanent", "5005");
+        String reloadFirewalld = "service firewalld reload";
+        File file = new File("/tmp/fireWalld.sh");
+        BufferedWriter bufferedWriter = null;
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            bufferedWriter = new BufferedWriter(new FileWriter(file));
+            bufferedWriter.write(startFirewalldService);
+            bufferedWriter.newLine();
+            bufferedWriter.write(openWebservicePort);
+            bufferedWriter.newLine();
+            bufferedWriter.write(openRemoteDebugPort);
+            bufferedWriter.newLine();
+            bufferedWriter.write(reloadFirewalld);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            if (bufferedWriter!=null) {
+                try {
+                    bufferedWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        namespaceService.exeCmdInDefaultNamespace("sh /tmp/fireWalld.sh");
     }
 
     private void initDNS() {
@@ -137,7 +157,7 @@ public class Host {
                 }
             }
         };
-        scheduler.scheduleAtFixedRate(beeper, 10, 10, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(beeper, 0, 10, TimeUnit.SECONDS);
     }
 
     private void initHostId() {

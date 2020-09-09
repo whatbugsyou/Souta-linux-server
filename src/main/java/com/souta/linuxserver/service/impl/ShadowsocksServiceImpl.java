@@ -98,13 +98,11 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         String line ;
         try {
             while ((line = bufferedReader.readLine()) != null) {
-                if (line != null) {
-                    Matcher matcher = compile.matcher(line);
-                    if (matcher.matches()) {
-                        String pid = matcher.group(3);
-                        String cmd2 = "kill -9 " + pid;
-                        namespaceService.exeCmdInDefaultNamespace(cmd);
-                    }
+                Matcher matcher = compile.matcher(line);
+                if (matcher.matches()) {
+                    String pid = matcher.group(3);
+                    String cmd2 = "kill -9 " + pid;
+                    namespaceService.exeCmdInDefaultNamespace(cmd2);
                 }
             }
         } catch (IOException e) {
