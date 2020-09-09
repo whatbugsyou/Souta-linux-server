@@ -20,9 +20,6 @@ import java.util.concurrent.TimeUnit;
 public class Host {
     public static String id;
     public static String port = "18080";
-    private static String location;
-    private static String operator;
-    private static String expirationTime;
     public static String IP = null;
     private static final Logger log = LoggerFactory.getLogger(Host.class);
     public static final String java_server_host = "http://106.55.13.147:8088";
@@ -46,7 +43,7 @@ public class Host {
     private void initIPRoute() {
         File file = new File(hostRouteFilePath);
         if (!file.exists()) {
-            log.info("file not found : {}", hostRouteFilePath);
+            log.error("file not found : {}", hostRouteFilePath);
             System.exit(1);
         }
 
@@ -163,19 +160,16 @@ public class Host {
     private void initHostId() {
         File file = new File(hostFilePath);
         if (!file.exists()) {
-            log.info("file not found {}", hostFilePath);
+            log.error("file not found {}", hostFilePath);
             System.exit(1);
         }
         String jsonStr = FileUtil.ReadFile(hostFilePath);
         JSONObject jsonObject = JSON.parseObject(jsonStr);
         port = (String) jsonObject.get("port");
-        location = (String) jsonObject.get("location");
-        operator = (String) jsonObject.get("operator");
-        expirationTime = (String) jsonObject.get("expirationTime");
         String id = jsonObject.getString("id");
         if ( (Host.id =id) == null) {
             if (!registerHost()){
-                log.info("registerHost false");
+                log.error("registerHost false");
                 System.exit(1);
             }
         }
@@ -193,7 +187,6 @@ public class Host {
 
         JSONObject response = JSON.parseObject(responseBody);
         Object id = response.get("id");
-
         if (id == null) {
             return false;
         } else {
