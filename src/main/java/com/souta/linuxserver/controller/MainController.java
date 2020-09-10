@@ -32,6 +32,7 @@ public class MainController {
     private static Set<String> dialingLines = new CopyOnWriteArraySet();
     private static HashMap<String, Integer> redialCheckMap = new HashMap<>();
     private static ExecutorService executorService = Executors.newCachedThreadPool();
+    private static Set<Line> errorSendLines = new HashSet<>();
 
     @PostConstruct
     public void init() {
@@ -81,13 +82,28 @@ public class MainController {
                     String body = new JSONObject(data).toJSONString();
                     log.info("send deadLine Info :");
                     log.info(body);
-                    new Thread(() -> HttpRequest.post(Host.java_server_host + "/v1.0/deadLine")
-                            .body(body)
-                            .execute()).start();
+                    new Thread(() -> {
+                        int status = HttpRequest.post(Host.java_server_host + "/v1.0/deadLine")
+                                .body(body)
+                                .execute().getStatus();
+                        if (status!=200){
+                            log.error("error in send dead line info to java server,API(POST) :  /v1.0/deadLine");
+                        }
+                    }).start();
                     redialCheckMap.put(entry.getKey(),value+1);
                 }
             }
         };
+
+        Runnable checkErrorSendLines = new Runnable() {
+            @Override
+            public void run() {
+                if (!errorSendLines.isEmpty()){
+                    sendLinesInfo(new ArrayList<>(errorSendLines));
+                }
+            }
+        };
+        scheduler.scheduleAtFixedRate(checkErrorSendLines, 0, 30, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
     }
@@ -107,8 +123,11 @@ public class MainController {
         HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
         ArrayList<Line> lines = getLines(lineIdSet);
         log.info("total {} lines is ok", lines.size());
-        HttpRequest.delete(Host.java_server_host + "/v1.0/server/lines?" + "hostId=" + Host.id)
+        int status = HttpRequest.delete(Host.java_server_host + "/v1.0/server/lines?" + "hostId=" + Host.id)
                 .execute().getStatus();
+        if (status!=200){
+            log.error("error in delete All Line from java server,API(DELETE) :  /v1.0/server/lines ");
+        }
         sendLinesInfo(lines);
     }
 
@@ -163,9 +182,15 @@ public class MainController {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    HttpRequest.put(Host.java_server_host + "/v1.0/line")
+                    int status = HttpRequest.put(Host.java_server_host + "/v1.0/line")
                             .body(body)
                             .execute().getStatus();
+                    if (status!=200) {
+                        log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
+                        errorSendLines.addAll(lines);
+                    }else if (!errorSendLines.isEmpty()){
+                        errorSendLines.removeAll(lines);
+                    }
                 }
             }).start();
         }

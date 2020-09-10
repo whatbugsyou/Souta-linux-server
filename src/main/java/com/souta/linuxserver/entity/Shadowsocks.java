@@ -2,6 +2,8 @@ package com.souta.linuxserver.entity;
 
 import lombok.Data;
 
+import java.util.Objects;
+
 @Data
 public class Shadowsocks {
     private String ip;
@@ -23,4 +25,17 @@ public class Shadowsocks {
         this.pid = pid;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Shadowsocks that = (Shadowsocks) o;
+        return Objects.equals(ip, that.ip) &&
+                id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(ip, id);
+    }
 }
