@@ -280,16 +280,18 @@ public class MainController {
         boolean exist = pppoeService.checkConfigFileExist(lineId);
         if (exist) {
             log.info("refresh Line {}", lineId);
-            deleteLine(lineId);
-            dialingLines.add(lineId);
-            new Thread(() -> {
-                try {
-                    TimeUnit.SECONDS.sleep(lineRedialWait);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                createLine(lineId);
-            }).start();
+            if (!dialingLines.contains(lineId)){
+                deleteLine(lineId);
+                dialingLines.add(lineId);
+                new Thread(() -> {
+                    try {
+                        TimeUnit.SECONDS.sleep(lineRedialWait);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    createLine(lineId);
+                }).start();
+            }
             resultMap.put("status", "ok");
             return resultMap;
         } else {
@@ -332,6 +334,7 @@ public class MainController {
         HashMap<String, Object> resultMap = new HashMap<>();
         socks5Service.stopSocks5(lineId);
         shadowsocksService.stopShadowsocks(lineId);
+        dialingLines.remove(lineId);
         pppoeService.shutDown(lineId);
         resultMap.put("status", "ok");
         return resultMap;
