@@ -1,6 +1,7 @@
 package com.souta.linuxserver.controller;
 
 import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
@@ -146,10 +147,13 @@ public class Host {
                         IP = nowIp;
                         log.info("send new HOST IP " + nowIp);
                         String jsonStr = FileUtil.ReadFile(hostFilePath);
-                        HttpRequest
+                        int status = HttpRequest
                                 .put(java_server_host + "/v1.0/server")
                                 .body(jsonStr, "application/json;charset=UTF-8")
-                                .execute();
+                                .execute().getStatus();
+                        if (status!=200){
+                            log.error("error in refresh HostInfo to java server,API(PUT) :  /v1.0/server");
+                        }
                     }
                 }
             }
@@ -179,13 +183,16 @@ public class Host {
     private static boolean registerHost() {
         String jsonStr = FileUtil.ReadFile(hostFilePath);
         JSONObject jsonObject = JSON.parseObject(jsonStr);
-        String responseBody = HttpRequest
+        HttpResponse execute = HttpRequest
                 .put(java_server_host + "/v1.0/server")
                 .body(jsonStr, "application/json;charset=UTF-8")
-                .execute()
-                .body();
-
-        JSONObject response = JSON.parseObject(responseBody);
+                .execute();
+        if (execute.getStatus()!=200){
+            log.error("error in send registerHost from java server,API(PUT) :  /v1.0/server");
+            return false;
+        }
+        String responseBody = execute.body();
+                JSONObject response = JSON.parseObject(responseBody);
         Object id = response.get("id");
         if (id == null) {
             return false;
