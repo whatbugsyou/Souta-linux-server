@@ -159,7 +159,7 @@ public class MainController {
             String lineId = id.toString();
             Socks5 socks5 = socks5Service.getSocks5(lineId);
             Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId);
-            if (socks5.getIp() != null && shadowsocks.getIp() != null) {
+            if (socks5.getPid() != null && shadowsocks.getPid() != null) {
                 log.info("Line {} is ok", lineId);
                 Line line = new Line(lineId, socks5, shadowsocks);
                 lines.add(line);
@@ -177,19 +177,27 @@ public class MainController {
             data.put("hostId", Host.id);
             data.put("lines", lines);
             String body = new JSONObject(data).toJSONString();
-            log.info("send Lines Info :");
-            log.info(body);
+            log.info("send Lines Info ...");
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    int status = HttpRequest.put(Host.java_server_host + "/v1.0/line")
-                            .body(body)
-                            .execute().getStatus();
-                    if (status!=200) {
+                    try {
+                        boolean status = HttpRequest.put(Host.java_server_host + "/v1.0/line")
+                                .body(body)
+                                .execute().isOk();
+                        if(status){
+                            log.info(body);
+                            if (!errorSendLines.isEmpty()){
+                                errorSendLines.removeAll(lines);
+                            }
+                        }else{
+                            log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
+                            errorSendLines.addAll(lines);
+                        }
+                    }catch (RuntimeException e){
+                        log.error(e.getMessage());
                         log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
                         errorSendLines.addAll(lines);
-                    }else if (!errorSendLines.isEmpty()){
-                        errorSendLines.removeAll(lines);
                     }
                 }
             }).start();
