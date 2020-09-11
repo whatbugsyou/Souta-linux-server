@@ -24,7 +24,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private final NamespaceService namespaceService;
     private final VethService vethService;
     private static final List<ADSL> adslAccount;
-    private static final HashMap<String, Integer> lastDialSecondGap;
+    private static final HashMap<String, Integer> lineOnDialLimitedMap;
     private static ScheduledExecutorService scheduler;
     private static final HashSet<String> isRecordInSecretFile;
     private static final int dilaGapLimit =8;
@@ -72,15 +72,19 @@ public class PPPOEServiceImpl implements PPPOEService {
             System.exit(1);
         }
 
-        lastDialSecondGap = new HashMap<>();
+        lineOnDialLimitedMap = new HashMap<>();
         Runnable refreshSecondGap = new Runnable() {
             @Override
             public void run() {
-                synchronized (lastDialSecondGap) {
-                    for (Map.Entry<String, Integer> entry : lastDialSecondGap.entrySet()) {
+                synchronized (lineOnDialLimitedMap) {
+                    for (Map.Entry<String, Integer> entry : lineOnDialLimitedMap.entrySet()) {
                         Integer value = entry.getValue() + 1;
-                        lastDialSecondGap.put(entry.getKey(), value);
-                        lastDialSecondGap.notifyAll();
+                        if (value >=dilaGapLimit ){
+                            lineOnDialLimitedMap.remove(entry.getKey());
+                        }else {
+                            lineOnDialLimitedMap.put(entry.getKey(), value);
+                        }
+                        lineOnDialLimitedMap.notifyAll();
                     }
                 }
             }
@@ -418,10 +422,9 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 Namespace namespace = pppoe.getVeth().getNamespace();
                 String ifupCMD = "ifup " + "ppp" + pppoe.getId();
-                Integer integer;
-                synchronized (lastDialSecondGap) {
-                    while ((integer = lastDialSecondGap.get(pppoe.getId())) != null && integer < dilaGapLimit) {
-                        lastDialSecondGap.wait();
+                synchronized (lineOnDialLimitedMap) {
+                    while (lineOnDialLimitedMap.get(pppoe.getId()) != null ) {
+                        lineOnDialLimitedMap.wait();
                     }
                 }
                 log.info("ppp{} start dialing ...", pppoe.getId());
@@ -444,7 +447,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                         break;
                     }
                 }
-                lastDialSecondGap.put(pppoe.getId(), 0);
+                lineOnDialLimitedMap.put(pppoe.getId(), 0);
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
                 return getPPPOE(pppoe.getId());
             }
