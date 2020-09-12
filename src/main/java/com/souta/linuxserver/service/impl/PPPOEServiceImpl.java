@@ -77,10 +77,12 @@ public class PPPOEServiceImpl implements PPPOEService {
             @Override
             public void run() {
                 synchronized (lineOnDialLimitedMap) {
-                    for (Map.Entry<String, Integer> entry : lineOnDialLimitedMap.entrySet()) {
-                        Integer value = entry.getValue() + 1;
-                        if (value >=dilaGapLimit ){
-                            lineOnDialLimitedMap.remove(entry.getKey());
+                    Iterator<Map.Entry<String, Integer>> iterator = lineOnDialLimitedMap.entrySet().iterator();
+                    while(iterator.hasNext()){
+                       Map.Entry<String, Integer> entry = iterator.next();
+                       Integer value = entry.getValue() + 1;
+                       if (value.intValue() >= dilaGapLimit ){
+                            iterator.remove();
                         }else {
                             lineOnDialLimitedMap.put(entry.getKey(), value);
                         }
