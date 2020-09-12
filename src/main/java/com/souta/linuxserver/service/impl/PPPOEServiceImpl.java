@@ -137,7 +137,7 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public boolean isDialUp(String pppoeId) {
-        String cmd = "ifconfig |grep ppp";
+        String cmd = "ip route";
         String namespaceName = "ns" + pppoeId;
         InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
         if (inputStream == null) {
