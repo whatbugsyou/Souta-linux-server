@@ -81,7 +81,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                     while(iterator.hasNext()){
                        Map.Entry<String, Integer> entry = iterator.next();
                        Integer value = entry.getValue() + 1;
-                       if (value.intValue() >= dilaGapLimit ){
+                       if (value >= dilaGapLimit ){
                             iterator.remove();
                         }else {
                             lineOnDialLimitedMap.put(entry.getKey(), value);
@@ -451,7 +451,8 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 lineOnDialLimitedMap.put(pppoe.getId(), 0);
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
-                return getPPPOE(pppoe.getId());
+                pppoe.setOutIP(getIP(pppoe.getId()));
+                return pppoe;
             }
         };
         FutureTask<PPPOE> futureTask = new FutureTask(callable);

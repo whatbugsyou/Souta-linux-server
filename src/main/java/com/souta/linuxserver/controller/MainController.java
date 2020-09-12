@@ -29,10 +29,10 @@ public class MainController {
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
     private static final int lineRedialWait = 2;
     private static final int deadLineLimitTimes = 3;
-    private static Set<String> dialingLines = new CopyOnWriteArraySet();
-    private static HashMap<String, Integer> redialCheckMap = new HashMap<>();
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
-    private static Set<Line> errorSendLines = new HashSet<>();
+    private static final Set<String> dialingLines = new CopyOnWriteArraySet();
+    private static final HashMap<String, Integer> redialCheckMap = new HashMap<>();
+    private static final ExecutorService executorService = Executors.newCachedThreadPool();
+    private static final Set<Line> errorSendLines = new HashSet<>();
 
     @PostConstruct
     public void init() {

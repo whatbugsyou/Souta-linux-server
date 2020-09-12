@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @Service
 public class NamespaceServiceImpl implements NamespaceService {
     private static final Logger log = LoggerFactory.getLogger(NamespaceServiceImpl.class);
-    private Runtime runtime = Runtime.getRuntime();
+    private final Runtime runtime = Runtime.getRuntime();
 
     @Override
     public boolean checkExist(String name) {
