@@ -84,8 +84,8 @@ public class PPPOEServiceImpl implements PPPOEService {
                         }else {
                             lineOnDialLimitedMap.put(entry.getKey(), value);
                         }
-                        lineOnDialLimitedMap.notifyAll();
                     }
+                    lineOnDialLimitedMap.notifyAll();
                 }
             }
         };
