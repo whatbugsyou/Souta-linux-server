@@ -1,15 +1,16 @@
 package com.souta.linuxserver.util;
 
 
-import java.util.Iterator;
 import java.util.TreeSet;
 
 public class LineMax {
     int max = 1;
     TreeSet<Integer> treeSet = new TreeSet<>();
-    public void add(int num){
+
+    public void add(int num) {
         treeSet.add(num);
     }
+
     public int getMax() {
         if (!treeSet.isEmpty()) {
             int pre = 0;
@@ -22,7 +23,7 @@ public class LineMax {
                 pre = next;
             }
             max = pre + 1;
-         }
+        }
         return max;
     }
 

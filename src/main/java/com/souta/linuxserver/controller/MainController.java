@@ -86,11 +86,11 @@ public class MainController {
                         int status = HttpRequest.post(Host.java_server_host + "/v1.0/deadLine")
                                 .body(body)
                                 .execute().getStatus();
-                        if (status!=200){
+                        if (status != 200) {
                             log.error("error in send dead line info to java server,API(POST) :  /v1.0/deadLine");
                         }
                     }).start();
-                    redialCheckMap.put(entry.getKey(),value+1);
+                    redialCheckMap.put(entry.getKey(), value + 1);
                 }
             }
         };
@@ -98,7 +98,7 @@ public class MainController {
         Runnable checkErrorSendLines = new Runnable() {
             @Override
             public void run() {
-                if (!errorSendLines.isEmpty()){
+                if (!errorSendLines.isEmpty()) {
                     sendLinesInfo(new ArrayList<>(errorSendLines));
                 }
             }
@@ -125,7 +125,7 @@ public class MainController {
         log.info("total {} lines is ok", lines.size());
         int status = HttpRequest.delete(Host.java_server_host + "/v1.0/server/lines?" + "hostId=" + Host.id)
                 .execute().getStatus();
-        if (status!=200){
+        if (status != 200) {
             log.error("error in delete All Line from java server,API(DELETE) :  /v1.0/server/lines ");
         }
         sendLinesInfo(lines);
@@ -185,16 +185,16 @@ public class MainController {
                         boolean status = HttpRequest.put(Host.java_server_host + "/v1.0/line")
                                 .body(body)
                                 .execute().isOk();
-                        if(status){
+                        if (status) {
                             log.info(body);
-                            if (!errorSendLines.isEmpty()){
+                            if (!errorSendLines.isEmpty()) {
                                 errorSendLines.removeAll(lines);
                             }
-                        }else{
+                        } else {
                             log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
                             errorSendLines.addAll(lines);
                         }
-                    }catch (RuntimeException e){
+                    } catch (RuntimeException e) {
                         log.error(e.getMessage());
                         log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
                         errorSendLines.addAll(lines);
@@ -245,15 +245,15 @@ public class MainController {
                 public void run() {
                     try {
                         PPPOE pppoeR = futureTask.get();
-                        if (pppoeR!=null ) {
-                            if (pppoeR.getOutIP() == null){
+                        if (pppoeR != null) {
+                            if (pppoeR.getOutIP() == null) {
                                 Integer integer = redialCheckMap.get(pppoeR.getId());
                                 if (integer != null) {
                                     redialCheckMap.put(pppoeR.getId(), integer + 1);
                                 } else {
                                     redialCheckMap.put(pppoeR.getId(), 1);
                                 }
-                            }else {
+                            } else {
                                 startSocks(lineId);
                                 sendLinesInfo(lineId);
                                 redialCheckMap.remove(pppoeR.getId());
@@ -288,7 +288,7 @@ public class MainController {
         boolean exist = pppoeService.checkConfigFileExist(lineId);
         if (exist) {
             log.info("refresh Line {}", lineId);
-            if (!dialingLines.contains(lineId)){
+            if (!dialingLines.contains(lineId)) {
                 deleteLine(lineId);
                 dialingLines.add(lineId);
                 new Thread(() -> {

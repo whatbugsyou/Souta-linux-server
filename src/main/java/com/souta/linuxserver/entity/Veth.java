@@ -1,13 +1,11 @@
 package com.souta.linuxserver.entity;
 
-import lombok.*;
-
-import java.io.IOException;
+import lombok.Data;
 
 @Data
 public class Veth {
     private String physicalEthName; // Physical ethernet
-    private String interfaceName ; // vertual ethernet
+    private String interfaceName; // vertual ethernet
     private String macAddr;
     private Namespace namespace;
 

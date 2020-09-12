@@ -50,10 +50,10 @@ public class Host {
 
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
-            String line ;
+            String line;
             boolean flag = false;
             while ((line = bufferedReader.readLine()) != null) {
-                if (line.equals(String.format("%s %s",hostRouteTablePrio,hostRouteTableName))) {
+                if (line.equals(String.format("%s %s", hostRouteTablePrio, hostRouteTableName))) {
                     flag = true;
                     break;
                 }
@@ -92,8 +92,8 @@ public class Host {
             bufferedWriter.write(reloadFirewalld);
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
-            if (bufferedWriter!=null) {
+        } finally {
+            if (bufferedWriter != null) {
                 try {
                     bufferedWriter.close();
                 } catch (IOException e) {
@@ -151,7 +151,7 @@ public class Host {
                                 .put(java_server_host + "/v1.0/server")
                                 .body(jsonStr, "application/json;charset=UTF-8")
                                 .execute().getStatus();
-                        if (status!=200){
+                        if (status != 200) {
                             log.error("error in refresh HostInfo to java server,API(PUT) :  /v1.0/server");
                         }
                     }
@@ -171,13 +171,12 @@ public class Host {
         JSONObject jsonObject = JSON.parseObject(jsonStr);
         port = (String) jsonObject.get("port");
         String id = jsonObject.getString("id");
-        if ( (Host.id =id) == null) {
-            if (!registerHost()){
+        if ((Host.id = id) == null) {
+            if (!registerHost()) {
                 log.error("registerHost false");
                 System.exit(1);
             }
         }
-
     }
 
     private static boolean registerHost() {
@@ -187,17 +186,17 @@ public class Host {
                 .put(java_server_host + "/v1.0/server")
                 .body(jsonStr, "application/json;charset=UTF-8")
                 .execute();
-        if (execute.getStatus()!=200){
+        if (execute.getStatus() != 200) {
             log.error("error in send registerHost from java server,API(PUT) :  /v1.0/server");
             return false;
         }
         String responseBody = execute.body();
-                JSONObject response = JSON.parseObject(responseBody);
+        JSONObject response = JSON.parseObject(responseBody);
         Object id = response.get("id");
         if (id == null) {
             return false;
         } else {
-            Host.id = String.valueOf(id) ;
+            Host.id = String.valueOf(id);
             jsonObject.put("id", Host.id);
         }
         try {

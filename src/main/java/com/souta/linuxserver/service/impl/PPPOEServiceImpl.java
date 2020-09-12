@@ -27,7 +27,8 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final HashMap<String, Integer> lineOnDialLimitedMap;
     private static ScheduledExecutorService scheduler;
     private static final HashSet<String> isRecordInSecretFile;
-    private static final int dilaGapLimit =8;
+    private static final int dilaGapLimit = 8;
+
     static {
         adslAccount = new ArrayList<>();
         File adslFile = new File(adslAccountFilePath);
@@ -37,7 +38,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             try {
                 fileReader = new FileReader(adslFile);
                 bufferedReader = new BufferedReader(fileReader);
-                String line ;
+                String line;
                 String reg = "(.*)----(.*)";
                 Pattern compile = Pattern.compile(reg);
                 while ((line = bufferedReader.readLine()) != null) {
@@ -78,12 +79,12 @@ public class PPPOEServiceImpl implements PPPOEService {
             public void run() {
                 synchronized (lineOnDialLimitedMap) {
                     Iterator<Map.Entry<String, Integer>> iterator = lineOnDialLimitedMap.entrySet().iterator();
-                    while(iterator.hasNext()){
-                       Map.Entry<String, Integer> entry = iterator.next();
-                       Integer value = entry.getValue() + 1;
-                       if (value >= dilaGapLimit ){
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, Integer> entry = iterator.next();
+                        Integer value = entry.getValue() + 1;
+                        if (value >= dilaGapLimit) {
                             iterator.remove();
-                        }else {
+                        } else {
                             lineOnDialLimitedMap.put(entry.getKey(), value);
                         }
                     }
@@ -102,12 +103,12 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public PPPOE createPPPOE(String pppoeId) {
-       return createPPPOE(pppoeId,null);
+        return createPPPOE(pppoeId, null);
     }
 
     @Override
     public PPPOE createPPPOE(String pppoeId, Veth veth) {
-        PPPOE pppoe ;
+        PPPOE pppoe;
         ADSL adsl = adslAccount.get(Integer.parseInt(pppoeId) - 1);
         if (adsl != null) {
             String adslUser = adsl.getAdslUser();
@@ -161,7 +162,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         if (inputStream != null) {
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-            String line ;
+            String line;
             try {
                 while ((line = bufferedReader.readLine()) != null) {
                     pid.append(" ").append(line);
@@ -190,7 +191,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         if (inputStream != null) {
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-            String line ;
+            String line;
             try {
                 while ((line = bufferedReader.readLine()) != null) {
                     Matcher matcher = compile.matcher(line);
@@ -214,11 +215,11 @@ public class PPPOEServiceImpl implements PPPOEService {
     public String getIP(String pppoeId) {
         String cmd = "ip route";
         InputStream inputStream = namespaceService.exeCmdInNamespace("ns" + pppoeId, cmd);
-        if (inputStream==null){
+        if (inputStream == null) {
             return null;
         }
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        String line ;
+        String line;
         Pattern pattern2 = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
         try {
             while ((line = bufferedReader.readLine()) != null) {
@@ -266,7 +267,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         FileReader chapfileReader = null;
         FileWriter tmpfileWriter = null;
         FileWriter papfileWriter = null;
-        String line ;
+        String line;
         File chap = new File("/etc/ppp/chap-secrets");
         File tmp_file = new File("/etc/ppp/chap-secrets_test");
         File pap = new File("/etc/ppp/pap-secrets");
@@ -368,7 +369,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         BufferedWriter cfgfileBufferedWriter = null;
         BufferedReader tmpbufferedReader = null;
         FileWriter fileWriter = null;
-        String line ;
+        String line;
         try {
             fileWriter = new FileWriter(new File(configFilePath));
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
@@ -425,7 +426,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 Namespace namespace = pppoe.getVeth().getNamespace();
                 String ifupCMD = "ifup " + "ppp" + pppoe.getId();
                 synchronized (lineOnDialLimitedMap) {
-                    while (lineOnDialLimitedMap.get(pppoe.getId()) != null ) {
+                    while (lineOnDialLimitedMap.get(pppoe.getId()) != null) {
                         lineOnDialLimitedMap.wait();
                     }
                 }
@@ -474,7 +475,7 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public PPPOE getPPPOE(String pppoeId) {
-        PPPOE pppoe ;
+        PPPOE pppoe;
         String vethName = "eth" + pppoeId;
         Veth veth = vethService.getVeth(vethName);
         if (veth == null) {
@@ -487,7 +488,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             String cmd = "ip route";
             InputStream inputStream = namespaceService.exeCmdInNamespace("ns" + pppoeId, cmd);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            String line ;
+            String line;
             Pattern pattern2 = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
             try {
                 while ((line = bufferedReader.readLine()) != null) {

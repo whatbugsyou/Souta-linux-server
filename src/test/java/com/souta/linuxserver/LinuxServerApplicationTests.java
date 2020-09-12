@@ -12,7 +12,9 @@ class LinuxServerApplicationTests {
     //@Test
     void contextLoads() {
     }
-    private ArrayList<String> seperator ;
+
+    private ArrayList<String> seperator;
+
     public static void main(String[] args) {
         LinuxServerApplicationTests linuxServerApplicationTests = new LinuxServerApplicationTests();
         ExecutorService executorService = Executors.newFixedThreadPool(10);

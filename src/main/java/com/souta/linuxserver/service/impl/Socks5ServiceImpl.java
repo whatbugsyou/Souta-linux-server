@@ -78,7 +78,7 @@ public class Socks5ServiceImpl implements Socks5Service {
 
     private boolean createConfigFile(String id) {
         String ip = pppoeService.getIP(id);
-        if (ip==null) {
+        if (ip == null) {
             return false;
         } else {
             PPPOE pppoe = pppoeService.getPPPOE(id);
@@ -131,7 +131,7 @@ public class Socks5ServiceImpl implements Socks5Service {
         }
         Socks5 socks5 = new Socks5();
         String ip = pppoeService.getIP(id);
-        if (ip !=null) {
+        if (ip != null) {
             String namespaceName = "ns" + id;
             String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
             InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);

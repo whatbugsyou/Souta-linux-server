@@ -28,7 +28,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = String.format("ls /tmp/shadowsocks/ |grep shadowsocks-%s.json",id);
+        String cmd = String.format("ls /tmp/shadowsocks/ |grep shadowsocks-%s.json", id);
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
@@ -40,7 +40,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
     private boolean createConfigFile(String id) {
         String ip = pppoeService.getIP(id);
-        if (ip ==null) {
+        if (ip == null) {
             return false;
         } else {
             PPPOE pppoe = pppoeService.getPPPOE(id);
@@ -51,7 +51,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         if (!dir.exists()) {
             dir.mkdir();
         }
-        File file = new File(dir, String.format("shadowsocks-%s.json",id));
+        File file = new File(dir, String.format("shadowsocks-%s.json", id));
         BufferedWriter cfgfileBufferedWriter = null;
         FileWriter fileWriter = null;
         try {
@@ -95,7 +95,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         String namespace = "ns" + id;
         InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        String line ;
+        String line;
         try {
             while ((line = bufferedReader.readLine()) != null) {
                 Matcher matcher = compile.matcher(line);
@@ -154,7 +154,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         if (exist) {
             shadowsocks = new Shadowsocks();
             String ip = pppoeService.getIP(id);
-            if (ip!=null) {
+            if (ip != null) {
                 String cmd = "netstat -ln -tpe |grep 10809 |grep " + ip;
                 String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
                 Pattern compile = Pattern.compile(s);

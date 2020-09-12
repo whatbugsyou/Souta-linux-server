@@ -1,12 +1,15 @@
 package com.souta.linuxserver.util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class FileUtil {
     public static String ReadFile(String path) {
         StringBuffer laststr = new StringBuffer();
         java.io.File file = new java.io.File(path);// 打开文件
-        if (!file.exists()){
+        if (!file.exists()) {
             return null;
         }
         BufferedReader reader = null;
