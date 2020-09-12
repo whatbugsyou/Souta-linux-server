@@ -137,7 +137,7 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public boolean isDialUp(String pppoeId) {
-        String cmd = "ip route";
+        String cmd = "ifconfig |grep ppp";
         String namespaceName = "ns" + pppoeId;
         InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
         if (inputStream == null) {
@@ -483,7 +483,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         pppoe.setVeth(veth);
         boolean dialUp = isDialUp(pppoeId);
         if (dialUp) {
-            String cmd = "ifconfig ppp0";
+            String cmd = "ip route";
             InputStream inputStream = namespaceService.exeCmdInNamespace("ns" + pppoeId, cmd);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             String line ;
