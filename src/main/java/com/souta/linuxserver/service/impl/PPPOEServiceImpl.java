@@ -446,13 +446,17 @@ public class PPPOEServiceImpl implements PPPOEService {
                         TimeUnit.MILLISECONDS.sleep((long) (sleepGapSec * 1000));
                     } else {
                         log.warn("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
-                        shutDown(pppoe.getId());
                         break;
                     }
                 }
                 lineOnDialLimitedMap.put(pppoe.getId(), 0);
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
-                pppoe.setOutIP(getIP(pppoe.getId()));
+                String ip = getIP(pppoe.getOutIP());
+                if (ip == null){
+                    shutDown(pppoe);
+                }else {
+                    pppoe.setOutIP(ip);
+                }
                 return pppoe;
             }
         };

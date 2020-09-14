@@ -275,11 +275,12 @@ public class MainController {
     }
 
     private void startSocks(String lineId) {
-        shadowsocksService.createShadowsocksConfigfile(lineId);
-        shadowsocksService.startShadowsocks(lineId);
-        socks5Service.createSocks5ConfigFile(lineId);
-        socks5Service.startSocks5(lineId);
-
+        if(shadowsocksService.createShadowsocksConfigfile(lineId)){
+            shadowsocksService.startShadowsocks(lineId);
+        }
+        if(socks5Service.createSocks5ConfigFile(lineId)){
+            socks5Service.startSocks5(lineId);
+        }
     }
 
     @PutMapping
