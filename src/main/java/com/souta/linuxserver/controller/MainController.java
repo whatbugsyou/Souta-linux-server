@@ -2,14 +2,16 @@ package com.souta.linuxserver.controller;
 
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSONObject;
-import com.souta.linuxserver.entity.*;
+import com.souta.linuxserver.entity.ADSL;
+import com.souta.linuxserver.entity.DeadLine;
+import com.souta.linuxserver.entity.Line;
+import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
 import com.souta.linuxserver.service.Socks5Service;
 import com.souta.linuxserver.util.LineMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
@@ -19,20 +21,22 @@ import java.util.concurrent.*;
 @RestController
 @RequestMapping("/v1.0/line/notify")
 public class MainController {
-    @Autowired
-    private PPPOEService pppoeService;
-    @Autowired
-    private ShadowsocksService shadowsocksService;
-    @Autowired
-    private Socks5Service socks5Service;
-
+    private final PPPOEService pppoeService;
+    private final ShadowsocksService shadowsocksService;
+    private final Socks5Service socks5Service;
+    private final LineService lineService;
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
-    private static final int lineRedialWait = 2;
-    private static final int deadLineLimitTimes = 3;
-    private static final Set<String> dialingLines = new CopyOnWriteArraySet();
+    private static final int checkingTimesOfDefineDeadLine = 3;
+
     private static final HashMap<String, Integer> redialCheckMap = new HashMap<>();
     private static final ExecutorService executorService = Executors.newCachedThreadPool();
     private static final Set<Line> errorSendLines = new HashSet<>();
+    public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, Socks5Service socks5Service, LineService lineService) {
+        this.pppoeService = pppoeService;
+        this.shadowsocksService = shadowsocksService;
+        this.socks5Service = socks5Service;
+        this.lineService = lineService;
+    }
 
     @PostConstruct
     public void init() {
@@ -45,10 +49,10 @@ public class MainController {
         Runnable addOneDial = () -> {
             String lineID = GenerateLineID();
             if (lineID != null) {
-                dialingLines.add(lineID);
-                log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
+                LineService.dialingLines.add(lineID);
+                log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineService.lineRedialWait);
                 try {
-                    TimeUnit.SECONDS.sleep(lineRedialWait);
+                    TimeUnit.SECONDS.sleep(lineService.lineRedialWait);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -60,7 +64,7 @@ public class MainController {
                 Executors.newScheduledThreadPool(3);
         Runnable checkFullDial = () -> {
             HashSet<String> newlineIdList = pppoeService.getDialuppedIdSet();
-            newlineIdList.addAll(dialingLines);
+            newlineIdList.addAll(LineService.dialingLines);
             if (newlineIdList.size() < pppoeService.getADSLList().size()) {
                 executorService.execute(addOneDial);
             }
@@ -70,7 +74,7 @@ public class MainController {
             for (Map.Entry<String, Integer> entry : entries
             ) {
                 Integer value = entry.getValue();
-                if (value == deadLineLimitTimes) {
+                if (value == checkingTimesOfDefineDeadLine) {
                     HashMap<String, Object> data = new HashMap<>();
                     DeadLine deadLine = new DeadLine();
                     deadLine.setLineId(entry.getKey());
@@ -82,14 +86,15 @@ public class MainController {
                     String body = new JSONObject(data).toJSONString();
                     log.info("send deadLine Info :");
                     log.info(body);
-                    new Thread(() -> {
+                    Runnable runnable = () -> {
                         int status = HttpRequest.post(Host.java_server_host + "/v1.0/deadLine")
                                 .body(body)
                                 .execute().getStatus();
                         if (status != 200) {
                             log.error("error in send dead line info to java server,API(POST) :  /v1.0/deadLine");
                         }
-                    }).start();
+                    };
+                    executorService.execute(runnable);
                     redialCheckMap.put(entry.getKey(), value + 1);
                 }
             }
@@ -108,16 +113,6 @@ public class MainController {
         scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
     }
 
-    private boolean checkLineIsError(String lineId) {
-        Integer integer = redialCheckMap.get(lineId);
-        if (integer != null) {
-            if (integer >= deadLineLimitTimes) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private void initSendLineInfo() {
         log.info("initLineInfo....");
         HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
@@ -129,90 +124,6 @@ public class MainController {
             log.error("error in delete All Line from java server,API(DELETE) :  /v1.0/server/lines ");
         }
         sendLinesInfo(lines);
-    }
-
-    private String GenerateLineID() {
-        LineMax lineMax = new LineMax();
-        HashSet<String> dialuppedId = pppoeService.getDialuppedIdSet();
-        dialuppedId.addAll(dialingLines);
-        List<ADSL> adslList = pppoeService.getADSLList();
-        if (dialuppedId.size() < adslList.size()) {
-            for (String id :
-                    dialuppedId) {
-                lineMax.add(Integer.parseInt(id));
-            }
-            return String.valueOf(lineMax.getMax());
-        }
-        return null;
-    }
-
-    private ArrayList<Line> getLines(HashSet<String> lineIdList) {
-        ArrayList<Line> lines = new ArrayList();
-        //sort id (String type)
-        TreeSet<Integer> integers = new TreeSet<>();
-        for (String id : lineIdList
-        ) {
-            integers.add(Integer.valueOf(id));
-        }
-        for (Integer id : integers
-        ) {
-            String lineId = id.toString();
-            Socks5 socks5 = socks5Service.getSocks5(lineId);
-            Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId);
-            if (socks5.getPid() != null && shadowsocks.getPid() != null) {
-                log.info("Line {} is ok", lineId);
-                Line line = new Line(lineId, socks5, shadowsocks);
-                lines.add(line);
-            } else {
-                log.warn("Line {} is not ok", lineId);
-                deleteLine(lineId);
-            }
-        }
-        return lines;
-    }
-
-    private void sendLinesInfo(ArrayList<Line> lines) {
-        if (!lines.isEmpty()) {
-            HashMap<String, Object> data = new HashMap<>();
-            data.put("hostId", Host.id);
-            data.put("lines", lines);
-            String body = new JSONObject(data).toJSONString();
-            log.info("send Lines Info ...");
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        boolean status = HttpRequest.put(Host.java_server_host + "/v1.0/line")
-                                .body(body)
-                                .execute().isOk();
-                        if (status) {
-                            log.info(body);
-                            if (!errorSendLines.isEmpty()) {
-                                errorSendLines.removeAll(lines);
-                            }
-                        } else {
-                            log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
-                            errorSendLines.addAll(lines);
-                        }
-                    } catch (RuntimeException e) {
-                        log.error(e.getMessage());
-                        log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
-                        errorSendLines.addAll(lines);
-                    }
-                }
-            }).start();
-        }
-    }
-
-    private void sendLinesInfo(HashSet<String> lineIdSet) {
-        ArrayList<Line> lines = getLines(lineIdSet);
-        sendLinesInfo(lines);
-    }
-
-    private void sendLinesInfo(String lineId) {
-        HashSet<String> lineIdSet = new HashSet<>();
-        lineIdSet.add(lineId);
-        sendLinesInfo(lineIdSet);
     }
 
     @PostMapping
@@ -230,83 +141,60 @@ public class MainController {
 
     public HashMap<String, Object> createLine(String lineId) {
         HashMap<String, Object> resultMap = new HashMap<>();
-        boolean start = shadowsocksService.isStart(lineId);
-        boolean start1 = socks5Service.isStart(lineId);
-        if (start1 && start) {
-            sendLinesInfo(lineId);
+        if (lineService.checkExits(lineId)){
             resultMap.put("status", "exist");
-            return resultMap;
         } else {
-            PPPOE pppoe = pppoeService.createPPPOE(lineId);
-            FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
-            dialingLines.add(lineId);
-            Runnable dialHandle = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        PPPOE pppoeR = futureTask.get();
-                        if (pppoeR != null) {
-                            if (pppoeR.getOutIP() == null) {
-                                Integer integer = redialCheckMap.get(pppoeR.getId());
-                                if (integer != null) {
-                                    redialCheckMap.put(pppoeR.getId(), integer + 1);
-                                } else {
-                                    redialCheckMap.put(pppoeR.getId(), 1);
-                                }
-                            } else {
-                                startSocks(lineId);
-                                sendLinesInfo(lineId);
-                                redialCheckMap.remove(pppoeR.getId());
-                            }
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (ExecutionException e) {
-                        e.printStackTrace();
-                    } finally {
-                        dialingLines.remove(lineId);
-                    }
-                }
-            };
-            executorService.execute(dialHandle);
+            resultMap.put("status", "ok");
         }
-        resultMap.put("status", "ok");
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                FutureTask<Line> futureTask = lineService.createLine(lineId);
+                lineReturnHandle(lineId,futureTask);
+            }
+        });
         return resultMap;
     }
-
-    private void startSocks(String lineId) {
-        if(shadowsocksService.createShadowsocksConfigfile(lineId)){
-            shadowsocksService.startShadowsocks(lineId);
-        }
-        if(socks5Service.createSocks5ConfigFile(lineId)){
-            socks5Service.startSocks5(lineId);
-        }
-    }
-
     @PutMapping
     public HashMap<String, Object> refreshLine(String lineId) {
         HashMap<String, Object> resultMap = new HashMap<>();
-        boolean exist = pppoeService.checkConfigFileExist(lineId);
-        if (exist) {
             log.info("refresh Line {}", lineId);
-            if (!dialingLines.contains(lineId)) {
-                deleteLine(lineId);
-                dialingLines.add(lineId);
-                new Thread(() -> {
-                    try {
-                        TimeUnit.SECONDS.sleep(lineRedialWait);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    createLine(lineId);
-                }).start();
-            }
-            resultMap.put("status", "ok");
-            return resultMap;
-        } else {
+        if (!pppoeService.isDialUp(lineId)) {
             resultMap.put("status", "not exist");
-            return resultMap;
+        }else {
+            resultMap.put("status", "ok");
         }
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                FutureTask<Line> futureTask = lineService.refreshLine(lineId);
+                lineReturnHandle(lineId,futureTask);
+            }
+        });
+        return resultMap;
+    }
+
+    private void lineReturnHandle(String lineId, FutureTask<Line> futureTask) {
+        Runnable LineReturnHandle = () -> {
+            Line line = null;
+            try {
+                line = futureTask.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            if (line == null) {
+                Integer integer = redialCheckMap.get(lineId);
+                if (integer != null) {
+                    redialCheckMap.put(lineId, integer + 1);
+                } else {
+                    redialCheckMap.put(lineId, 1);
+                }
+            }else {
+                sendLinesInfo(line);
+                redialCheckMap.remove(lineId);
+            }
+        };
+        executorService.execute(LineReturnHandle);
     }
 
     @GetMapping
@@ -341,10 +229,12 @@ public class MainController {
     public HashMap<String, Object> deleteLine(String lineId) {
         log.info("delete line {}", lineId);
         HashMap<String, Object> resultMap = new HashMap<>();
-        socks5Service.stopSocks5(lineId);
-        shadowsocksService.stopShadowsocks(lineId);
-        dialingLines.remove(lineId);
-        pppoeService.shutDown(lineId);
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                lineService.deleteLine(lineId);
+            }
+        });
         resultMap.put("status", "ok");
         return resultMap;
     }
@@ -352,29 +242,91 @@ public class MainController {
     @GetMapping("/proto")
     public HashMap<String, Object> proto(String lineId, String protoId, String action) {
         HashMap<String, Object> resultMap = new HashMap<>();
-        if (!pppoeService.isDialUp(lineId)) {
-            resultMap.put("status", "not exist");
-            return resultMap;
-        } else {
             log.info("proto change : line {} , {} ,{}", lineId, protoId, action);
-            if (protoId.equals("socks5")) {
-                socks5Service.createSocks5ConfigFile(lineId);
-                if (action.equals("on")) {
-                    socks5Service.startSocks5(lineId);
-                } else if (action.equals("off")) {
-                    socks5Service.stopSocks5(lineId);
-                }
-            } else {
-                shadowsocksService.createShadowsocksConfigfile(lineId);
-                if (action.equals("on")) {
-                    shadowsocksService.startShadowsocks(lineId);
-                } else if (action.equals("off")) {
-                    shadowsocksService.stopShadowsocks(lineId);
-                }
+            if (lineService.editProtoInLine(lineId,protoId,action)) {
+                resultMap.put("status", "ok");
+            }else {
+                resultMap.put("status", "not exist");
             }
-            resultMap.put("status", "ok");
             return resultMap;
+    }
+
+    private void sendLinesInfo(ArrayList<Line> lines) {
+        if (!lines.isEmpty()) {
+            HashMap<String, Object> data = new HashMap<>();
+            data.put("hostId", Host.id);
+            data.put("lines", lines);
+            String body = new JSONObject(data).toJSONString();
+            log.info("send Lines Info ...");
+            Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        boolean status = HttpRequest.put(Host.java_server_host + "/v1.0/line")
+                                .body(body)
+                                .execute().isOk();
+                        if (status) {
+                            log.info(body);
+                            if (!errorSendLines.isEmpty()) {
+                                errorSendLines.removeAll(lines);
+                            }
+                        } else {
+                            log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
+                            errorSendLines.addAll(lines);
+                        }
+                    } catch (RuntimeException e) {
+                        log.error(e.getMessage());
+                        log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
+                        errorSendLines.addAll(lines);
+                    }
+                }
+            };
+            executorService.execute(runnable);
         }
+    }
+
+    private void sendLinesInfo(Line line) {
+        ArrayList<Line> list = new ArrayList<>();
+        list.add(line);
+        sendLinesInfo(list);
+    }
+
+    private ArrayList<Line> getLines(HashSet<String> lineIdList) {
+        ArrayList<Line> lines = new ArrayList();
+        //sort id (String type)
+        TreeSet<Integer> integers = new TreeSet<>();
+        for (String id : lineIdList
+        ) {
+            integers.add(Integer.valueOf(id));
+        }
+        for (Integer id : integers
+        ) {
+            String lineId = id.toString();
+            Line line = lineService.getLine(lineId);
+            if (line!=null){
+                log.info("Line {} is ok", lineId);
+                lines.add(line);
+            } else {
+                log.warn("Line {} is not ok", lineId);
+                deleteLine(lineId);
+            }
+        }
+        return lines;
+    }
+
+    private String GenerateLineID() {
+        LineMax lineMax = new LineMax();
+        HashSet<String> dialuppedId = pppoeService.getDialuppedIdSet();
+        dialuppedId.addAll(lineService.dialingLines);
+        List<ADSL> adslList = pppoeService.getADSLList();
+        if (dialuppedId.size() < adslList.size()) {
+            for (String id :
+                    dialuppedId) {
+                lineMax.add(Integer.parseInt(id));
+            }
+            return String.valueOf(lineMax.getMax());
+        }
+        return null;
     }
 
 }

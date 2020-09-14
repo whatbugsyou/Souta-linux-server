@@ -1,6 +1,5 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.entity.PPPOE;
 import com.souta.linuxserver.entity.Shadowsocks;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
@@ -35,18 +34,10 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
     @Override
     public boolean createShadowsocksConfigfile(String id) {
-        return createConfigFile(id);
-    }
-
-    private boolean createConfigFile(String id) {
         String ip = pppoeService.getIP(id);
         if (ip == null) {
             return false;
-        } else {
-            PPPOE pppoe = pppoeService.getPPPOE(id);
-            ip = pppoe.getOutIP();
         }
-
         File dir = new File("/tmp/shadowsocks");
         if (!dir.exists()) {
             dir.mkdir();
@@ -122,17 +113,17 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
 
     @Override
-    public synchronized boolean startShadowsocks(String id) {
-        boolean exist = checkConfigFileExist(id);
-        if (exist) {
+    public  boolean startShadowsocks(String id) {
+        if(createShadowsocksConfigfile(id)) {
             String cmd = "ssserver -c /tmp/shadowsocks/shadowsocks-%s.json";
             cmd = String.format(cmd, id, id);
             String namespaceName = "ns" + id;
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
-        } else {
+        }else {
             return false;
         }
+
     }
 
     @Override

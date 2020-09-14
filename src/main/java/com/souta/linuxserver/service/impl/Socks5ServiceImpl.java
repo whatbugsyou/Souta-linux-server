@@ -1,6 +1,5 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.entity.PPPOE;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
@@ -73,16 +72,9 @@ public class Socks5ServiceImpl implements Socks5Service {
 
     @Override
     public boolean createSocks5ConfigFile(String id) {
-        return createConfigFile(id);
-    }
-
-    private boolean createConfigFile(String id) {
         String ip = pppoeService.getIP(id);
         if (ip == null) {
             return false;
-        } else {
-            PPPOE pppoe = pppoeService.getPPPOE(id);
-            ip = pppoe.getOutIP();
         }
         File dir = new File("/tmp/socks5");
         if (!dir.exists()) {
@@ -197,15 +189,14 @@ public class Socks5ServiceImpl implements Socks5Service {
 
     @Override
     public boolean startSocks5(String id) {
-        boolean exist = checkConfigFileExist(id);
-        if (exist) {
-            String namespaceName = "ns" + id;
-            String cmd = "sh /tmp/socks5/socks5-" + id + ".sh";
-            namespaceService.exeCmdInNamespace(namespaceName, cmd);
-            return true;
-        } else {
-            return false;
-        }
+            if (createSocks5ConfigFile(id)){
+                String namespaceName = "ns" + id;
+                String cmd = "sh /tmp/socks5/socks5-" + id + ".sh";
+                namespaceService.exeCmdInNamespace(namespaceName, cmd);
+                return true;
+            }else {
+                return false;
+            }
     }
 
     @Override

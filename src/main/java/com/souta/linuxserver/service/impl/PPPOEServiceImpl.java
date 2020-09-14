@@ -28,7 +28,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static ScheduledExecutorService scheduler;
     private static final HashSet<String> isRecordInSecretFile;
     private static final int dilaGapLimit = 8;
-
+    private static final ExecutorService pool= Executors.newCachedThreadPool();
     static {
         adslAccount = new ArrayList<>();
         File adslFile = new File(adslAccountFilePath);
@@ -451,7 +451,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 lineOnDialLimitedMap.put(pppoe.getId(), 0);
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
-                String ip = getIP(pppoe.getOutIP());
+                String ip = getIP(pppoe.getId());
                 if (ip == null){
                     shutDown(pppoe);
                 }else {
@@ -461,7 +461,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             }
         };
         FutureTask<PPPOE> futureTask = new FutureTask(callable);
-        new Thread(futureTask).start();
+        pool.execute(futureTask);
         return futureTask;
     }
 
