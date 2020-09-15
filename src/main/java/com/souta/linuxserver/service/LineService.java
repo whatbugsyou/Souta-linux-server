@@ -10,6 +10,11 @@ public interface LineService {
     Set<String> dialingLines = new CopyOnWriteArraySet();
     int lineRedialWait = 2;
 
+    /**
+     *
+     * @param lineId
+     * @return FutureTask.get with line if success ,otherwise null.
+     */
     FutureTask<Line> createLine(String lineId);
     Line getLine(String lineId);
     FutureTask<Line> refreshLine(String lineId);

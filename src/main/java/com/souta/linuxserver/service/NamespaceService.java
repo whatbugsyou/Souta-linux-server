@@ -45,12 +45,17 @@ public interface NamespaceService {
     InputStream exeCmdInNamespace(Namespace namespace, String cmd);
 
     /**
-     * @param namespace - namespace name
+     * @param namespace --  namespace name
      * @param cmd       --  bash command
      * @return an Objcet of InputStream , relating to the cmd exeuting output.
      */
     InputStream exeCmdInNamespace(String namespace, String cmd);
 
+
+    /**
+     * @param cmd       --  bash command
+     * @return an Objcet of InputStream , relating to the cmd exeuting output.
+     */
     InputStream exeCmdInDefaultNamespace(String cmd);
 
 

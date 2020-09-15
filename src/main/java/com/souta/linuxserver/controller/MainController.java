@@ -45,6 +45,11 @@ public class MainController {
         monitorLines();
     }
 
+    /**
+     * monitor deadline : redial false with 3 times will be define as a deadline .it is recorded in redialCheckMap.check redialCheckMap for deadline and send it to java server.
+     * monitor fullDial : if dial-upped lines count is less than the count of server configured ,it will call addOneDial to make full use of server line resources.
+     * monitor errorLine: if error occurred in sending  line info,it will resend when  errorSendLines is checked with once a period of 30s.
+     */
     private void monitorLines() {
         Runnable addOneDial = () -> {
             String lineID = GenerateLineID();
@@ -113,6 +118,9 @@ public class MainController {
         scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
     }
 
+    /**
+     * scan all lines and filter  lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to java server.
+     */
     private void initSendLineInfo() {
         log.info("initLineInfo....");
         HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
@@ -174,6 +182,11 @@ public class MainController {
         return resultMap;
     }
 
+    /**
+     * if line what furutrTask get with is not null ,it will send the line to java server,otherwise will record the line ID in redialCheckMap.
+     * @param lineId
+     * @param futureTask
+     */
     private void lineReturnHandle(String lineId, FutureTask<Line> futureTask) {
         Runnable LineReturnHandle = () -> {
             Line line = null;
@@ -251,6 +264,10 @@ public class MainController {
             return resultMap;
     }
 
+    /**
+     * send lines to java server.if response status is not ok or catch an exception , will add lines into errorSendLines ,ready checking thread to invoke resend.
+     * @param lines
+     */
     private void sendLinesInfo(ArrayList<Line> lines) {
         if (!lines.isEmpty()) {
             HashMap<String, Object> data = new HashMap<>();
@@ -314,6 +331,9 @@ public class MainController {
         return lines;
     }
 
+    /**
+     * @return an number about the max number of not dial-up line numbers
+     */
     private String GenerateLineID() {
         LineMax lineMax = new LineMax();
         HashSet<String> dialuppedId = pppoeService.getDialuppedIdSet();
