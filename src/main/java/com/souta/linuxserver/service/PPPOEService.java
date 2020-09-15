@@ -16,8 +16,6 @@ public interface PPPOEService {
 
     boolean checkConfigFileExist(String pppoeId);
 
-    boolean createConifgFile(String pppoeId, String adslUser, String adslPassword);
-
     FutureTask<PPPOE> dialUp(PPPOE pppoe);
 
     boolean dialUp(String pppoeId);

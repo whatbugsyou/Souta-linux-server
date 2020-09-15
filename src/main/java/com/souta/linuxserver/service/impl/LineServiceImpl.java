@@ -38,20 +38,21 @@ public class LineServiceImpl implements LineService {
                 dialingLines.add(lineId);
                 FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
                 PPPOE pppoeR = futureTask.get();
-                if (pppoeR != null && pppoeR.getOutIP() != null) {
-                    if (startSocks(lineId)) {
+                String ip;
+                if (pppoeR != null && (ip=pppoeR.getOutIP()) != null) {
+                    if (startSocks(lineId,ip)) {
                         int times = 0;
-                        while (!socks5Service.isStart(lineId) && !shadowsocksService.isStart(lineId)) {
-                            TimeUnit.MILLISECONDS.sleep(100);
-                            if (++times == 10) {
-                                break;
-                            }
-                        }
-                        if (times<10){
-                            Socks5 socks5 = socks5Service.getSocks5(lineId);
-                            Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId);
-                            line = new Line(lineId, socks5, shadowsocks);
-                        }else {
+                         do {
+                             Socks5 socks5 = socks5Service.getSocks5(lineId,ip);
+                             Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId,ip);
+                             if (socks5.getPid()!=null && shadowsocks.getPid()!=null){
+                                 line =new Line(lineId,socks5,shadowsocks);
+                                 break;
+                             }
+                             TimeUnit.MILLISECONDS.sleep(100);
+                        }while(++times < 10);
+
+                        if (line==null){
                             deleteLine(lineId);
                         }
                     }
@@ -65,9 +66,9 @@ public class LineServiceImpl implements LineService {
         return futureTask;
     }
 
-    private boolean startSocks(String lineId) {
-        boolean b = socks5Service.startSocks5(lineId);
-        boolean b1 = shadowsocksService.startShadowsocks(lineId);
+    private boolean startSocks(String lineId, String ip) {
+        boolean b = socks5Service.startSocks5(lineId,ip);
+        boolean b1 = shadowsocksService.startShadowsocks(lineId,ip);
         return b && b1;
     }
 

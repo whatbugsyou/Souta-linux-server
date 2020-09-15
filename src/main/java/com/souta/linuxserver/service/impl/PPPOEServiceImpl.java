@@ -250,7 +250,6 @@ public class PPPOEServiceImpl implements PPPOEService {
         return hasOutput(inputStream);
     }
 
-    @Override
     public boolean createConifgFile(String pppoeId, String adslUser, String adslPassword) {
         createMainConfigFile(pppoeId, adslUser);
         refreshSecretConfig(adslUser, adslPassword);
@@ -451,11 +450,17 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 lineOnDialLimitedMap.put(pppoe.getId(), 0);
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
-                String ip = getIP(pppoe.getId());
-                if (ip == null){
+                int times =0;
+                do {
+                    String ip = getIP(pppoe.getId());
+                    if (ip != null){
+                        pppoe.setOutIP(ip);
+                        break;
+                    }
+                    TimeUnit.MILLISECONDS.sleep(100);
+                }while(++times < 10);
+                if (pppoe.getOutIP() == null){
                     shutDown(pppoe);
-                }else {
-                    pppoe.setOutIP(ip);
                 }
                 return pppoe;
             }

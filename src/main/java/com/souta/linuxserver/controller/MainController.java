@@ -271,12 +271,12 @@ public class MainController {
                                 errorSendLines.removeAll(lines);
                             }
                         } else {
-                            log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
+                            log.error("not ok  in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
                             errorSendLines.addAll(lines);
                         }
                     } catch (RuntimeException e) {
                         log.error(e.getMessage());
-                        log.error("error in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
+                        log.error("exception in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
                         errorSendLines.addAll(lines);
                     }
                 }
