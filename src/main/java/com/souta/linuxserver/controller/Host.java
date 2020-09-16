@@ -3,8 +3,8 @@ package com.souta.linuxserver.controller;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.souta.linuxserver.exception.ResponseNotOkException;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.impl.NamespaceServiceImpl;
 import com.souta.linuxserver.util.FileUtil;
@@ -36,18 +36,21 @@ public class Host {
     public void init() {
         initDNS();
         initFirewall();
-        initIPRoute();
-        initHostId();
+        try {
+            initIPRoute();
+            initHostId();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
         monitorHostIp();
     }
 
-    private void initIPRoute() {
+    private void initIPRoute() throws FileNotFoundException{
         File file = new File(hostRouteFilePath);
         if (!file.exists()) {
-            log.error("file not found : {}", hostRouteFilePath);
-            System.exit(1);
+            throw new FileNotFoundException(hostRouteFilePath);
         }
-
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
             String line;
@@ -161,25 +164,26 @@ public class Host {
         scheduler.scheduleAtFixedRate(beeper, 0, 10, TimeUnit.SECONDS);
     }
 
-    private void initHostId() {
+    private void initHostId() throws FileNotFoundException{
         File file = new File(hostFilePath);
         if (!file.exists()) {
-            log.error("file not found {}", hostFilePath);
-            System.exit(1);
+            throw new FileNotFoundException(hostFilePath);
         }
         String jsonStr = FileUtil.ReadFile(hostFilePath);
         JSONObject jsonObject = JSON.parseObject(jsonStr);
         port = (String) jsonObject.get("port");
         String id = jsonObject.getString("id");
         if ((Host.id = id) == null) {
-            if (!registerHost()) {
-                log.error("registerHost false");
+            try {
+                registerHost();
+            } catch (Exception e) {
+                log.error(e.getMessage());
                 System.exit(1);
             }
         }
     }
 
-    private static boolean registerHost() {
+    private static void registerHost() throws Exception{
         String jsonStr = FileUtil.ReadFile(hostFilePath);
         JSONObject jsonObject = JSON.parseObject(jsonStr);
         HttpResponse execute = HttpRequest
@@ -187,38 +191,33 @@ public class Host {
                 .body(jsonStr, "application/json;charset=UTF-8")
                 .execute();
         if (execute.getStatus() != 200) {
-            log.error("error in send registerHost from java server,API(PUT) :  /v1.0/server");
-            return false;
+            throw new ResponseNotOkException("error in send registerHost from java server,API(PUT) :  /v1.0/server");
         }
         String responseBody = execute.body();
         JSONObject response = JSON.parseObject(responseBody);
         Object id = response.get("id");
         if (id == null) {
-            return false;
+            throw new NullPointerException("id is null");
         } else {
             Host.id = String.valueOf(id);
             jsonObject.put("id", Host.id);
         }
+        FileWriter fileWriter = null;
         try {
-            FileWriter fileWriter = null;
-            try {
-                fileWriter = new FileWriter(hostFilePath);
-                fileWriter.write(jsonObject.toJSONString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                if (fileWriter != null) {
-                    try {
-                        fileWriter.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            fileWriter = new FileWriter(hostFilePath);
+            fileWriter.write(jsonObject.toJSONString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fileWriter != null) {
+                try {
+                    fileWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
-        } catch (JSONException e) {
-            log.info(e.getMessage());
         }
-        return true;
+
     }
 
 }
