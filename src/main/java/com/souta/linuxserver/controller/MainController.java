@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.DeadLine;
 import com.souta.linuxserver.entity.Line;
+import com.souta.linuxserver.exception.ResponseNotOkException;
 import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
@@ -283,19 +284,15 @@ public class MainController {
                                 .body(body)
                                 .execute().isOk();
                         if (status) {
-                            log.info(body);
-                            if (!errorSendLines.isEmpty()) {
-                                errorSendLines.removeAll(lines);
-                            }
+                            errorSendLines.removeAll(lines);
                         } else {
-                            log.error("not ok  in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
-                            errorSendLines.addAll(lines);
+                            throw new ResponseNotOkException("response not ok in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
                         }
-                    } catch (RuntimeException e) {
+                    } catch (RuntimeException | ResponseNotOkException e) {
                         log.error(e.getMessage());
-                        log.error("exception in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
                         errorSendLines.addAll(lines);
                     }
+                    log.info(body);
                 }
             };
             executorService.execute(runnable);

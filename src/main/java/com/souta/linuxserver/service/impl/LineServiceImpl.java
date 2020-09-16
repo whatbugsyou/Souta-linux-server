@@ -74,9 +74,12 @@ public class LineServiceImpl implements LineService {
 
     @Override
     public Line getLine(String lineId) {
-        if (checkExits(lineId)) {
-            Socks5 socks5 = socks5Service.getSocks5(lineId);
-            Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId);
+        String ip = pppoeService.getIP(lineId);
+        if (ip==null) return null;
+
+        Socks5 socks5 = socks5Service.getSocks5(lineId,ip);
+        Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId,ip);
+        if (socks5.getPid()!=null && shadowsocks.getPid()!=null){
             return new Line(lineId, socks5, shadowsocks);
         } else {
             return null;
@@ -139,8 +142,9 @@ public class LineServiceImpl implements LineService {
         if (!pppoeService.isDialUp(lineId)){
             return false;
         }
-        boolean startShadowscocks = shadowsocksService.isStart(lineId);
-        boolean startSocks5 = socks5Service.isStart(lineId);
+        String ip = pppoeService.getIP(lineId);
+        boolean startShadowscocks = shadowsocksService.isStart(lineId,ip);
+        boolean startSocks5 = socks5Service.isStart(lineId,ip);
         return startShadowscocks && startSocks5;
     }
 }

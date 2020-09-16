@@ -21,14 +21,12 @@ public class Line {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Line line = (Line) o;
-        return id.equals(line.id) &&
-                Objects.equals(socks5, line.socks5) &&
-                Objects.equals(shadowsocks, line.shadowsocks);
+        return Objects.equals(id, line.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, socks5, shadowsocks);
+        return Objects.hash(id);
     }
 }
 
