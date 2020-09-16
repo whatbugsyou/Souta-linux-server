@@ -148,10 +148,9 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     @Override
-    public boolean dialUp(String pppoeId) {
+    public FutureTask<PPPOE> dialUp(String pppoeId) {
         PPPOE pppoe = getPPPOE(pppoeId);
-        dialUp(pppoe);
-        return true;
+        return dialUp(pppoe);
     }
 
     @Override
