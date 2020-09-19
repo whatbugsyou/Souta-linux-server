@@ -24,7 +24,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private final NamespaceService namespaceService;
     private final VethService vethService;
     private static final List<ADSL> adslAccount;
-    private static final HashMap<String, Integer> lineOnDialLimitedMap;
+    private static final ConcurrentHashMap<String, Integer> lineOnDialLimitedMap;
     private static ScheduledExecutorService scheduler;
     private static final HashSet<String> isRecordInSecretFile;
     private static final int dilaGapLimit = 8;
@@ -73,7 +73,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             System.exit(1);
         }
 
-        lineOnDialLimitedMap = new HashMap<>();
+        lineOnDialLimitedMap = new ConcurrentHashMap<>();
         Runnable refreshSecondGap = new Runnable() {
             @Override
             public void run() {
