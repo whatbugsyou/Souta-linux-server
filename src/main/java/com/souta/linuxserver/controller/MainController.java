@@ -29,8 +29,14 @@ public class MainController {
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
     private static final int checkingTimesOfDefineDeadLine = 3;
 
-    private static final HashMap<String, Integer> redialCheckMap = new HashMap<>();
+    /**
+     * record the times of false dial ,if the times is >= checkingTimesOfDefineDeadLine will send to java server as a dead line
+     */
+    private static final HashMap<String, Integer> dialFalseTimesMap = new HashMap<>();
     private static final ExecutorService executorService = Executors.newCachedThreadPool();
+    /**
+     * the line that is error sent is going to be resent.
+     */
     private static final Set<Line> errorSendLines = new HashSet<>();
     public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, Socks5Service socks5Service, LineService lineService) {
         this.pppoeService = pppoeService;
@@ -76,7 +82,7 @@ public class MainController {
             }
         };
         Runnable checkDeadLine = () -> {
-            Set<Map.Entry<String, Integer>> entries = redialCheckMap.entrySet();
+            Set<Map.Entry<String, Integer>> entries = dialFalseTimesMap.entrySet();
             for (Map.Entry<String, Integer> entry : entries
             ) {
                 Integer value = entry.getValue();
@@ -101,7 +107,7 @@ public class MainController {
                         }
                     };
                     executorService.execute(runnable);
-                    redialCheckMap.put(entry.getKey(), value + 1);
+                    dialFalseTimesMap.put(entry.getKey(), value + 1);
                 }
             }
         };
@@ -197,15 +203,15 @@ public class MainController {
                 e.printStackTrace();
             }
             if (line == null) {
-                Integer integer = redialCheckMap.get(lineId);
+                Integer integer = dialFalseTimesMap.get(lineId);
                 if (integer != null) {
-                    redialCheckMap.put(lineId, integer + 1);
+                    dialFalseTimesMap.put(lineId, integer + 1);
                 } else {
-                    redialCheckMap.put(lineId, 1);
+                    dialFalseTimesMap.put(lineId, 1);
                 }
             }else {
                 sendLinesInfo(line);
-                redialCheckMap.remove(lineId);
+                dialFalseTimesMap.remove(lineId);
             }
         };
         executorService.execute(LineReturnHandle);
