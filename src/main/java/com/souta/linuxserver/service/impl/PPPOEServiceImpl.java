@@ -66,7 +66,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                     }
                 }
             }
-            scheduler = Executors.newScheduledThreadPool(adslAccount.size());
+            scheduler = Executors.newSingleThreadScheduledExecutor();
             log.info("find {} adsl account", adslAccount.size());
         } else {
             log.info("not found {} file ", adslAccountFilePath);
