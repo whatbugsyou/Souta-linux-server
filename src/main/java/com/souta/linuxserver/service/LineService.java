@@ -33,7 +33,7 @@ public interface LineService {
      * @param lineId
      * @param protoId socks5 or shadowsocks
      * @param action on or off
-     * @return
+     * @return true if is dial up.
      */
     boolean editProtoInLine(String lineId, String protoId, String action);
     boolean checkExits(String lineId);

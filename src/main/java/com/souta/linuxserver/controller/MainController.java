@@ -19,6 +19,11 @@ import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static com.souta.linuxserver.controller.Host.java_server_host;
+import static com.souta.linuxserver.controller.Host.id;
+import static com.souta.linuxserver.service.LineService.dialingLines;
+import static com.souta.linuxserver.service.LineService.lineRedialWait;
+
 @RestController
 @RequestMapping("/v1.0/line/notify")
 public class MainController {
@@ -61,10 +66,10 @@ public class MainController {
         Runnable addOneDial = () -> {
             String lineID = GenerateLineID();
             if (lineID != null) {
-                LineService.dialingLines.add(lineID);
-                log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineService.lineRedialWait);
+                dialingLines.add(lineID);
+                log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
                 try {
-                    TimeUnit.SECONDS.sleep(lineService.lineRedialWait);
+                    TimeUnit.SECONDS.sleep(lineRedialWait);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -76,7 +81,7 @@ public class MainController {
                 Executors.newScheduledThreadPool(3);
         Runnable checkFullDial = () -> {
             HashSet<String> newlineIdList = pppoeService.getDialuppedIdSet();
-            newlineIdList.addAll(LineService.dialingLines);
+            newlineIdList.addAll(dialingLines);
             if (newlineIdList.size() < pppoeService.getADSLList().size()) {
                 executorService.execute(addOneDial);
             }
@@ -93,13 +98,13 @@ public class MainController {
                     ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(entry.getKey()));
                     deadLine.setAdslUser(adsl.getAdslUser());
                     deadLine.setAdslPassword(adsl.getAdslPassword());
-                    data.put("hostId", Host.id);
+                    data.put("hostId", id);
                     data.put("deadLine", deadLine);
                     String body = new JSONObject(data).toJSONString();
                     log.info("send deadLine Info :");
                     log.info(body);
                     Runnable runnable = () -> {
-                        int status = HttpRequest.post(Host.java_server_host + "/v1.0/deadLine")
+                        int status = HttpRequest.post(java_server_host + "/v1.0/deadLine")
                                 .body(body)
                                 .execute().getStatus();
                         if (status != 200) {
@@ -112,12 +117,9 @@ public class MainController {
             }
         };
 
-        Runnable checkErrorSendLines = new Runnable() {
-            @Override
-            public void run() {
-                if (!errorSendLines.isEmpty()) {
-                    sendLinesInfo(new ArrayList<>(errorSendLines));
-                }
+        Runnable checkErrorSendLines = () -> {
+            if (!errorSendLines.isEmpty()) {
+                sendLinesInfo(new ArrayList<>(errorSendLines));
             }
         };
         scheduler.scheduleAtFixedRate(checkErrorSendLines, 0, 30, TimeUnit.SECONDS);
@@ -133,7 +135,7 @@ public class MainController {
         HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
         ArrayList<Line> lines = getLines(lineIdSet);
         log.info("total {} lines is ok", lines.size());
-        int status = HttpRequest.delete(Host.java_server_host + "/v1.0/server/lines?" + "hostId=" + Host.id)
+        int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
                 .execute().getStatus();
         if (status != 200) {
             log.error("error in delete All Line from java server,API(DELETE) :  /v1.0/server/lines ");
@@ -278,7 +280,7 @@ public class MainController {
     private void sendLinesInfo(ArrayList<Line> lines) {
         if (!lines.isEmpty()) {
             HashMap<String, Object> data = new HashMap<>();
-            data.put("hostId", Host.id);
+            data.put("hostId", id);
             data.put("lines", lines);
             String body = new JSONObject(data).toJSONString();
             log.info("send Lines Info ...");
@@ -286,7 +288,7 @@ public class MainController {
                 @Override
                 public void run() {
                     try {
-                        boolean status = HttpRequest.put(Host.java_server_host + "/v1.0/line")
+                        boolean status = HttpRequest.put(java_server_host + "/v1.0/line")
                                 .body(body)
                                 .execute().isOk();
                         if (status) {
@@ -340,7 +342,7 @@ public class MainController {
     private String GenerateLineID() {
         LineMax lineMax = new LineMax();
         HashSet<String> dialuppedId = pppoeService.getDialuppedIdSet();
-        dialuppedId.addAll(lineService.dialingLines);
+        dialuppedId.addAll(dialingLines);
         List<ADSL> adslList = pppoeService.getADSLList();
         if (dialuppedId.size() < adslList.size()) {
             for (String id :
