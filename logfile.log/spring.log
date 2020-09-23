@@ -1,7 +1,0 @@
-2020-08-18 10:13:50.015  INFO 4424 --- [main] c.s.l.LinuxServerApplicationTests        : Starting LinuxServerApplicationTests on 12-E5 with PID 4424 (started by Administrator in C:\Users\Administrator\IdeaProjects\linux-server)
-2020-08-18 10:13:50.017  INFO 4424 --- [main] c.s.l.LinuxServerApplicationTests        : No active profile set, falling back to default profiles: default
-2020-08-18 10:13:50.718  INFO 4424 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.ws.config.annotation.DelegatingWsConfiguration' of type [org.springframework.ws.config.annotation.DelegatingWsConfiguration$$EnhancerBySpringCGLIB$$3483bcd8] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
-2020-08-18 10:13:50.791  INFO 4424 --- [main] .w.s.a.s.AnnotationActionEndpointMapping : Supporting [WS-Addressing August 2004, WS-Addressing 1.0]
-2020-08-18 10:13:51.323  INFO 4424 --- [main] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
-2020-08-18 10:13:51.708  INFO 4424 --- [main] c.s.l.LinuxServerApplicationTests        : Started LinuxServerApplicationTests in 1.987 seconds (JVM running for 3.012)
-2020-08-18 10:13:52.256  INFO 4424 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
