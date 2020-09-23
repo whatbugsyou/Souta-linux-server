@@ -9,11 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Random;
+import java.util.Scanner;
 
 @Service
 public class VethServiceImpl implements VethService {
@@ -21,22 +19,38 @@ public class VethServiceImpl implements VethService {
     @Autowired
     private NamespaceService namespaceService;
     private static String physicalEthName;
+    private static final String physicalEthNameFilePath = "/tmp/physicalEth";
 
     static {
-        String cmd = "ls /sys/class/net/|awk '{print $1}'|head -n 1";
-        NamespaceServiceImpl namespaceService1 = new NamespaceServiceImpl();
-        InputStream inputStream = namespaceService1.exeCmdInDefaultNamespace(cmd);
-        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-        try {
-            physicalEthName = bufferedReader.readLine();
+        File file = new File(physicalEthNameFilePath);
+        if (file.exists()){
+            BufferedReader bufferedReader = null;
+            try {
+                bufferedReader = new BufferedReader(new FileReader(file));
+                physicalEthName = bufferedReader.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             if (physicalEthName == null) {
                 log.error("detect physicalEthName error");
                 System.exit(1);
             }
             log.info("auto get physicalEthName={}", physicalEthName);
-        } catch (IOException e) {
-            e.printStackTrace();
+        }else {
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("please enter the Physical Ethernet Name (default eth0):");
+            physicalEthName = scanner.nextLine().trim();
+            if (physicalEthName.isEmpty()){
+                physicalEthName = "eth0";
+            }
+            FileWriter fileWriter = null;
+            try {
+                fileWriter = new FileWriter(file);
+                fileWriter.write(physicalEthName);
+                fileWriter.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
