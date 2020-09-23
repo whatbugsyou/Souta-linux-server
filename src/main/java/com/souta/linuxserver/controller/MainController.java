@@ -53,7 +53,7 @@ public class MainController {
     @PostConstruct
     public void init() {
         new Host().init();
-        initSendLineInfo();
+        initAndSendsLineInfo();
         monitorLines();
     }
 
@@ -130,17 +130,21 @@ public class MainController {
     /**
      * scan all lines and filter  lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to java server.
      */
-    private void initSendLineInfo() {
+    private void initAndSendsLineInfo() {
         log.info("initLineInfo....");
         HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
         ArrayList<Line> lines = getLines(lineIdSet);
         log.info("total {} lines is ok", lines.size());
+//        clean();
+        sendLinesInfo(lines);
+    }
+    @DeleteMapping("/all")
+    public void clean(){
         int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
                 .execute().getStatus();
         if (status != 200) {
             log.error("error in delete All Line from java server,API(DELETE) :  /v1.0/server/lines ");
         }
-        sendLinesInfo(lines);
     }
 
     @PostMapping
@@ -212,7 +216,7 @@ public class MainController {
                     dialFalseTimesMap.put(lineId, 1);
                 }
             }else {
-                sendLinesInfo(line);
+                sendLineInfo(line);
                 dialFalseTimesMap.remove(lineId);
             }
         };
@@ -247,7 +251,7 @@ public class MainController {
         return resultMap;
     }
 
-    @DeleteMapping
+    @DeleteMapping()
     public HashMap<String, Object> deleteLine(String lineId) {
         log.info("delete line {}", lineId);
         HashMap<String, Object> resultMap = new HashMap<>();
@@ -294,7 +298,7 @@ public class MainController {
                         if (status) {
                             errorSendLines.removeAll(lines);
                         } else {
-                            throw new ResponseNotOkException("response not ok in sendLinesInfo to java server,API(PUT) :  /v1.0/lines ");
+                            throw new ResponseNotOkException("response not ok in sendLinesInfo to java server,API(PUT) :  /v1.0/line ");
                         }
                     } catch (RuntimeException | ResponseNotOkException e) {
                         log.error(e.getMessage());
@@ -307,7 +311,7 @@ public class MainController {
         }
     }
 
-    private void sendLinesInfo(Line line) {
+    private void sendLineInfo(Line line) {
         ArrayList<Line> list = new ArrayList<>();
         list.add(line);
         sendLinesInfo(list);
