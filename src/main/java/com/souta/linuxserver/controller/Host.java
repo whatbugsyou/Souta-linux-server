@@ -1,5 +1,6 @@
 package com.souta.linuxserver.controller;
 
+import cn.hutool.core.text.StrBuilder;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
@@ -36,8 +37,8 @@ public class Host {
     public void init() {
         initDNS();
         initFirewall();
+        initIPRoute();
         try {
-            initIPRoute();
             initHostId();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -46,11 +47,7 @@ public class Host {
         monitorHostIp();
     }
 
-    private void initIPRoute() throws FileNotFoundException{
-        File file = new File(hostRouteFilePath);
-        if (!file.exists()) {
-            throw new FileNotFoundException(hostRouteFilePath);
-        }
+    private void initIPRoute(){
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
             String line;
@@ -65,6 +62,16 @@ public class Host {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
                 namespaceService.exeCmdInDefaultNamespace(cmd);
             }
+            File file = new File(hostRouteFilePath);
+            String cmd = "ip route";
+            InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
+            bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
+            while ((line = bufferedReader.readLine()) != null) {
+                bufferedWriter.write(String.format("ip route add %s table %s",line,hostRouteTableName));
+                bufferedWriter.newLine();
+            }
+            bufferedWriter.flush();
             namespaceService.exeCmdInDefaultNamespace("sh " + hostRouteFilePath);
             namespaceService.exeCmdInDefaultNamespace("ip rule del from all table " + hostRouteTableName);
             namespaceService.exeCmdInDefaultNamespace("ip rule add from all table " + hostRouteTableName);
@@ -75,10 +82,12 @@ public class Host {
 
 
     private void initFirewall() {
-        String startFirewalldService = "service firewalld start";
-        String openWebservicePort = String.format("firewall-cmd --zone=public --add-port=%s/tcp --permanent", port);
-        String openRemoteDebugPort = String.format("firewall-cmd --zone=public --add-port=%s/tcp --permanent", "5005");
-        String reloadFirewalld = "service firewalld reload";
+        String startFirewalldService = "service firewalld start \n";
+        String openWebservicePort = String.format("firewall-cmd --zone=public --add-port=%s/tcp --permanent \n", port);
+        String openRemoteDebugPort = String.format("firewall-cmd --zone=public --add-port=%s/tcp --permanent \n", "5005");
+        String reloadFirewalld = "service firewalld reload \n";
+        StrBuilder strBuilder = new StrBuilder();
+        strBuilder.append(startFirewalldService).append(openWebservicePort).append(openRemoteDebugPort).append(reloadFirewalld);
         File file = new File("/tmp/fireWalld.sh");
         BufferedWriter bufferedWriter = null;
         try {
@@ -86,13 +95,7 @@ public class Host {
                 file.createNewFile();
             }
             bufferedWriter = new BufferedWriter(new FileWriter(file));
-            bufferedWriter.write(startFirewalldService);
-            bufferedWriter.newLine();
-            bufferedWriter.write(openWebservicePort);
-            bufferedWriter.newLine();
-            bufferedWriter.write(openRemoteDebugPort);
-            bufferedWriter.newLine();
-            bufferedWriter.write(reloadFirewalld);
+            bufferedWriter.write(strBuilder.toString());
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -147,6 +150,9 @@ public class Host {
 
                 if (nowIp != null && nowIp.matches("[\\\\.\\d]+")) {
                     if (IP == null || !IP.equals(nowIp)) {
+                        if (IP != null) {
+                            initIPRoute();
+                        }
                         IP = nowIp;
                         log.info("send new HOST IP " + nowIp);
                         String jsonStr = FileUtil.ReadFile(hostFilePath);
@@ -172,8 +178,8 @@ public class Host {
         String jsonStr = FileUtil.ReadFile(hostFilePath);
         JSONObject jsonObject = JSON.parseObject(jsonStr);
         port = (String) jsonObject.get("port");
-        String id = jsonObject.getString("id");
-        if ((Host.id = id) == null) {
+        id = jsonObject.getString("id");
+        if (id != null) {
             try {
                 registerHost();
             } catch (Exception e) {
