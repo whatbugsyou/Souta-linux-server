@@ -130,13 +130,19 @@ public class MainController {
     /**
      * scan all lines and filter  lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to java server.
      */
-    private void initAndSendsLineInfo() {
-        log.info("initLineInfo....");
-        HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-        ArrayList<Line> lines = getLines(lineIdSet);
-        log.info("total {} lines is ok", lines.size());
-//        clean();
-        sendLinesInfo(lines);
+    @GetMapping("/init")
+    public void initAndSendsLineInfo() {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                log.info("initLineInfo....");
+                HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
+                ArrayList<Line> lines = getLines(lineIdSet);
+                log.info("total {} lines is ok", lines.size());
+                //        clean();
+                sendLinesInfo(lines);
+            }
+        });
     }
     @DeleteMapping("/all")
     public void clean(){
