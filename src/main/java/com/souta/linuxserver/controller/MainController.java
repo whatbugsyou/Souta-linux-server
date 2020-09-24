@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.souta.linuxserver.controller.Host.java_server_host;
 import static com.souta.linuxserver.controller.Host.id;
@@ -33,6 +35,7 @@ public class MainController {
     private final LineService lineService;
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
     private static final int checkingTimesOfDefineDeadLine = 3;
+    private static final ReentrantLock initLock = new ReentrantLock();
 
     /**
      * record the times of false dial ,if the times is >= checkingTimesOfDefineDeadLine will send to java server as a dead line
@@ -135,12 +138,17 @@ public class MainController {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                log.info("initLineInfo....");
-                HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-                ArrayList<Line> lines = getLines(lineIdSet);
-                log.info("total {} lines is ok", lines.size());
-                //        clean();
-                sendLinesInfo(lines);
+                try {
+                    initLock.lock();
+                    log.info("initLineInfo....");
+                    HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
+                    ArrayList<Line> lines = getLines(lineIdSet);
+                    log.info("total {} lines is ok", lines.size());
+                    //        clean();
+                    sendLinesInfo(lines);
+                }finally {
+                    initLock.unlock();
+                }
             }
         });
     }
@@ -194,8 +202,13 @@ public class MainController {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                FutureTask<Line> futureTask = lineService.refreshLine(lineId);
-                lineReturnHandle(lineId,futureTask);
+                try {
+                    initLock.lock();
+                    FutureTask<Line> futureTask = lineService.refreshLine(lineId);
+                    lineReturnHandle(lineId,futureTask);
+                }finally {
+                    initLock.unlock();
+                }
             }
         });
         return resultMap;
