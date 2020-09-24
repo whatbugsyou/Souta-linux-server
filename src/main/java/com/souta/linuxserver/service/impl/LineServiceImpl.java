@@ -88,18 +88,15 @@ public class LineServiceImpl implements LineService {
 
     @Override
     public FutureTask<Line> refreshLine(String lineId) {
-        boolean exist = pppoeService.checkConfigFileExist(lineId);
-        if (exist) {
-            if (!dialingLines.contains(lineId)) {
-                deleteLine(lineId);
-                dialingLines.add(lineId);
-                try {
-                    TimeUnit.SECONDS.sleep(lineRedialWait);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return createLine(lineId);
+        if (!dialingLines.contains(lineId)) {
+            deleteLine(lineId);
+            dialingLines.add(lineId);
+            try {
+                TimeUnit.SECONDS.sleep(lineRedialWait);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            return createLine(lineId);
         }
         return null;
     }

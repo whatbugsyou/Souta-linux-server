@@ -223,7 +223,11 @@ public class MainController {
         Runnable LineReturnHandle = () -> {
             Line line = null;
             try {
-                line = futureTask.get();
+                if (futureTask != null) {
+                    line = futureTask.get();
+                }else {
+                    return;
+                }
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
