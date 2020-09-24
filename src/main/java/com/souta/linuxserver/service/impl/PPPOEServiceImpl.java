@@ -1,5 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
+import cn.hutool.core.collection.ConcurrentHashSet;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.PPPOE;
@@ -23,14 +24,15 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final String adslAccountFilePath = "/tmp/adsl.txt";
     private final NamespaceService namespaceService;
     private final VethService vethService;
-    private static final List<ADSL> adslAccount;
-    private static final ConcurrentHashMap<String, Integer> lineOnDialLimitedMap;
+    private static final List<ADSL> adslAccount = new ArrayList<>();
+    private static final ConcurrentHashSet<String> redialLimitedLine =new ConcurrentHashSet<>();
     private static ScheduledExecutorService scheduler;
-    private static final HashSet<String> isRecordInSecretFile;
+    private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
     private static final int dilaGapLimit = 8;
     private static final ExecutorService pool= Executors.newCachedThreadPool();
+    private static final Timer timer = new Timer();
+
     static {
-        adslAccount = new ArrayList<>();
         File adslFile = new File(adslAccountFilePath);
         if (adslFile.exists()) {
             FileReader fileReader = null;
@@ -73,27 +75,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             System.exit(1);
         }
 
-        lineOnDialLimitedMap = new ConcurrentHashMap<>();
-        Runnable refreshSecondGap = new Runnable() {
-            @Override
-            public void run() {
-                synchronized (lineOnDialLimitedMap) {
-                    Iterator<Map.Entry<String, Integer>> iterator = lineOnDialLimitedMap.entrySet().iterator();
-                    while (iterator.hasNext()) {
-                        Map.Entry<String, Integer> entry = iterator.next();
-                        Integer value = entry.getValue() + 1;
-                        if (value >= dilaGapLimit) {
-                            iterator.remove();
-                        } else {
-                            lineOnDialLimitedMap.put(entry.getKey(), value);
-                        }
-                    }
-                    lineOnDialLimitedMap.notifyAll();
-                }
-            }
-        };
-        scheduler.scheduleAtFixedRate(refreshSecondGap, 0, 1, TimeUnit.SECONDS);
-        isRecordInSecretFile = new HashSet<>();
+
     }
 
     public PPPOEServiceImpl(NamespaceService namespaceService, VethService vethService) {
@@ -423,9 +405,9 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 Namespace namespace = pppoe.getVeth().getNamespace();
                 String ifupCMD = "ifup " + "ppp" + pppoe.getId();
-                synchronized (lineOnDialLimitedMap) {
-                    while (lineOnDialLimitedMap.get(pppoe.getId()) != null) {
-                        lineOnDialLimitedMap.wait();
+                synchronized (redialLimitedLine) {
+                    while (redialLimitedLine.contains(pppoe.getId())) {
+                        redialLimitedLine.wait();
                     }
                 }
                 log.info("ppp{} start dialing ...", pppoe.getId());
@@ -447,7 +429,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                         break;
                     }
                 }
-                lineOnDialLimitedMap.put(pppoe.getId(), 0);
+                limitRedialTime(pppoe.getId());
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
                 int times =0;
                 do {
@@ -467,6 +449,19 @@ public class PPPOEServiceImpl implements PPPOEService {
         FutureTask<PPPOE> futureTask = new FutureTask(callable);
         pool.execute(futureTask);
         return futureTask;
+    }
+    private void limitRedialTime(String id){
+        redialLimitedLine.add(id);
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                synchronized (redialLimitedLine){
+                    redialLimitedLine.remove(id);
+                    redialLimitedLine.notifyAll();
+                }
+            }
+        };
+        timer.schedule(timerTask,TimeUnit.SECONDS.toMillis(dilaGapLimit));
     }
 
     @Override
