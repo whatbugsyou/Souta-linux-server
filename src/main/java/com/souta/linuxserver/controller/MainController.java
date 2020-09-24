@@ -199,18 +199,18 @@ public class MainController {
         }else {
             resultMap.put("status", "ok");
         }
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    initLock.lock();
+        try {
+            initLock.lock();
+            executorService.execute(new Runnable() {
+                @Override
+                public void run() {
                     FutureTask<Line> futureTask = lineService.refreshLine(lineId);
                     lineReturnHandle(lineId,futureTask);
-                }finally {
-                    initLock.unlock();
                 }
-            }
-        });
+            });
+        }finally {
+            initLock.unlock();
+        }
         return resultMap;
     }
 
