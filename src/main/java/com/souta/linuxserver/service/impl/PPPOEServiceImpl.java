@@ -1,6 +1,5 @@
 package com.souta.linuxserver.service.impl;
 
-import cn.hutool.core.collection.ConcurrentHashSet;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.PPPOE;
@@ -26,13 +25,14 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final String adslAccountFilePath = "/tmp/adsl.txt";
     private final NamespaceService namespaceService;
     private final VethService vethService;
-    private static final List<ADSL> adslAccount = new ArrayList<>();
+    private static final List<ADSL> adslAccountList = new ArrayList<>();
     private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
     private static final int dilaGapLimit = 8;
     private static final ExecutorService pool= Executors.newCachedThreadPool();
     private static final Timer timer = new Timer();
     private static final ReentrantLock reDialLock = new ReentrantLock();
     private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
+    private static final ArrayList<Condition> conditionList = new ArrayList<>();
     static {
         File adslFile = new File(adslAccountFilePath);
         if (adslFile.exists()) {
@@ -48,7 +48,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                     Matcher matcher = compile.matcher(line);
                     if (matcher.matches()) {
                         ADSL adsl = new ADSL(matcher.group(1), matcher.group(2));
-                        adslAccount.add(adsl);
+                        adslAccountList.add(adsl);
                     }
                 }
             } catch (IOException e) {
@@ -69,13 +69,14 @@ public class PPPOEServiceImpl implements PPPOEService {
                     }
                 }
             }
-            log.info("find {} adsl account", adslAccount.size());
+            log.info("find {} adsl account", adslAccountList.size());
         } else {
             log.info("not found {} file ", adslAccountFilePath);
             System.exit(1);
         }
-
-
+        for (int i = 0; i < adslAccountList.size(); i++) {
+            conditionList.add(reDialLock.newCondition());
+        }
     }
 
     public PPPOEServiceImpl(NamespaceService namespaceService, VethService vethService) {
@@ -91,7 +92,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public PPPOE createPPPOE(String pppoeId, Veth veth) {
         PPPOE pppoe;
-        ADSL adsl = adslAccount.get(Integer.parseInt(pppoeId) - 1);
+        ADSL adsl = adslAccountList.get(Integer.parseInt(pppoeId) - 1);
         if (adsl != null) {
             String adslUser = adsl.getAdslUser();
             String adslPassword = adsl.getAdslPassword();
@@ -189,7 +190,7 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public List<ADSL> getADSLList() {
-        return adslAccount;
+        return adslAccountList;
     }
 
     @Override
@@ -455,7 +456,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         return futureTask;
     }
     private void limitRedialTime(String id){
-        Condition condition = reDialLock.newCondition();
+        Condition condition = conditionList.get(Integer.parseInt(id));
         redialLimitedConditionMap.put(id,condition);
         TimerTask timerTask = new TimerTask() {
             @Override
@@ -537,8 +538,8 @@ public class PPPOEServiceImpl implements PPPOEService {
                 return null;
             }
         }
-        pppoe.setAdslPassword(adslAccount.get(Integer.parseInt(pppoeId) - 1).getAdslPassword());
-        pppoe.setAdslUser(adslAccount.get(Integer.parseInt(pppoeId) - 1).getAdslUser());
+        pppoe.setAdslPassword(adslAccountList.get(Integer.parseInt(pppoeId) - 1).getAdslPassword());
+        pppoe.setAdslUser(adslAccountList.get(Integer.parseInt(pppoeId) - 1).getAdslUser());
         return pppoe;
     }
 }
