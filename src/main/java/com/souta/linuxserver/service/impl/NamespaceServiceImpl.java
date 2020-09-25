@@ -39,11 +39,7 @@ public class NamespaceServiceImpl implements NamespaceService {
                 }
             }
         }
-        if (read != -1) {
-            return true;
-        } else {
-            return false;
-        }
+        return read != -1;
     }
 
     @Override

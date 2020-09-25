@@ -1,6 +1,6 @@
 package com.souta.linuxserver.entity;
 
-import lombok.*;
+import lombok.Data;
 
 @Data
 public class PPPOE {

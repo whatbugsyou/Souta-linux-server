@@ -23,16 +23,15 @@ import java.util.regex.Pattern;
 public class PPPOEServiceImpl implements PPPOEService {
     private static final Logger log = LoggerFactory.getLogger(PPPOEService.class);
     private static final String adslAccountFilePath = "/tmp/adsl.txt";
-    private final NamespaceService namespaceService;
-    private final VethService vethService;
     private static final List<ADSL> adslAccountList = new ArrayList<>();
     private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
     private static final int dilaGapLimit = 8;
-    private static final ExecutorService pool= Executors.newCachedThreadPool();
+    private static final ExecutorService pool = Executors.newCachedThreadPool();
     private static final Timer timer = new Timer();
     private static final ReentrantLock reDialLock = new ReentrantLock();
     private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
     private static final ArrayList<Condition> conditionList = new ArrayList<>();
+
     static {
         File adslFile = new File(adslAccountFilePath);
         if (adslFile.exists()) {
@@ -78,6 +77,9 @@ public class PPPOEServiceImpl implements PPPOEService {
             conditionList.add(reDialLock.newCondition());
         }
     }
+
+    private final NamespaceService namespaceService;
+    private final VethService vethService;
 
     public PPPOEServiceImpl(NamespaceService namespaceService, VethService vethService) {
         this.namespaceService = namespaceService;
@@ -407,9 +409,9 @@ public class PPPOEServiceImpl implements PPPOEService {
                 Namespace namespace = pppoe.getVeth().getNamespace();
                 String ifupCMD = "ifup " + "ppp" + pppoe.getId();
                 try {
-                        reDialLock.lock();
-                        Condition condition = redialLimitedConditionMap.get(pppoe.getId());
-                    if (condition!=null){
+                    reDialLock.lock();
+                    Condition condition = redialLimitedConditionMap.get(pppoe.getId());
+                    if (condition != null) {
                         condition.await();
                     }
                 } finally {
@@ -436,16 +438,16 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 limitRedialTime(pppoe.getId());
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
-                int times =0;
+                int times = 0;
                 do {
                     String ip = getIP(pppoe.getId());
-                    if (ip != null){
+                    if (ip != null) {
                         pppoe.setOutIP(ip);
                         break;
                     }
                     TimeUnit.MILLISECONDS.sleep(100);
-                }while(++times < 10);
-                if (pppoe.getOutIP() == null){
+                } while (++times < 10);
+                if (pppoe.getOutIP() == null) {
                     shutDown(pppoe);
                 }
                 return pppoe;
@@ -455,9 +457,10 @@ public class PPPOEServiceImpl implements PPPOEService {
         pool.execute(futureTask);
         return futureTask;
     }
-    private void limitRedialTime(String id){
+
+    private void limitRedialTime(String id) {
         Condition condition = conditionList.get(Integer.parseInt(id));
-        redialLimitedConditionMap.put(id,condition);
+        redialLimitedConditionMap.put(id, condition);
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
@@ -465,12 +468,12 @@ public class PPPOEServiceImpl implements PPPOEService {
                     reDialLock.lock();
                     condition.signalAll();
                     redialLimitedConditionMap.remove(id);
-                }finally {
+                } finally {
                     reDialLock.unlock();
                 }
             }
         };
-        timer.schedule(timerTask,TimeUnit.SECONDS.toMillis(dilaGapLimit));
+        timer.schedule(timerTask, TimeUnit.SECONDS.toMillis(dilaGapLimit));
     }
 
     @Override

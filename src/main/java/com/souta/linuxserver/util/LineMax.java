@@ -15,7 +15,7 @@ public class LineMax {
         if (!treeSet.isEmpty()) {
             int pre = 0;
             for (Integer integer : treeSet) {
-                int next = (int) integer;
+                int next = integer;
                 if (next - pre > 1) {
                     max = pre + 1;
                     return max;

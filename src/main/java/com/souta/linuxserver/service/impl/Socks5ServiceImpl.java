@@ -16,8 +16,6 @@ import java.util.regex.Pattern;
 
 @Service
 public class Socks5ServiceImpl implements Socks5Service {
-    private final NamespaceService namespaceService;
-    private final PPPOEService pppoeService;
     private static final Logger log = LoggerFactory.getLogger(Socks5ServiceImpl.class);
 
     static {
@@ -27,27 +25,12 @@ public class Socks5ServiceImpl implements Socks5Service {
         }
     }
 
+    private final NamespaceService namespaceService;
+    private final PPPOEService pppoeService;
+
     public Socks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService) {
         this.namespaceService = namespaceService;
         this.pppoeService = pppoeService;
-    }
-
-    @Override
-    public boolean checkConfigFileExist(String id) {
-        String cmd = "ls /tmp/socks5/ |grep socks5-" + id + ".sh";
-        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-        return hasOutput(inputStream);
-    }
-
-    @Override
-    public boolean isStart(String id, String ip) {
-        if (ip != null) {
-            String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
-            String namespaceName = "ns" + id;
-            InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
-            return hasOutput(inputStream);
-        }
-        return false;
     }
 
     static boolean hasOutput(InputStream inputStream) {
@@ -69,15 +52,33 @@ public class Socks5ServiceImpl implements Socks5Service {
     }
 
     @Override
+    public boolean checkConfigFileExist(String id) {
+        String cmd = "ls /tmp/socks5/ |grep socks5-" + id + ".sh";
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
+        return hasOutput(inputStream);
+    }
+
+    @Override
+    public boolean isStart(String id, String ip) {
+        if (ip != null) {
+            String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
+            String namespaceName = "ns" + id;
+            InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            return hasOutput(inputStream);
+        }
+        return false;
+    }
+
+    @Override
     public boolean isStart(String id) {
         String ip = pppoeService.getIP(id);
-       return isStart(id,ip);
+        return isStart(id, ip);
     }
 
     @Override
     public boolean createSocks5ConfigFile(String id) {
         String ip = pppoeService.getIP(id);
-        return createSocks5ConfigFile(id,ip);
+        return createSocks5ConfigFile(id, ip);
     }
 
     @Override
@@ -127,12 +128,12 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public Socks5 getSocks5(String id) {
         String ip = pppoeService.getIP(id);
-        return getSocks5(id,ip);
+        return getSocks5(id, ip);
     }
 
     @Override
     public Socks5 getSocks5(String id, String ip) {
-        Socks5 socks5 =null;
+        Socks5 socks5 = null;
         boolean exist = checkConfigFileExist(id);
         if (exist) {
             if (ip != null) {
@@ -204,18 +205,18 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public boolean startSocks5(String id) {
         String ip = pppoeService.getIP(id);
-        return  startSocks5(id,ip);
+        return startSocks5(id, ip);
 
     }
 
     @Override
     public boolean startSocks5(String id, String ip) {
-        if (createSocks5ConfigFile(id,ip)){
+        if (createSocks5ConfigFile(id, ip)) {
             String namespaceName = "ns" + id;
             String cmd = "sh /tmp/socks5/socks5-" + id + ".sh";
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
-        }else {
+        } else {
             return false;
         }
     }

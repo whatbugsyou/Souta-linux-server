@@ -20,19 +20,55 @@ import java.util.concurrent.TimeUnit;
 
 @Data
 public class Host {
-    public static String id;
-    public static String port = "18080";
-    public static String IP = null;
-    private static final Logger log = LoggerFactory.getLogger(Host.class);
     public static final String java_server_host = "http://106.55.13.147:8088";
+    private static final Logger log = LoggerFactory.getLogger(Host.class);
     private static final String hostFilePath = "/tmp/host.json";
     private static final String hostRouteFilePath = "/tmp/hostRoute.sh";
     private static final String DNSFilePath = "/etc/resolv.conf";
     private static final String ipRouteTablePath = "/etc/iproute2/rt_tables";
     private static final String hostRouteTablePrio = "100";
     private static final String hostRouteTableName = "hostRouteTable";
+    public static String id;
+    public static String port = "18080";
+    public static String IP = null;
     private NamespaceService namespaceService = new NamespaceServiceImpl();
 
+    private static void registerHost() throws Exception {
+        String jsonStr = FileUtil.ReadFile(hostFilePath);
+        JSONObject jsonObject = JSON.parseObject(jsonStr);
+        HttpResponse execute = HttpRequest
+                .put(java_server_host + "/v1.0/server")
+                .body(jsonStr, "application/json;charset=UTF-8")
+                .execute();
+        if (execute.getStatus() != 200) {
+            throw new ResponseNotOkException("error in send registerHost from java server,API(PUT) :  /v1.0/server");
+        }
+        String responseBody = execute.body();
+        JSONObject response = JSON.parseObject(responseBody);
+        Object id = response.get("id");
+        if (id == null) {
+            throw new NullPointerException("id is null");
+        } else {
+            Host.id = String.valueOf(id);
+            jsonObject.put("id", Host.id);
+        }
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(hostFilePath);
+            fileWriter.write(jsonObject.toJSONString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fileWriter != null) {
+                try {
+                    fileWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
 
     public void init() {
         initDNS();
@@ -47,7 +83,7 @@ public class Host {
         monitorHostIp();
     }
 
-    private void initIPRoute(){
+    private void initIPRoute() {
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
             String line;
@@ -68,7 +104,7 @@ public class Host {
             bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
             while ((line = bufferedReader.readLine()) != null) {
-                bufferedWriter.write(String.format("ip route add %s table %s",line,hostRouteTableName));
+                bufferedWriter.write(String.format("ip route add %s table %s", line, hostRouteTableName));
                 bufferedWriter.newLine();
             }
             bufferedWriter.flush();
@@ -79,7 +115,6 @@ public class Host {
             e.printStackTrace();
         }
     }
-
 
     private void initFirewall() {
         String startFirewalldService = "service firewalld start \n";
@@ -170,7 +205,7 @@ public class Host {
         scheduler.scheduleAtFixedRate(beeper, 0, 10, TimeUnit.SECONDS);
     }
 
-    private void initHostId() throws FileNotFoundException{
+    private void initHostId() throws FileNotFoundException {
         File file = new File(hostFilePath);
         if (!file.exists()) {
             throw new FileNotFoundException(hostFilePath);
@@ -187,43 +222,6 @@ public class Host {
                 System.exit(1);
             }
         }
-    }
-
-    private static void registerHost() throws Exception{
-        String jsonStr = FileUtil.ReadFile(hostFilePath);
-        JSONObject jsonObject = JSON.parseObject(jsonStr);
-        HttpResponse execute = HttpRequest
-                .put(java_server_host + "/v1.0/server")
-                .body(jsonStr, "application/json;charset=UTF-8")
-                .execute();
-        if (execute.getStatus() != 200) {
-            throw new ResponseNotOkException("error in send registerHost from java server,API(PUT) :  /v1.0/server");
-        }
-        String responseBody = execute.body();
-        JSONObject response = JSON.parseObject(responseBody);
-        Object id = response.get("id");
-        if (id == null) {
-            throw new NullPointerException("id is null");
-        } else {
-            Host.id = String.valueOf(id);
-            jsonObject.put("id", Host.id);
-        }
-        FileWriter fileWriter = null;
-        try {
-            fileWriter = new FileWriter(hostFilePath);
-            fileWriter.write(jsonObject.toJSONString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (fileWriter != null) {
-                try {
-                    fileWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
     }
 
 }

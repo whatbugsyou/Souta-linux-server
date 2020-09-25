@@ -15,7 +15,7 @@ import java.util.Scanner;
 
 @Service
 public class VethServiceImpl implements VethService {
-    private static final Logger log = LoggerFactory.getLogger(NamespaceServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(VethServiceImpl.class);
     @Autowired
     private NamespaceService namespaceService;
     private static String physicalEthName;

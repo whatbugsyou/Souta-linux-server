@@ -16,9 +16,9 @@ import java.util.regex.Pattern;
 
 @Service
 public class ShadowsocksServiceImpl implements ShadowsocksService {
+    private static final Logger log = LoggerFactory.getLogger(ShadowsocksService.class);
     private final NamespaceService namespaceService;
     private final PPPOEService pppoeService;
-    private static final Logger log = LoggerFactory.getLogger(ShadowsocksService.class);
 
     public ShadowsocksServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService) {
         this.namespaceService = namespaceService;
@@ -80,7 +80,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     @Override
     public boolean createShadowsocksConfigfile(String id) {
         String ip = pppoeService.getIP(id);
-        return createShadowsocksConfigfile(id,ip);
+        return createShadowsocksConfigfile(id, ip);
     }
 
     @Override
@@ -118,21 +118,21 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
     @Override
     public boolean startShadowsocks(String id, String ip) {
-        if(createShadowsocksConfigfile(id,ip)) {
+        if (createShadowsocksConfigfile(id, ip)) {
             String cmd = "ssserver -c /tmp/shadowsocks/shadowsocks-%s.json";
             cmd = String.format(cmd, id, id);
             String namespaceName = "ns" + id;
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
-        }else {
+        } else {
             return false;
         }
     }
 
     @Override
-    public  boolean startShadowsocks(String id) {
+    public boolean startShadowsocks(String id) {
         String ip = pppoeService.getIP(id);
-        return  startShadowsocks(id,ip);
+        return startShadowsocks(id, ip);
     }
 
     @Override
@@ -149,12 +149,12 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     @Override
     public boolean isStart(String id) {
         String ip = pppoeService.getIP(id);
-        return isStart(id,ip);
+        return isStart(id, ip);
     }
 
     @Override
     public Shadowsocks getShadowsocks(String id, String ip) {
-        Shadowsocks shadowsocks =null;
+        Shadowsocks shadowsocks = null;
         boolean exist = checkConfigFileExist(id);
         if (exist) {
             shadowsocks = new Shadowsocks();
@@ -191,7 +191,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     @Override
     public Shadowsocks getShadowsocks(String id) {
         String ip = pppoeService.getIP(id);
-        return getShadowsocks(id,ip);
+        return getShadowsocks(id, ip);
     }
 
     @Override

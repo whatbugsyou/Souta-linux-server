@@ -18,25 +18,19 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.souta.linuxserver.controller.Host.java_server_host;
 import static com.souta.linuxserver.controller.Host.id;
+import static com.souta.linuxserver.controller.Host.java_server_host;
 import static com.souta.linuxserver.service.LineService.dialingLines;
 import static com.souta.linuxserver.service.LineService.lineRedialWait;
 
 @RestController
 @RequestMapping("/v1.0/line/notify")
 public class MainController {
-    private final PPPOEService pppoeService;
-    private final ShadowsocksService shadowsocksService;
-    private final Socks5Service socks5Service;
-    private final LineService lineService;
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
     private static final int checkingTimesOfDefineDeadLine = 3;
     private static final ReentrantLock initLock = new ReentrantLock();
-
     /**
      * record the times of false dial ,if the times is >= checkingTimesOfDefineDeadLine will send to java server as a dead line
      */
@@ -46,6 +40,11 @@ public class MainController {
      * the line that is error sent is going to be resent.
      */
     private static final Set<Line> errorSendLines = new HashSet<>();
+    private final PPPOEService pppoeService;
+    private final ShadowsocksService shadowsocksService;
+    private final Socks5Service socks5Service;
+    private final LineService lineService;
+
     public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, Socks5Service socks5Service, LineService lineService) {
         this.pppoeService = pppoeService;
         this.shadowsocksService = shadowsocksService;
@@ -146,14 +145,15 @@ public class MainController {
                     log.info("total {} lines is ok", lines.size());
                     //        clean();
                     sendLinesInfo(lines);
-                }finally {
+                } finally {
                     initLock.unlock();
                 }
             }
         });
     }
+
     @DeleteMapping("/all")
-    public void clean(){
+    public void clean() {
         int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
                 .execute().getStatus();
         if (status != 200) {
@@ -176,7 +176,7 @@ public class MainController {
 
     public HashMap<String, Object> createLine(String lineId) {
         HashMap<String, Object> resultMap = new HashMap<>();
-        if (lineService.checkExits(lineId)){
+        if (lineService.checkExits(lineId)) {
             resultMap.put("status", "exist");
         } else {
             resultMap.put("status", "ok");
@@ -185,18 +185,19 @@ public class MainController {
             @Override
             public void run() {
                 FutureTask<Line> futureTask = lineService.createLine(lineId);
-                lineReturnHandle(lineId,futureTask);
+                lineReturnHandle(lineId, futureTask);
             }
         });
         return resultMap;
     }
+
     @PutMapping
     public HashMap<String, Object> refreshLine(String lineId) {
         HashMap<String, Object> resultMap = new HashMap<>();
-            log.info("refresh Line {}", lineId);
+        log.info("refresh Line {}", lineId);
         if (!pppoeService.isDialUp(lineId)) {
             resultMap.put("status", "not exist");
-        }else {
+        } else {
             resultMap.put("status", "ok");
         }
         try {
@@ -205,10 +206,10 @@ public class MainController {
                 @Override
                 public void run() {
                     FutureTask<Line> futureTask = lineService.refreshLine(lineId);
-                    lineReturnHandle(lineId,futureTask);
+                    lineReturnHandle(lineId, futureTask);
                 }
             });
-        }finally {
+        } finally {
             initLock.unlock();
         }
         return resultMap;
@@ -216,6 +217,7 @@ public class MainController {
 
     /**
      * if line what furutrTask get with is not null ,it will send the line to java server,otherwise will record the line ID in redialCheckMap.
+     *
      * @param lineId
      * @param futureTask
      */
@@ -225,7 +227,7 @@ public class MainController {
             try {
                 if (futureTask != null) {
                     line = futureTask.get();
-                }else {
+                } else {
                     return;
                 }
             } catch (InterruptedException | ExecutionException e) {
@@ -238,7 +240,7 @@ public class MainController {
                 } else {
                     dialFalseTimesMap.put(lineId, 1);
                 }
-            }else {
+            } else {
                 sendLineInfo(line);
                 dialFalseTimesMap.remove(lineId);
             }
@@ -291,17 +293,18 @@ public class MainController {
     @GetMapping("/proto")
     public HashMap<String, Object> proto(String lineId, String protoId, String action) {
         HashMap<String, Object> resultMap = new HashMap<>();
-            log.info("proto change : line {} , {} ,{}", lineId, protoId, action);
-            if (lineService.editProtoInLine(lineId,protoId,action)) {
-                resultMap.put("status", "ok");
-            }else {
-                resultMap.put("status", "not exist");
-            }
-            return resultMap;
+        log.info("proto change : line {} , {} ,{}", lineId, protoId, action);
+        if (lineService.editProtoInLine(lineId, protoId, action)) {
+            resultMap.put("status", "ok");
+        } else {
+            resultMap.put("status", "not exist");
+        }
+        return resultMap;
     }
 
     /**
      * send lines to java server.if response status is not ok or catch an exception , will add lines into errorSendLines ,ready checking thread to invoke resend.
+     *
      * @param lines
      */
     private void sendLinesInfo(ArrayList<Line> lines) {
@@ -352,7 +355,7 @@ public class MainController {
         ) {
             String lineId = id.toString();
             Line line = lineService.getLine(lineId);
-            if (line!=null){
+            if (line != null) {
                 log.info("Line {} is ok", lineId);
                 lines.add(line);
             } else {
