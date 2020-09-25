@@ -459,7 +459,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     private void limitRedialTime(String id) {
-        Condition condition = conditionList.get(Integer.parseInt(id));
+        Condition condition = conditionList.get(Integer.parseInt(id)-1);
         redialLimitedConditionMap.put(id, condition);
         TimerTask timerTask = new TimerTask() {
             @Override
