@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,13 +27,12 @@ public class PPPOEServiceImpl implements PPPOEService {
     private final NamespaceService namespaceService;
     private final VethService vethService;
     private static final List<ADSL> adslAccount = new ArrayList<>();
-    private static final ConcurrentHashSet<String> redialLimitedLine =new ConcurrentHashSet<>();
-    private static ScheduledExecutorService scheduler;
     private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
     private static final int dilaGapLimit = 8;
     private static final ExecutorService pool= Executors.newCachedThreadPool();
     private static final Timer timer = new Timer();
-
+    private static final ReentrantLock reDialLock = new ReentrantLock();
+    private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
     static {
         File adslFile = new File(adslAccountFilePath);
         if (adslFile.exists()) {
@@ -68,7 +69,6 @@ public class PPPOEServiceImpl implements PPPOEService {
                     }
                 }
             }
-            scheduler = Executors.newSingleThreadScheduledExecutor();
             log.info("find {} adsl account", adslAccount.size());
         } else {
             log.info("not found {} file ", adslAccountFilePath);
@@ -405,10 +405,14 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 Namespace namespace = pppoe.getVeth().getNamespace();
                 String ifupCMD = "ifup " + "ppp" + pppoe.getId();
-                synchronized (redialLimitedLine) {
-                    while (redialLimitedLine.contains(pppoe.getId())) {
-                        redialLimitedLine.wait();
+                try {
+                        reDialLock.lock();
+                        Condition condition = redialLimitedConditionMap.get(pppoe.getId());
+                    if (condition!=null){
+                        condition.await();
                     }
+                } finally {
+                    reDialLock.unlock();
                 }
                 log.info("ppp{} start dialing ...", pppoe.getId());
                 namespaceService.exeCmdInNamespace(namespace, ifupCMD);
@@ -451,13 +455,17 @@ public class PPPOEServiceImpl implements PPPOEService {
         return futureTask;
     }
     private void limitRedialTime(String id){
-        redialLimitedLine.add(id);
+        Condition condition = reDialLock.newCondition();
+        redialLimitedConditionMap.put(id,condition);
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
-                synchronized (redialLimitedLine){
-                    redialLimitedLine.remove(id);
-                    redialLimitedLine.notifyAll();
+                try {
+                    reDialLock.lock();
+                    condition.signalAll();
+                    redialLimitedConditionMap.remove(id);
+                }finally {
+                    reDialLock.unlock();
                 }
             }
         };
