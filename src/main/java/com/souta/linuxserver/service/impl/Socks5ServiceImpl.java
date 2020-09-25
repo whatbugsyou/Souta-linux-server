@@ -19,9 +19,30 @@ public class Socks5ServiceImpl implements Socks5Service {
     private static final Logger log = LoggerFactory.getLogger(Socks5ServiceImpl.class);
 
     static {
-        File file = new File("/var/run/ss5");
-        if (!file.exists()) {
-            file.mkdir();
+        try {
+            File file = new File("/var/run/ss5");
+            if (!file.exists()) {
+                file.mkdir();
+            }
+            File file1 = new File("/tmp/ss5.passwd");
+            if (!file1.exists()) {
+                FileWriter fileWriter = new FileWriter(file1);
+                fileWriter.write("test123 test123");
+                fileWriter.flush();
+            }
+            File file2 = new File("/tmp/ss5.conf");
+            if (!file2.exists()) {
+                FileWriter fileWriter = new FileWriter(file1);
+                fileWriter.write("auth 0.0.0.0/0 - u\n");
+                fileWriter.write("permit u 0.0.0.0/0 - 0.0.0.0/0 - - - - -\n");
+
+            }
+            File file3 = new File("/tmp/ss5.log");
+            if (!file3.exists()) {
+                file.createNewFile();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
