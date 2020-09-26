@@ -168,10 +168,10 @@ public class Host {
 
     private void monitorHostIp() {
         ScheduledExecutorService scheduler =
-                Executors.newScheduledThreadPool(1);
+                Executors.newSingleThreadScheduledExecutor();
         Runnable beeper = () -> {
             if (id != null) {
-                String cmd = "curl members.3322.org/dyndns/getip";
+                String cmd = "ifconfig | grep destination|awk '{print $2}'";
                 InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
                 String nowIp = null;
                 if (inputStream != null) {
@@ -182,7 +182,6 @@ public class Host {
                         e.printStackTrace();
                     }
                 }
-
                 if (nowIp != null && nowIp.matches("[\\\\.\\d]+")) {
                     if (IP == null || !IP.equals(nowIp)) {
                         if (IP != null) {
@@ -199,6 +198,8 @@ public class Host {
                             log.error("error in refresh HostInfo to java server,API(PUT) :  /v1.0/server");
                         }
                     }
+                }else {
+                    log.error("HOST IP is not found");
                 }
             }
         };
