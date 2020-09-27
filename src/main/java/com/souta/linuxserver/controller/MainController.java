@@ -32,7 +32,7 @@ public class MainController {
     private static final int checkingTimesOfDefineDeadLine = 3;
     private static final ReentrantLock initLock = new ReentrantLock();
     /**
-     * record the times of false dial ,if the times is >= checkingTimesOfDefineDeadLine will send to java server as a dead line
+     * record the times of false dial ,if the times are >= checkingTimesOfDefineDeadLine will send to java server as a dead line
      */
     private static final ConcurrentHashMap<String, Integer> dialFalseTimesMap = new ConcurrentHashMap<>();
     private static final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -60,9 +60,9 @@ public class MainController {
     }
 
     /**
-     * monitor deadline : redial false with 3 times will be define as a deadline .it is recorded in redialCheckMap.check redialCheckMap for deadline and send it to java server.
+     * monitor deadline : redial false with 3 times will be defined as a deadline .it is recorded in redialCheckMap.check redialCheckMap for deadline and send it to java server.
      * monitor fullDial : if dial-upped lines count is less than the count of server configured ,it will call addOneDial to make full use of server line resources.
-     * monitor errorLine: if error occurred in sending  line info,it will resend when  errorSendLines is checked with once a period of 30s.
+     * monitor errorLine: if error occurs in sending  line info,it will resend when  errorSendLines is checked once a period of 30s.
      */
     private void monitorLines() {
         Runnable addOneDial = () -> {
@@ -110,7 +110,7 @@ public class MainController {
                                 .body(body)
                                 .execute().getStatus();
                         if (status != 200) {
-                            log.error("error in send dead line info to java server,API(POST) :  /v1.0/deadLine");
+                            log.error("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
                         }
                     };
                     executorService.execute(runnable);
@@ -130,7 +130,7 @@ public class MainController {
     }
 
     /**
-     * scan all lines and filter  lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to java server.
+     * scan all lines and filter lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to the Java server.
      */
     @GetMapping("/init")
     public void initAndSendsLineInfo() {
@@ -157,7 +157,7 @@ public class MainController {
         int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
                 .execute().getStatus();
         if (status != 200) {
-            log.error("error in delete All Line from java server,API(DELETE) :  /v1.0/server/lines ");
+            log.error("error in deleting All Line from java server,API(DELETE) :  /v1.0/server/lines ");
         }
     }
 
@@ -216,7 +216,7 @@ public class MainController {
     }
 
     /**
-     * if line what furutrTask get with is not null ,it will send the line to java server,otherwise will record the line ID in redialCheckMap.
+     * if line what furutrTask gets with is not null,it will send the line to java server,otherwise it will record the line ID in redialCheckMap.
      *
      * @param lineId
      * @param futureTask
@@ -303,7 +303,7 @@ public class MainController {
     }
 
     /**
-     * send lines to java server.if response status is not ok or catch an exception , will add lines into errorSendLines ,ready checking thread to invoke resend.
+     *send lines to the Java server. If response status is not OK or catch an exception, will add lines into errorSendLines, ready checking thread to invoke resend.
      *
      * @param lines
      */
@@ -324,7 +324,7 @@ public class MainController {
                         if (status) {
                             errorSendLines.removeAll(lines);
                         } else {
-                            throw new ResponseNotOkException("response not ok in sendLinesInfo to java server,API(PUT) :  /v1.0/line ");
+                            throw new ResponseNotOkException("response not OK in sendLinesInfo to the Java server,API(PUT) :  /v1.0/line ");
                         }
                     } catch (RuntimeException | ResponseNotOkException e) {
                         log.error(e.getMessage());
@@ -356,10 +356,10 @@ public class MainController {
             String lineId = id.toString();
             Line line = lineService.getLine(lineId);
             if (line != null) {
-                log.info("Line {} is ok", lineId);
+                log.info("Line {} is OK", lineId);
                 lines.add(line);
             } else {
-                log.warn("Line {} is not ok", lineId);
+                log.warn("Line {} is NOT OK", lineId);
                 deleteLine(lineId);
             }
         }
@@ -367,7 +367,7 @@ public class MainController {
     }
 
     /**
-     * @return an number about the max number of not dial-up line numbers
+     * @return a number about the max number of not dial-up line numbers
      */
     private String GenerateLineID() {
         LineMax lineMax = new LineMax();

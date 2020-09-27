@@ -24,10 +24,10 @@ public interface PPPOEService {
     boolean checkConfigFileExist(String pppoeId);
 
     /**
-     * start dialing and checking .Once upon the dial is success ,return the pppoe with ip. The checking process will last  for 1 minute if dial not success ,and then shutdown the dial process.
+     * start dialing and checking .Once upon the dial is successful ,return the pppoe with ip. The checking process will last  for 1 minute if dial is not successful ,and then shutdown the dial process.
      *
      * @param pppoe
-     * @return FutureTask<PPPOE> ,if dial success , checking ip is exist about the dial,will get an object of PPPOE with exact ip ,otherwise null ip.
+     * @return FutureTask<PPPOE> ,if dial success , checking ip exits about the dial,will get an object of PPPOE with exact ip ,otherwise null ip.
      */
     FutureTask<PPPOE> dialUp(PPPOE pppoe);
 

@@ -41,7 +41,7 @@ public class Host {
                 .body(jsonStr, "application/json;charset=UTF-8")
                 .execute();
         if (execute.getStatus() != 200) {
-            throw new ResponseNotOkException("error in send registerHost from java server,API(PUT) :  /v1.0/server");
+            throw new ResponseNotOkException("error in sending registerHost from java server,API(PUT) :  /v1.0/server");
         }
         String responseBody = execute.body();
         JSONObject response = JSON.parseObject(responseBody);
@@ -195,7 +195,7 @@ public class Host {
                                 .body(jsonStr, "application/json;charset=UTF-8")
                                 .execute().getStatus();
                         if (status != 200) {
-                            log.error("error in refresh HostInfo to java server,API(PUT) :  /v1.0/server");
+                            log.error("error in refreshing  HostInfo to java server,API(PUT) :  /v1.0/server");
                         }
                     }
                 }else {

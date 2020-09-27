@@ -14,7 +14,7 @@ public interface NamespaceService {
 
     /**
      * @param namespace -Namespace Object
-     * @return true if the given namespace is exist, false otherwise.
+     * @return true if the given namespace exists, false otherwise.
      */
     boolean checkExist(Namespace namespace);
 
@@ -27,13 +27,13 @@ public interface NamespaceService {
 
     /**
      * @param name --namespace name
-     * @return an object of Namespace .if the namespace is existing ,will not create a new namespace.
+     * @return an object of Namespace .if the namespace exists,will not create a new namespace.
      */
     Namespace createNameSpace(String name);
 
     /**
      * @param name --namespace name
-     * @return true . if the namespace is not existing ,return true directly.
+     * @return true . if the namespace does not exist ,return true directly.
      */
     boolean deleteNameSpace(String name);
 

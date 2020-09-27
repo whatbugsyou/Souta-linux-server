@@ -9,13 +9,13 @@ import java.util.concurrent.FutureTask;
 public interface LineService {
     Set<String> dialingLines = new CopyOnWriteArraySet();
     /**
-     * seconds of a gap between two dial with the same id.
+     * seconds of a gap between two dials with the same id.
      */
     int lineRedialWait = 2;
 
     /**
      * @param lineId
-     * @return FutureTask.get with line if success ,otherwise null.
+     * @return FutureTask.gets line if success ,otherwise null.
      */
     FutureTask<Line> createLine(String lineId);
 
@@ -33,7 +33,7 @@ public interface LineService {
      * @param lineId
      * @param protoId socks5 or shadowsocks
      * @param action on or off
-     * @return true if is dial up.
+     * @return true if it is dial up.
      */
     boolean editProtoInLine(String lineId, String protoId, String action);
     boolean checkExits(String lineId);
