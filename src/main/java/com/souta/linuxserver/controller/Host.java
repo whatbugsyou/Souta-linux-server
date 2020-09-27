@@ -181,17 +181,6 @@ public class Host {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                }else if (nowIp==null || nowIp.equals("")){
-                    cmd = "curl members.3322.org/dyndns/getip";
-                    inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-                    if (inputStream != null) {
-                        try {
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));// 读取文件
-                            nowIp = reader.readLine();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
                 }
                 if (nowIp==null || nowIp.equals("")){
                     cmd = "curl members.3322.org/dyndns/getip";
