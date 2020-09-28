@@ -65,27 +65,24 @@ public class MainController {
      * monitor errorLine: if error occurs in sending  line info,it will resend when  errorSendLines is checked once a period of 30s.
      */
     private void monitorLines() {
-        Runnable addOneDial = () -> {
-            String lineID = GenerateLineID();
-            if (lineID != null) {
-                dialingLines.add(lineID);
-                log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
-                try {
-                    TimeUnit.SECONDS.sleep(lineRedialWait);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                createLine(lineID);
-            }
-        };
         log.info("monitorLines starting...");
         ScheduledExecutorService scheduler =
                 Executors.newScheduledThreadPool(3);
         Runnable checkFullDial = () -> {
-            HashSet<String> newlineIdList = pppoeService.getDialuppedIdSet();
-            newlineIdList.addAll(dialingLines);
-            if (newlineIdList.size() < pppoeService.getADSLList().size()) {
-                executorService.execute(addOneDial);
+            String lineID = GenerateLineID();
+            if (lineID != null) {
+                executorService.execute(() -> {
+                    boolean addTrue = dialingLines.add(lineID);
+                    if (addTrue){
+                        log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
+                        try {
+                            TimeUnit.SECONDS.sleep(lineRedialWait);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        createLine(lineID);
+                    }
+                });
             }
         };
         Runnable checkDeadLine = () -> {
