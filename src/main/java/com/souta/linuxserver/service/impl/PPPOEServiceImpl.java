@@ -424,7 +424,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 float sleepGapSec = 0.5f;
                 int dialEndSec = 60;
                 String ip = null;
-                while (getIP(pppoe.getId())==null) {
+                while ((ip = getIP(pppoe.getId()))==null) {
                     checkCount++;
                     costSec = checkCount * sleepGapSec;
                     if (costSec % 10 == 0) {
