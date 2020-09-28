@@ -31,6 +31,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final ReentrantLock reDialLock = new ReentrantLock();
     private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
     private static final ArrayList<Condition> conditionList = new ArrayList<>();
+    private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
 
     static {
         File adslFile = new File(adslAccountFilePath);
@@ -204,10 +205,9 @@ public class PPPOEServiceImpl implements PPPOEService {
         }
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         String line;
-        Pattern pattern2 = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
         try {
             while ((line = bufferedReader.readLine()) != null) {
-                Matcher matcher2 = pattern2.matcher(line);
+                Matcher matcher2 = iproutePattern.matcher(line);
                 if (matcher2.matches() != false) {
                     return matcher2.group(3);
                 }
@@ -423,7 +423,8 @@ public class PPPOEServiceImpl implements PPPOEService {
                 float costSec = 0;
                 float sleepGapSec = 0.5f;
                 int dialEndSec = 60;
-                while (!isDialUp(pppoe)) {
+                String ip = null;
+                while (getIP(pppoe.getId())==null) {
                     checkCount++;
                     costSec = checkCount * sleepGapSec;
                     if (costSec % 10 == 0) {
@@ -438,17 +439,10 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 limitRedialTime(pppoe.getId());
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
-                int times = 0;
-                do {
-                    String ip = getIP(pppoe.getId());
-                    if (ip != null) {
-                        pppoe.setOutIP(ip);
-                        break;
-                    }
-                    TimeUnit.MILLISECONDS.sleep(100);
-                } while (++times < 10);
-                if (pppoe.getOutIP() == null) {
+                if (ip == null) {
                     shutDown(pppoe);
+                }else {
+                    pppoe.setOutIP(ip);
                 }
                 return pppoe;
             }
