@@ -178,12 +178,9 @@ public class MainController {
         } else {
             resultMap.put("status", "ok");
         }
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
+        executorService.execute(() ->  {
                 FutureTask<Line> futureTask = lineService.createLine(lineId);
                 lineReturnHandle(lineId, futureTask);
-            }
         });
         return resultMap;
     }
@@ -199,12 +196,9 @@ public class MainController {
         }
         try {
             initLock.lock();
-            executorService.execute(new Runnable() {
-                @Override
-                public void run() {
-                    FutureTask<Line> futureTask = lineService.refreshLine(lineId);
-                    lineReturnHandle(lineId, futureTask);
-                }
+            executorService.execute(() -> {
+                FutureTask<Line> futureTask = lineService.refreshLine(lineId);
+                lineReturnHandle(lineId, futureTask);
             });
         } finally {
             initLock.unlock();
@@ -213,36 +207,33 @@ public class MainController {
     }
 
     /**
-     * if line what furutrTask gets with is not null,it will send the line to java server,otherwise it will record the line ID in redialCheckMap.
+     * if line what furutrTask gets is not null,it will send the line to java server,otherwise it will record the line ID in redialCheckMap.
      *
      * @param lineId
      * @param futureTask
      */
     private void lineReturnHandle(String lineId, FutureTask<Line> futureTask) {
-        Runnable LineReturnHandle = () -> {
-            Line line = null;
-            try {
-                if (futureTask != null) {
-                    line = futureTask.get();
-                } else {
-                    return;
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-            if (line == null) {
-                Integer integer = dialFalseTimesMap.get(lineId);
-                if (integer != null) {
-                    dialFalseTimesMap.put(lineId, integer + 1);
-                } else {
-                    dialFalseTimesMap.put(lineId, 1);
-                }
+        Line line = null;
+        try {
+            if (futureTask != null) {
+                line = futureTask.get();
             } else {
-                sendLineInfo(line);
-                dialFalseTimesMap.remove(lineId);
+                return;
             }
-        };
-        executorService.execute(LineReturnHandle);
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+        if (line == null) {
+            Integer integer = dialFalseTimesMap.get(lineId);
+            if (integer != null) {
+                dialFalseTimesMap.put(lineId, integer + 1);
+            } else {
+                dialFalseTimesMap.put(lineId, 1);
+            }
+        } else {
+            sendLineInfo(line);
+            dialFalseTimesMap.remove(lineId);
+        }
     }
 
     @GetMapping
