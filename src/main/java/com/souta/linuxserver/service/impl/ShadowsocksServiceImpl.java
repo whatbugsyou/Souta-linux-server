@@ -155,34 +155,31 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     @Override
     public Shadowsocks getShadowsocks(String id, String ip) {
         Shadowsocks shadowsocks = null;
-        boolean exist = checkConfigFileExist(id);
-        if (exist) {
-            shadowsocks = new Shadowsocks();
-            if (ip != null) {
-                String cmd = "netstat -ln -tpe |grep 10809 |grep " + ip;
-                String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
-                Pattern compile = Pattern.compile(s);
-                String namespace = "ns" + id;
-                InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                String line = null;
-                try {
-                    line = bufferedReader.readLine();
-                } catch (IOException e) {
-                    e.printStackTrace();
+        if (ip != null) {
+            String cmd = "netstat -ln -tpe |grep 10809 |grep " + ip;
+            String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
+            Pattern compile = Pattern.compile(s);
+            String namespace = "ns" + id;
+            InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            String line = null;
+            try {
+                line = bufferedReader.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (line != null) {
+                Matcher matcher = compile.matcher(line);
+                if (matcher.matches()) {
+                    String pid = matcher.group(3);
+                    shadowsocks = new Shadowsocks();
+                    shadowsocks.setPid(pid);
+                    shadowsocks.setIp(ip);
+                    shadowsocks.setId(id);
+                    shadowsocks.setPassword("test123");
+                    shadowsocks.setPort("10809");
+                    shadowsocks.setEncryption("aes-256-cfb");
                 }
-                if (line != null) {
-                    Matcher matcher = compile.matcher(line);
-                    if (matcher.matches()) {
-                        String pid = matcher.group(3);
-                        shadowsocks.setPid(pid);
-                    }
-                }
-                shadowsocks.setIp(ip);
-                shadowsocks.setId(id);
-                shadowsocks.setPassword("test123");
-                shadowsocks.setPort("10809");
-                shadowsocks.setEncryption("aes-256-cfb");
             }
         }
         return shadowsocks;

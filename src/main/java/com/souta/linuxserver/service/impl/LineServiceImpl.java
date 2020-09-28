@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.concurrent.*;
 
 @Service
@@ -40,17 +41,22 @@ public class LineServiceImpl implements LineService {
                 String ip;
                 if (pppoeR != null && (ip = pppoeR.getOutIP()) != null) {
                     if (startSocks(lineId, ip)) {
-                        int times = 0;
+                        log.info("startSocks {} has return",lineId);
+                        int times = 1;
+                        Socks5 socks5 = null;
+                        Shadowsocks shadowsocks = null;
                         do {
-                            Socks5 socks5 = socks5Service.getSocks5(lineId, ip);
-                            Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId, ip);
-                            if (socks5.getPid() != null && shadowsocks.getPid() != null) {
+                            if (socks5==null){
+                                socks5 = socks5Service.getSocks5(lineId, ip);
+                            }
+                            if (shadowsocks==null){
+                                shadowsocks = shadowsocksService.getShadowsocks(lineId, ip);
+                            }
+                            if (socks5 != null && shadowsocks != null) {
                                 line = new Line(lineId, socks5, shadowsocks);
                                 break;
                             }
-                            TimeUnit.MILLISECONDS.sleep(100);
                         } while (++times < 10);
-
                         if (line == null) {
                             deleteLine(lineId);
                         }
@@ -78,7 +84,7 @@ public class LineServiceImpl implements LineService {
 
         Socks5 socks5 = socks5Service.getSocks5(lineId, ip);
         Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId, ip);
-        if (socks5.getPid() != null && shadowsocks.getPid() != null) {
+        if (socks5 != null && shadowsocks != null) {
             return new Line(lineId, socks5, shadowsocks);
         } else {
             return null;

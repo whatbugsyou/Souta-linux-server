@@ -155,35 +155,32 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public Socks5 getSocks5(String id, String ip) {
         Socks5 socks5 = null;
-        boolean exist = checkConfigFileExist(id);
-        if (exist) {
-            if (ip != null) {
-                socks5 = new Socks5();
-                String namespaceName = "ns" + id;
-                String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
-                InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
-                String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
-                Pattern compile = Pattern.compile(s);
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                String line = null;
-                try {
-                    line = bufferedReader.readLine();
-                } catch (IOException e) {
-                    e.printStackTrace();
+        if (ip != null) {
+            String namespaceName = "ns" + id;
+            String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
+            InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
+            Pattern compile = Pattern.compile(s);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            String line = null;
+            try {
+                line = bufferedReader.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (line != null) {
+                Matcher matcher = compile.matcher(line);
+                if (matcher.matches()) {
+                    String pid = matcher.group(3);
+                    socks5 = new Socks5();
+                    socks5.setPid(pid);
+                    String port = "10808";
+                    socks5.setId(id);
+                    socks5.setIp(ip);
+                    socks5.setUsername("test123");
+                    socks5.setPassword("test123");
+                    socks5.setPort(port);
                 }
-                if (line != null) {
-                    Matcher matcher = compile.matcher(line);
-                    if (matcher.matches()) {
-                        String pid = matcher.group(3);
-                        socks5.setPid(pid);
-                    }
-                }
-                String port = "10808";
-                socks5.setId(id);
-                socks5.setIp(ip);
-                socks5.setUsername("test123");
-                socks5.setPassword("test123");
-                socks5.setPort(port);
             }
         }
         return socks5;
