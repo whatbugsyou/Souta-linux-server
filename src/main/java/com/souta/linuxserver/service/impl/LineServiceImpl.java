@@ -41,8 +41,7 @@ public class LineServiceImpl implements LineService {
                 String ip;
                 if (pppoeR != null && (ip = pppoeR.getOutIP()) != null) {
                     if (startSocks(lineId, ip)) {
-                        log.info("startSocks {} has return",lineId);
-                        int times = 1;
+                        int times = 0;
                         Socks5 socks5 = null;
                         Shadowsocks shadowsocks = null;
                         do {

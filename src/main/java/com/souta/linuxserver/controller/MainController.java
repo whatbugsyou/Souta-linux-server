@@ -163,7 +163,7 @@ public class MainController {
         String lineId = GenerateLineID();
         if (lineId == null) {
             HashMap<String, Object> resultMap = new HashMap<>();
-            resultMap.put("status", "error GenerateLineID ,  adsl acount is used up");
+            resultMap.put("status", "error GenerateLineID ,  adsl account is used up");
             return resultMap;
         } else {
             log.info("create Line {}", lineId);
