@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.concurrent.*;
 
 @Service
@@ -46,10 +45,10 @@ public class LineServiceImpl implements LineService {
                         Shadowsocks shadowsocks = null;
                         do {
                             if (socks5==null){
-                                socks5 = socks5Service.getSocks5(lineId, ip);
+                                socks5 = socks5Service.getSocks(lineId, ip);
                             }
                             if (shadowsocks==null){
-                                shadowsocks = shadowsocksService.getShadowsocks(lineId, ip);
+                                shadowsocks = shadowsocksService.getSocks(lineId, ip);
                             }
                             if (socks5 != null && shadowsocks != null) {
                                 line = new Line(lineId, socks5, shadowsocks);
@@ -71,8 +70,8 @@ public class LineServiceImpl implements LineService {
     }
 
     private boolean startSocks(String lineId, String ip) {
-        boolean b = socks5Service.startSocks5(lineId, ip);
-        boolean b1 = shadowsocksService.startShadowsocks(lineId, ip);
+        boolean b = socks5Service.startSocks(lineId, ip);
+        boolean b1 = shadowsocksService.startSocks(lineId, ip);
         return b && b1;
     }
 
@@ -81,8 +80,8 @@ public class LineServiceImpl implements LineService {
         String ip = pppoeService.getIP(lineId);
         if (ip == null) return null;
 
-        Socks5 socks5 = socks5Service.getSocks5(lineId, ip);
-        Shadowsocks shadowsocks = shadowsocksService.getShadowsocks(lineId, ip);
+        Socks5 socks5 = socks5Service.getSocks(lineId, ip);
+        Shadowsocks shadowsocks = shadowsocksService.getSocks(lineId, ip);
         if (socks5 != null && shadowsocks != null) {
             return new Line(lineId, socks5, shadowsocks);
         } else {
@@ -107,8 +106,8 @@ public class LineServiceImpl implements LineService {
 
     @Override
     public boolean deleteLine(String lineId) {
-        socks5Service.stopSocks5(lineId);
-        shadowsocksService.stopShadowsocks(lineId);
+        socks5Service.stopSocks(lineId);
+        shadowsocksService.stopSocks(lineId);
         dialingLines.remove(lineId);
         pppoeService.shutDown(lineId);
         return true;
@@ -120,18 +119,18 @@ public class LineServiceImpl implements LineService {
             return false;
         } else {
             if (protoId.equals("socks5")) {
-                socks5Service.createSocks5ConfigFile(lineId);
+                socks5Service.createConfigFile(lineId);
                 if (action.equals("on")) {
-                    socks5Service.startSocks5(lineId);
+                    socks5Service.startSocks(lineId);
                 } else if (action.equals("off")) {
-                    socks5Service.stopSocks5(lineId);
+                    socks5Service.stopSocks(lineId);
                 }
             } else {
-                shadowsocksService.createShadowsocksConfigfile(lineId);
+                shadowsocksService.createConfigFile(lineId);
                 if (action.equals("on")) {
-                    shadowsocksService.startShadowsocks(lineId);
+                    shadowsocksService.startSocks(lineId);
                 } else if (action.equals("off")) {
-                    shadowsocksService.stopShadowsocks(lineId);
+                    shadowsocksService.stopSocks(lineId);
                 }
             }
             return true;

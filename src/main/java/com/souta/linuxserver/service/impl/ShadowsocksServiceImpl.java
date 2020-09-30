@@ -34,7 +34,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     @Override
-    public boolean createShadowsocksConfigfile(String id, String ip) {
+    public boolean createConfigFile(String id, String ip) {
         if (ip == null) {
             return false;
         }
@@ -78,14 +78,13 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         return true;
     }
 
-    @Override
-    public boolean createShadowsocksConfigfile(String id) {
+    public boolean createConfigFile(String id) {
         String ip = pppoeService.getIP(id);
-        return createShadowsocksConfigfile(id, ip);
+        return createConfigFile(id, ip);
     }
 
     @Override
-    public boolean stopShadowsocks(String id) {
+    public boolean stopSocks(String id) {
         String cmd = "netstat -ln -tpe |grep 10809";
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
@@ -109,17 +108,17 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     @Override
-    public boolean restartShadowsocks(String id) {
-        if (stopShadowsocks(id)) {
-            return startShadowsocks(id);
+    public boolean restartSocks(String id) {
+        if (stopSocks(id)) {
+            return startSocks(id);
         } else {
             return false;
         }
     }
 
     @Override
-    public boolean startShadowsocks(String id, String ip) {
-        if (createShadowsocksConfigfile(id, ip)) {
+    public boolean startSocks(String id, String ip) {
+        if (createConfigFile(id, ip)) {
             String cmd = "ssserver -c /tmp/shadowsocks/shadowsocks-%s.json";
             cmd = String.format(cmd, id, id);
             String namespaceName = "ns" + id;
@@ -131,9 +130,9 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     @Override
-    public boolean startShadowsocks(String id) {
+    public boolean startSocks(String id) {
         String ip = pppoeService.getIP(id);
-        return startShadowsocks(id, ip);
+        return startSocks(id, ip);
     }
 
     @Override
@@ -154,7 +153,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     @Override
-    public Shadowsocks getShadowsocks(String id, String ip) {
+    public Shadowsocks getSocks(String id, String ip) {
         Shadowsocks shadowsocks = null;
         if (ip != null) {
             String cmd = "netstat -ln -tpe |grep 10809 |grep " + ip;
@@ -184,9 +183,9 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     @Override
-    public Shadowsocks getShadowsocks(String id) {
+    public Shadowsocks getSocks(String id) {
         String ip = pppoeService.getIP(id);
-        return getShadowsocks(id, ip);
+        return getSocks(id, ip);
     }
 
     @Override

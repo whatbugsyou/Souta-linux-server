@@ -98,13 +98,13 @@ public class Socks5ServiceImpl implements Socks5Service {
     }
 
     @Override
-    public boolean createSocks5ConfigFile(String id) {
+    public boolean createConfigFile(String id) {
         String ip = pppoeService.getIP(id);
-        return createSocks5ConfigFile(id, ip);
+        return createConfigFile(id, ip);
     }
 
     @Override
-    public boolean createSocks5ConfigFile(String id, String ip) {
+    public boolean createConfigFile(String id, String ip) {
         if (ip == null) {
             return false;
         }
@@ -148,13 +148,13 @@ public class Socks5ServiceImpl implements Socks5Service {
     }
 
     @Override
-    public Socks5 getSocks5(String id) {
+    public Socks5 getSocks(String id) {
         String ip = pppoeService.getIP(id);
-        return getSocks5(id, ip);
+        return getSocks(id, ip);
     }
 
     @Override
-    public Socks5 getSocks5(String id, String ip) {
+    public Socks5 getSocks(String id, String ip) {
         Socks5 socks5 = null;
         if (ip != null) {
             String namespaceName = "ns" + id;
@@ -184,7 +184,7 @@ public class Socks5ServiceImpl implements Socks5Service {
     }
 
     @Override
-    public boolean stopSocks5(String id) {
+    public boolean stopSocks(String id) {
         String cmd = "netstat -ln -tpe |grep 10808";
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
@@ -209,24 +209,24 @@ public class Socks5ServiceImpl implements Socks5Service {
     }
 
     @Override
-    public boolean restartSocks5(String id) {
-        if (stopSocks5(id)) {
-            return startSocks5(id);
+    public boolean restartSocks(String id) {
+        if (stopSocks(id)) {
+            return startSocks(id);
         } else {
             return false;
         }
     }
 
     @Override
-    public boolean startSocks5(String id) {
+    public boolean startSocks(String id) {
         String ip = pppoeService.getIP(id);
-        return startSocks5(id, ip);
+        return startSocks(id, ip);
 
     }
 
     @Override
-    public boolean startSocks5(String id, String ip) {
-        if (createSocks5ConfigFile(id, ip)) {
+    public boolean startSocks(String id, String ip) {
+        if (createConfigFile(id, ip)) {
             String namespaceName = "ns" + id;
             String cmd = "sh /tmp/socks5/socks5-" + id + ".sh";
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
@@ -237,7 +237,7 @@ public class Socks5ServiceImpl implements Socks5Service {
     }
 
     @Override
-    public List<Socks5> getAllListenedSocks5() {
+    public List<Socks5> getAllListenedSocks() {
         String cmd = "ip -all netns exec netstat -ln -tpe |grep 10808";
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         String line;

@@ -4,24 +4,10 @@ import com.souta.linuxserver.entity.Shadowsocks;
 
 import java.util.List;
 
-public interface ShadowsocksService {
-    boolean checkConfigFileExist(String id);
+public interface ShadowsocksService extends SocksService{
 
-    boolean createShadowsocksConfigfile(String id,String ip);
-    boolean createShadowsocksConfigfile(String id);
-
-    boolean stopShadowsocks(String id);
-
-    boolean restartShadowsocks(String id);
-
-    boolean startShadowsocks(String id,String ip);
-    boolean startShadowsocks(String id);
-
-    boolean isStart(String id,String ip);
-    boolean isStart(String id);
-
-    Shadowsocks getShadowsocks(String id,String ip);
-    Shadowsocks getShadowsocks(String id);
+    Shadowsocks getSocks(String id, String ip);
+    Shadowsocks getSocks(String id);
 
     List<Shadowsocks> getAllListenedShadowsocks();
 }
