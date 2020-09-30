@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class Veth {
     private String physicalEthName; // Physical ethernet
-    private String interfaceName; // vertual ethernet
+    private String interfaceName; // virtual ethernet
     private String macAddr;
     private Namespace namespace;
 
