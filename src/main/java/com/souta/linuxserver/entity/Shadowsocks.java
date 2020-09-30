@@ -1,11 +1,12 @@
 package com.souta.linuxserver.entity;
 
+import com.souta.linuxserver.entity.prototype.SocksPrototype;
 import lombok.Data;
 
 import java.util.Objects;
 
 @Data
-public class Shadowsocks {
+public class Shadowsocks extends SocksPrototype {
     private String ip;
     private String port;
     private String password;

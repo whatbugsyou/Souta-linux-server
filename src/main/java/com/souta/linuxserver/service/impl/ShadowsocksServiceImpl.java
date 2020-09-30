@@ -1,6 +1,7 @@
 package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Shadowsocks;
+import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
@@ -172,13 +173,10 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
                 Matcher matcher = compile.matcher(line);
                 if (matcher.matches()) {
                     String pid = matcher.group(3);
-                    shadowsocks = new Shadowsocks();
+                    shadowsocks = (Shadowsocks) SocksPrototypeManager.getProtoType("Shadowsocks");
                     shadowsocks.setPid(pid);
                     shadowsocks.setIp(ip);
                     shadowsocks.setId(id);
-                    shadowsocks.setPassword("test123");
-                    shadowsocks.setPort("10809");
-                    shadowsocks.setEncryption("aes-256-cfb");
                 }
             }
         }
@@ -192,12 +190,13 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     }
 
     @Override
+    @Deprecated
     public List<Shadowsocks> getAllListenedShadowsocks() {
         String cmd = "ip -all netns exec netstat -ln -tpe |grep 10809";
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         String line = null;
         Pattern compile = Pattern.compile(s);
-        ArrayList<Shadowsocks> shadowsocks5List = new ArrayList<>();
+        ArrayList<Shadowsocks> shadowsocksList = new ArrayList<>();
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         try {
@@ -207,20 +206,17 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
                     String ip = matcher.group(1);
                     String ownerId = matcher.group(2);
                     String pid = matcher.group(3);
-                    String port = "10809";
-                    Shadowsocks shadowsocks = new Shadowsocks();
-                    shadowsocks.setIp(ip);
-                    shadowsocks.setPassword("test123");
+                    Shadowsocks shadowsocks = (Shadowsocks) SocksPrototypeManager.getProtoType("Shadowsocks");
                     shadowsocks.setPid(pid);
-                    shadowsocks.setPort(port);
+                    shadowsocks.setIp(ip);
                     shadowsocks.setId(ownerId.substring(2));
-                    shadowsocks5List.add(shadowsocks);
+                    shadowsocksList.add(shadowsocks);
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return shadowsocks5List;
+        return shadowsocksList;
     }
 
     private boolean hasOutput(InputStream inputStream) {

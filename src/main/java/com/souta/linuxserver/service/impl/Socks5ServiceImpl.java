@@ -1,6 +1,7 @@
 package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Socks5;
+import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.Socks5Service;
@@ -172,14 +173,10 @@ public class Socks5ServiceImpl implements Socks5Service {
                 Matcher matcher = compile.matcher(line);
                 if (matcher.matches()) {
                     String pid = matcher.group(3);
-                    socks5 = new Socks5();
+                    socks5 = (Socks5) SocksPrototypeManager.getProtoType("Socks5");
                     socks5.setPid(pid);
-                    String port = "10808";
                     socks5.setId(id);
                     socks5.setIp(ip);
-                    socks5.setUsername("test123");
-                    socks5.setPassword("test123");
-                    socks5.setPort(port);
                 }
             }
         }
