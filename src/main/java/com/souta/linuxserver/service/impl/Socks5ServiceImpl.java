@@ -124,7 +124,7 @@ public class Socks5ServiceImpl implements Socks5Service {
             cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=/tmp/ss5.passwd\n");
             cfgfileBufferedWriter.write("export SS5_LOG_FILE=/tmp/ss5.log\n");
             cfgfileBufferedWriter.write("export SS5_PROFILE_PATH=/tmp\n");
-            String startCmd = "/usr/sbin/ss5 -t -u root";
+            String startCmd = "/usr/sbin/ss5 -t -m -u root";
             cfgfileBufferedWriter.write(startCmd);
         } catch (IOException e) {
             e.printStackTrace();
