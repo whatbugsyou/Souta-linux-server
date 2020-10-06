@@ -119,15 +119,15 @@ public class LineServiceImpl implements LineService {
             return false;
         } else {
             if (protoId.equals("socks5")) {
-                socks5Service.createConfigFile(lineId);
                 if (action.equals("on")) {
+                    socks5Service.createConfigFile(lineId);
                     socks5Service.startSocks(lineId);
                 } else if (action.equals("off")) {
                     socks5Service.stopSocks(lineId);
                 }
             } else {
-                shadowsocksService.createConfigFile(lineId);
                 if (action.equals("on")) {
+                    shadowsocksService.createConfigFile(lineId);
                     shadowsocksService.startSocks(lineId);
                 } else if (action.equals("off")) {
                     shadowsocksService.stopSocks(lineId);
