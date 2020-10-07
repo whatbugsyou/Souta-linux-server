@@ -33,7 +33,7 @@ public class Socks5ServiceImpl implements Socks5Service {
             }
             File file2 = new File("/tmp/ss5.conf");
             if (!file2.exists()) {
-                FileWriter fileWriter = new FileWriter(file1);
+                FileWriter fileWriter = new FileWriter(file2);
                 fileWriter.write("auth 0.0.0.0/0 - u\n");
                 fileWriter.write("permit u 0.0.0.0/0 - 0.0.0.0/0 - - - - -\n");
 
