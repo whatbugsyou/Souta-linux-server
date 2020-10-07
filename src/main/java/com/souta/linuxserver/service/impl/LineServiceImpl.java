@@ -34,6 +34,7 @@ public class LineServiceImpl implements LineService {
             Line line = getLine(lineId);
             if (line == null) {
                 PPPOE pppoe = pppoeService.createPPPOE(lineId);
+                if (pppoe==null) return null;
                 dialingLines.add(lineId);
                 FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
                 PPPOE pppoeR = futureTask.get();
@@ -56,6 +57,7 @@ public class LineServiceImpl implements LineService {
                             }
                         } while (++times < 10);
                         if (line == null) {
+                            log.error("line {} create error",lineId);
                             deleteLine(lineId);
                         }
                     }
