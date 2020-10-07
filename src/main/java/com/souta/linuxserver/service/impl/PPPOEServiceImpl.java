@@ -42,12 +42,12 @@ public class PPPOEServiceImpl implements PPPOEService {
                 fileReader = new FileReader(adslFile);
                 bufferedReader = new BufferedReader(fileReader);
                 String line;
-                String reg = "(.*)----(.*)";
+                String reg = "(.*)----(.*)----(.*)";
                 Pattern compile = Pattern.compile(reg);
                 while ((line = bufferedReader.readLine()) != null) {
                     Matcher matcher = compile.matcher(line);
                     if (matcher.matches()) {
-                        ADSL adsl = new ADSL(matcher.group(1), matcher.group(2));
+                        ADSL adsl = new ADSL(matcher.group(1), matcher.group(2),matcher.group(3));
                         adslAccountList.add(adsl);
                     }
                 }
@@ -87,38 +87,21 @@ public class PPPOEServiceImpl implements PPPOEService {
         this.vethService = vethService;
     }
 
+
     @Override
     public PPPOE createPPPOE(String pppoeId) {
-        return createPPPOE(pppoeId, null);
-    }
-
-    @Override
-    public PPPOE createPPPOE(String pppoeId, Veth veth) {
-        PPPOE pppoe;
         ADSL adsl = adslAccountList.get(Integer.parseInt(pppoeId) - 1);
-        if (adsl != null) {
-            String adslUser = adsl.getAdslUser();
-            String adslPassword = adsl.getAdslPassword();
-            createConifgFile(pppoeId, adslUser, adslPassword);
-            pppoe = new PPPOE(veth, pppoeId, adslUser, adslPassword);
-        } else {
-            return null;
-        }
-        if (veth == null) {
-            String vethName = "eth" + pppoeId;
-            String namespaceName = "ns" + pppoeId;
-            veth = vethService.createVeth(vethName, namespaceName);
+        if (adsl == null) return null;
+        String vethName = "eth" + pppoeId;
+        String namespaceName = "ns" + pppoeId;
+        Veth veth = vethService.createVeth(adsl.getEthernetName(), vethName, namespaceName);
+        if (!veth.getNamespace().equals(namespaceName)) return null;
 
-        } else {
-            boolean exist = vethService.checkExist(veth);
-            if (exist) {
-                String vethName = "eth" + pppoeId;
-                if (!vethName.equals(veth.getInterfaceName())) {
-                    return null;
-                }
-            }
-        }
-        pppoe.setVeth(veth);
+        String adslUser = adsl.getAdslUser();
+        String adslPassword = adsl.getAdslPassword();
+        createConifgFile(pppoeId, adslUser, adslPassword);
+
+        PPPOE pppoe = new PPPOE(veth, pppoeId, adslUser, adslPassword);
         return pppoe;
     }
 

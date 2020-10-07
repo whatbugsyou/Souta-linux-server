@@ -19,8 +19,6 @@ public interface PPPOEService {
      */
     PPPOE createPPPOE(String pppoeId);
 
-    PPPOE createPPPOE(String pppoeId, Veth veth);
-
     boolean checkConfigFileExist(String pppoeId);
 
     /**

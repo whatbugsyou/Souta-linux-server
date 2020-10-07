@@ -18,46 +18,6 @@ public class VethServiceImpl implements VethService {
     private static final Logger log = LoggerFactory.getLogger(VethServiceImpl.class);
     @Autowired
     private NamespaceService namespaceService;
-    private static String physicalEthName;
-    private static final String physicalEthNameFilePath = "/tmp/physicalEth";
-
-    static {
-        File file = new File(physicalEthNameFilePath);
-        if (file.exists()){
-            BufferedReader bufferedReader = null;
-            try {
-                bufferedReader = new BufferedReader(new FileReader(file));
-                physicalEthName = bufferedReader.readLine();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (physicalEthName == null) {
-                log.error("detect physicalEthName error");
-                System.exit(1);
-            }
-            log.info("auto get physicalEthName={}", physicalEthName);
-        }else {
-            Scanner scanner = new Scanner(System.in);
-            System.out.println("please enter the Physical Ethernet Name (default eth0):");
-            physicalEthName = scanner.nextLine().trim();
-            if (physicalEthName.isEmpty()){
-                physicalEthName = "eth0";
-            }
-            FileWriter fileWriter = null;
-            try {
-                fileWriter = new FileWriter(file);
-                fileWriter.write(physicalEthName);
-                fileWriter.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @Override
-    public Veth createVeth(String vthName, String namespaceName) {
-        return createVeth(physicalEthName, vthName, namespaceName);
-    }
 
     @Override
     public Veth createVeth(String physicalEthName, String vethName, String namespaceName) {
@@ -134,7 +94,7 @@ public class VethServiceImpl implements VethService {
             return null;
         } else {
             String macAddr = getMacAddr(vethName, namespaceName);
-            return new Veth(physicalEthName, vethName, macAddr, new Namespace(namespaceName));
+            return new Veth(null  , vethName, macAddr, new Namespace(namespaceName));
         }
     }
 
