@@ -95,7 +95,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         String vethName = "eth" + pppoeId;
         String namespaceName = "ns" + pppoeId;
         Veth veth = vethService.createVeth(adsl.getEthernetName(), vethName, namespaceName);
-        if (!veth.getNamespace().equals(namespaceName)) return null;
+        if (!veth.getNamespace().getName().equals(namespaceName)) return null;
 
         String adslUser = adsl.getAdslUser();
         String adslPassword = adsl.getAdslPassword();
