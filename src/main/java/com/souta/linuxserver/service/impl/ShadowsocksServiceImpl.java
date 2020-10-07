@@ -119,7 +119,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     @Override
     public boolean startSocks(String id, String ip) {
         if (createConfigFile(id, ip)) {
-            String cmd = "ssserver -c /tmp/shadowsocks/shadowsocks-%s.json";
+            String cmd = "ssserver -c /tmp/shadowsocks/shadowsocks-%s.json >/dev/null 2>&1 &";
             cmd = String.format(cmd, id, id);
             String namespaceName = "ns" + id;
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
