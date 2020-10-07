@@ -56,6 +56,7 @@ public class Host {
         try {
             fileWriter = new FileWriter(hostFilePath);
             fileWriter.write(jsonObject.toJSONString());
+            fileWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -227,7 +228,7 @@ public class Host {
         JSONObject jsonObject = JSON.parseObject(jsonStr);
         port = (String) jsonObject.get("port");
         id = jsonObject.getString("id");
-        if (id != null) {
+        if (id == null) {
             try {
                 registerHost();
             } catch (Exception e) {
