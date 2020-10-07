@@ -77,7 +77,7 @@ public class Host {
         try {
             initHostId();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             System.exit(1);
         }
         monitorHostIp();
