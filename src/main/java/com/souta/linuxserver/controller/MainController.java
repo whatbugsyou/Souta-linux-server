@@ -94,7 +94,7 @@ public class MainController {
                     HashMap<String, Object> data = new HashMap<>();
                     DeadLine deadLine = new DeadLine();
                     deadLine.setLineId(entry.getKey());
-                    ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(entry.getKey()));
+                    ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(entry.getKey())-1);
                     deadLine.setAdslUser(adsl.getAdslUser());
                     deadLine.setAdslPassword(adsl.getAdslPassword());
                     data.put("hostId", id);
