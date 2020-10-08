@@ -33,36 +33,39 @@ public class LineServiceImpl implements LineService {
         Callable<Line> dialHandle = () -> {
             Line line = getLine(lineId);
             if (line == null) {
-                PPPOE pppoe = pppoeService.createPPPOE(lineId);
-                if (pppoe==null) return null;
-                dialingLines.add(lineId);
-                FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
-                PPPOE pppoeR = futureTask.get();
-                String ip;
-                if (pppoeR != null && (ip = pppoeR.getOutIP()) != null) {
-                    if (startSocks(lineId, ip)) {
-                        int times = 0;
-                        Socks5 socks5 = null;
-                        Shadowsocks shadowsocks = null;
-                        do {
-                            if (socks5==null){
-                                socks5 = socks5Service.getSocks(lineId, ip);
+                try {
+                    PPPOE pppoe = pppoeService.createPPPOE(lineId);
+                    if (pppoe==null) return null;
+                    dialingLines.add(lineId);
+                    FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
+                    PPPOE pppoeR = futureTask.get();
+                    String ip;
+                    if (pppoeR != null && (ip = pppoeR.getOutIP()) != null) {
+                        if (startSocks(lineId, ip)) {
+                            int times = 0;
+                            Socks5 socks5 = null;
+                            Shadowsocks shadowsocks = null;
+                            do {
+                                if (socks5==null){
+                                    socks5 = socks5Service.getSocks(lineId, ip);
+                                }
+                                if (shadowsocks==null){
+                                    shadowsocks = shadowsocksService.getSocks(lineId, ip);
+                                }
+                                if (socks5 != null && shadowsocks != null) {
+                                    line = new Line(lineId, socks5, shadowsocks);
+                                    break;
+                                }
+                            } while (++times < 10);
+                            if (line == null) {
+                                log.error("line {} create error",lineId);
+                                deleteLine(lineId);
                             }
-                            if (shadowsocks==null){
-                                shadowsocks = shadowsocksService.getSocks(lineId, ip);
-                            }
-                            if (socks5 != null && shadowsocks != null) {
-                                line = new Line(lineId, socks5, shadowsocks);
-                                break;
-                            }
-                        } while (++times < 10);
-                        if (line == null) {
-                            log.error("line {} create error",lineId);
-                            deleteLine(lineId);
                         }
                     }
+                }finally {
+                    dialingLines.remove(lineId);
                 }
-                dialingLines.remove(lineId);
             }
             return line;
         };
