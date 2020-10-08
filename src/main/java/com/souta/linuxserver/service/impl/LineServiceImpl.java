@@ -63,9 +63,9 @@ public class LineServiceImpl implements LineService {
                             }
                         }
                     }
-                }finally {
-                    dialingLines.remove(lineId);
                 }
+            }finally {
+                dialingLines.remove(lineId);
             }
             return line;
         };
