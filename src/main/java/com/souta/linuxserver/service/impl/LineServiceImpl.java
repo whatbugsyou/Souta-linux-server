@@ -32,8 +32,8 @@ public class LineServiceImpl implements LineService {
     public FutureTask<Line> createLine(String lineId) {
         Callable<Line> dialHandle = () -> {
             Line line = getLine(lineId);
-            if (line == null) {
-                try {
+            try {
+                if (line == null) {
                     PPPOE pppoe = pppoeService.createPPPOE(lineId);
                     if (pppoe==null) return null;
                     dialingLines.add(lineId);
@@ -96,17 +96,17 @@ public class LineServiceImpl implements LineService {
 
     @Override
     public FutureTask<Line> refreshLine(String lineId) {
-        if (!dialingLines.contains(lineId)) {
-            deleteLine(lineId);
-            dialingLines.add(lineId);
-            try {
-                TimeUnit.SECONDS.sleep(lineRedialWait);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return createLine(lineId);
+        boolean add = dialingLines.add(lineId);
+        if (!add) return null;
+        socks5Service.stopSocks(lineId);
+        shadowsocksService.stopSocks(lineId);
+        pppoeService.shutDown(lineId);
+        try {
+            TimeUnit.SECONDS.sleep(lineRedialWait);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        return null;
+        return createLine(lineId);
     }
 
     @Override
