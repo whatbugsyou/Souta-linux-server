@@ -1,17 +1,16 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.entity.Line;
-import com.souta.linuxserver.entity.PPPOE;
-import com.souta.linuxserver.entity.Shadowsocks;
-import com.souta.linuxserver.entity.Socks5;
+import com.souta.linuxserver.entity.*;
 import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
 import com.souta.linuxserver.service.Socks5Service;
+import com.souta.linuxserver.util.LineMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 @Service
@@ -94,6 +93,29 @@ public class LineServiceImpl implements LineService {
         }
     }
 
+    public List<Line> getLines(Set<String> lineIdList) {
+        ArrayList<Line> lines = new ArrayList();
+        //sort id (String type)
+        TreeSet<Integer> integers = new TreeSet<>();
+        for (String id : lineIdList
+        ) {
+            integers.add(Integer.valueOf(id));
+        }
+        for (Integer id : integers
+        ) {
+            String lineId = id.toString();
+            Line line = getLine(lineId);
+            if (line != null) {
+                log.info("Line {} is OK", lineId);
+                lines.add(line);
+            } else {
+                log.warn("Line {} is NOT OK", lineId);
+                deleteLine(lineId);
+            }
+        }
+        return lines;
+    }
+
     @Override
     public FutureTask<Line> refreshLine(String lineId) {
         boolean add = dialingLines.add(lineId);
@@ -151,5 +173,21 @@ public class LineServiceImpl implements LineService {
         boolean startShadowscocks = shadowsocksService.isStart(lineId, ip);
         boolean startSocks5 = socks5Service.isStart(lineId, ip);
         return startShadowscocks && startSocks5;
+    }
+
+    @Override
+    public String generateLineID() {
+        LineMax lineMax = new LineMax();
+        HashSet<String> dialuppedId = pppoeService.getDialuppedIdSet();
+        dialuppedId.addAll(dialingLines);
+        List<ADSL> adslList = pppoeService.getADSLList();
+        if (dialuppedId.size() < adslList.size()) {
+            for (String id :
+                    dialuppedId) {
+                lineMax.add(Integer.parseInt(id));
+            }
+            return String.valueOf(lineMax.getMax());
+        }
+        return null;
     }
 }

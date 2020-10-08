@@ -2,6 +2,7 @@ package com.souta.linuxserver.service;
 
 import com.souta.linuxserver.entity.Line;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.FutureTask;
@@ -35,6 +36,7 @@ public interface LineService {
      * @return Line with started socks information,otherwise null.
      */
     Line getLine(String lineId);
+    List<Line> getLines(Set<String> lineIdList);
     FutureTask<Line> refreshLine(String lineId);
     boolean deleteLine(String lineId);
 
@@ -48,4 +50,8 @@ public interface LineService {
     boolean editProtoInLine(String lineId, String protoId, String action);
     boolean checkExits(String lineId);
 
+    /**
+     * @return a number about the max number of not dial-up line numbers
+     */
+    String generateLineID();
 }

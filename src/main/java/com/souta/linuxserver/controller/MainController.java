@@ -10,7 +10,6 @@ import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
 import com.souta.linuxserver.service.Socks5Service;
-import com.souta.linuxserver.util.LineMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -69,7 +68,7 @@ public class MainController {
         ScheduledExecutorService scheduler =
                 Executors.newScheduledThreadPool(3);
         Runnable checkFullDial = () -> {
-            String lineID = GenerateLineID();
+            String lineID = lineService.generateLineID();
             if (lineID != null) {
                 boolean addTrue = dialingLines.add(lineID);
                 if (addTrue){
@@ -138,7 +137,7 @@ public class MainController {
                     initLock.lock();
                     log.info("initLineInfo....");
                     HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-                    ArrayList<Line> lines = getLines(lineIdSet);
+                    ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
                     log.info("total {} lines is ok", lines.size());
                     //        clean();
                     sendLinesInfo(lines);
@@ -160,7 +159,7 @@ public class MainController {
 
     @PostMapping
     public HashMap<String, Object> createLine() {
-        String lineId = GenerateLineID();
+        String lineId = lineService.generateLineID();
         if (lineId == null) {
             HashMap<String, Object> resultMap = new HashMap<>();
             resultMap.put("status", "error GenerateLineID ,  adsl account is used up");
@@ -329,47 +328,6 @@ public class MainController {
         ArrayList<Line> list = new ArrayList<>();
         list.add(line);
         sendLinesInfo(list);
-    }
-
-    private ArrayList<Line> getLines(HashSet<String> lineIdList) {
-        ArrayList<Line> lines = new ArrayList();
-        //sort id (String type)
-        TreeSet<Integer> integers = new TreeSet<>();
-        for (String id : lineIdList
-        ) {
-            integers.add(Integer.valueOf(id));
-        }
-        for (Integer id : integers
-        ) {
-            String lineId = id.toString();
-            Line line = lineService.getLine(lineId);
-            if (line != null) {
-                log.info("Line {} is OK", lineId);
-                lines.add(line);
-            } else {
-                log.warn("Line {} is NOT OK", lineId);
-                deleteLine(lineId);
-            }
-        }
-        return lines;
-    }
-
-    /**
-     * @return a number about the max number of not dial-up line numbers
-     */
-    private String GenerateLineID() {
-        LineMax lineMax = new LineMax();
-        HashSet<String> dialuppedId = pppoeService.getDialuppedIdSet();
-        dialuppedId.addAll(dialingLines);
-        List<ADSL> adslList = pppoeService.getADSLList();
-        if (dialuppedId.size() < adslList.size()) {
-            for (String id :
-                    dialuppedId) {
-                lineMax.add(Integer.parseInt(id));
-            }
-            return String.valueOf(lineMax.getMax());
-        }
-        return null;
     }
 
 }
