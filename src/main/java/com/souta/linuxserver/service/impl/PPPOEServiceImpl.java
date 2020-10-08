@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 @Service
 public class PPPOEServiceImpl implements PPPOEService {
     private static final Logger log = LoggerFactory.getLogger(PPPOEService.class);
-    private static final String adslAccountFilePath = "/tmp/adsl.txt";
+    private static final String adslAccountFilePath = "~/adsl.txt";
     private static final List<ADSL> adslAccountList = new ArrayList<>();
     private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
     private static final int dilaGapLimit = 8;

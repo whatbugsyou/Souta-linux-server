@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 public class Host {
     public static final String java_server_host = "http://106.55.13.147:8088";
     private static final Logger log = LoggerFactory.getLogger(Host.class);
-    private static final String hostFilePath = "/tmp/host.json";
-    private static final String hostRouteFilePath = "/tmp/hostRoute.sh";
+    private static final String hostFilePath = "~/host.json";
+    private static final String hostRouteFilePath = "~/hostRoute.sh";
     private static final String DNSFilePath = "/etc/resolv.conf";
     private static final String ipRouteTablePath = "/etc/iproute2/rt_tables";
     private static final String hostRouteTablePrio = "100";
@@ -124,7 +124,7 @@ public class Host {
         String reloadFirewalld = "service firewalld reload \n";
         StrBuilder strBuilder = new StrBuilder();
         strBuilder.append(startFirewalldService).append(openWebservicePort).append(openRemoteDebugPort).append(reloadFirewalld);
-        File file = new File("/tmp/fireWalld.sh");
+        File file = new File("~/fireWalld.sh");
         BufferedWriter bufferedWriter = null;
         try {
             if (!file.exists()) {
@@ -143,7 +143,7 @@ public class Host {
                 }
             }
         }
-        namespaceService.exeCmdInDefaultNamespace("sh /tmp/fireWalld.sh");
+        namespaceService.exeCmdInDefaultNamespace("sh ~/fireWalld.sh");
     }
 
     private void initDNS() {

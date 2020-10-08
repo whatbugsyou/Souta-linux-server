@@ -28,7 +28,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = String.format("ls /tmp/shadowsocks/ |grep shadowsocks-%s.json", id);
+        String cmd = String.format("ls ~/shadowsocks/ |grep shadowsocks-%s.json", id);
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
@@ -38,7 +38,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         if (ip == null) {
             return false;
         }
-        File dir = new File("/tmp/shadowsocks");
+        File dir = new File("~/shadowsocks");
         if (!dir.exists()) {
             dir.mkdir();
         }
@@ -119,7 +119,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     @Override
     public boolean startSocks(String id, String ip) {
         if (createConfigFile(id, ip)) {
-            String cmd = "ssserver -c /tmp/shadowsocks/shadowsocks-%s.json >/dev/null 2>&1 &";
+            String cmd = "ssserver -c ~/shadowsocks/shadowsocks-%s.json >/dev/null 2>&1 &";
             cmd = String.format(cmd, id, id);
             String namespaceName = "ns" + id;
             namespaceService.exeCmdInNamespace(namespaceName, cmd);

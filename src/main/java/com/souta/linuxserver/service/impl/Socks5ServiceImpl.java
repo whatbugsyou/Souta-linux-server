@@ -25,20 +25,20 @@ public class Socks5ServiceImpl implements Socks5Service {
             if (!file.exists()) {
                 file.mkdir();
             }
-            File file1 = new File("/tmp/ss5.passwd");
+            File file1 = new File("~/ss5.passwd");
             if (!file1.exists()) {
                 FileWriter fileWriter = new FileWriter(file1);
                 fileWriter.write("test123 test123");
                 fileWriter.flush();
             }
-            File file2 = new File("/tmp/ss5.conf");
+            File file2 = new File("~/ss5.conf");
             if (!file2.exists()) {
                 FileWriter fileWriter = new FileWriter(file2);
                 fileWriter.write("auth 0.0.0.0/0 - u\n");
                 fileWriter.write("permit u 0.0.0.0/0 - 0.0.0.0/0 - - - - -\n");
 
             }
-            File file3 = new File("/tmp/ss5.log");
+            File file3 = new File("~/ss5.log");
             if (!file3.exists()) {
                 file.createNewFile();
             }
@@ -75,7 +75,7 @@ public class Socks5ServiceImpl implements Socks5Service {
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = "ls /tmp/socks5/ |grep socks5-" + id + ".sh";
+        String cmd = "ls ~/socks5/ |grep socks5-" + id + ".sh";
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
@@ -108,7 +108,7 @@ public class Socks5ServiceImpl implements Socks5Service {
         if (ip == null) {
             return false;
         }
-        File dir = new File("/tmp/socks5");
+        File dir = new File("~/socks5");
         if (!dir.exists()) {
             dir.mkdir();
         }
@@ -120,10 +120,10 @@ public class Socks5ServiceImpl implements Socks5Service {
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
             cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR=" + ip + "\n");
             cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=10808\n");
-            cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/tmp/ss5.conf\n");
-            cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=/tmp/ss5.passwd\n");
-            cfgfileBufferedWriter.write("export SS5_LOG_FILE=/tmp/ss5.log\n");
-            cfgfileBufferedWriter.write("export SS5_PROFILE_PATH=/tmp\n");
+            cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=~/ss5.conf\n");
+            cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=~/ss5.passwd\n");
+            cfgfileBufferedWriter.write("export SS5_LOG_FILE=~/ss5.log\n");
+            cfgfileBufferedWriter.write("export SS5_PROFILE_PATH=~\n");
             String startCmd = "/usr/sbin/ss5 -t -m -u root";
             cfgfileBufferedWriter.write(startCmd);
         } catch (IOException e) {
@@ -228,7 +228,7 @@ public class Socks5ServiceImpl implements Socks5Service {
     public boolean startSocks(String id, String ip) {
         if (createConfigFile(id, ip)) {
             String namespaceName = "ns" + id;
-            String cmd = "sh /tmp/socks5/socks5-" + id + ".sh";
+            String cmd = "sh ~/socks5/socks5-" + id + ".sh";
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
         } else {
