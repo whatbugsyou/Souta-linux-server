@@ -71,9 +71,9 @@ public class MainController {
         Runnable checkFullDial = () -> {
             String lineID = GenerateLineID();
             if (lineID != null) {
-                executorService.execute(() -> {
-                    boolean addTrue = dialingLines.add(lineID);
-                    if (addTrue){
+                boolean addTrue = dialingLines.add(lineID);
+                if (addTrue){
+                    executorService.execute(() -> {
                         log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
                         try {
                             TimeUnit.SECONDS.sleep(lineRedialWait);
@@ -81,8 +81,8 @@ public class MainController {
                             e.printStackTrace();
                         }
                         createLine(lineID);
-                    }
-                });
+                    });
+                }
             }
         };
         Runnable checkDeadLine = () -> {
@@ -171,7 +171,7 @@ public class MainController {
         }
     }
 
-    public HashMap<String, Object> createLine(String lineId) {
+    private HashMap<String, Object> createLine(String lineId) {
         HashMap<String, Object> resultMap = new HashMap<>();
         if (lineService.checkExits(lineId)) {
             resultMap.put("status", "exist");
