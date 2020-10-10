@@ -36,7 +36,7 @@ public class Socks5ServiceImpl implements Socks5Service {
                 FileWriter fileWriter = new FileWriter(file2);
                 fileWriter.write("auth 0.0.0.0/0 - u\n");
                 fileWriter.write("permit u 0.0.0.0/0 - 0.0.0.0/0 - - - - -\n");
-
+                fileWriter.flush();
             }
             File file3 = new File("/root/ss5.log");
             if (!file3.exists()) {
