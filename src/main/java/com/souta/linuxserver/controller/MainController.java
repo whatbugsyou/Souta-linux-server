@@ -29,7 +29,6 @@ import static com.souta.linuxserver.service.LineService.lineRedialWait;
 public class MainController {
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
     private static final int checkingTimesOfDefineDeadLine = 3;
-    private static final ReentrantLock initLock = new ReentrantLock();
     /**
      * record the times of false dial ,if the times are >= checkingTimesOfDefineDeadLine will send to java server as a dead line
      */
@@ -54,7 +53,7 @@ public class MainController {
     @PostConstruct
     public void init() {
         new Host().init();
-        initAndSendsLineInfo();
+        initLines();
         monitorLines();
     }
 
@@ -128,22 +127,26 @@ public class MainController {
     /**
      * scan all lines and filter lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to the Java server.
      */
-    @GetMapping("/init")
-    public void initAndSendsLineInfo() {
+    public void initLines(){
+        log.info("initLineInfo....");
+        HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
+        ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
+        log.info("total {} lines is ok", lines.size());
+        //        clean();
+        sendLinesInfo(lines);
+    }
+
+    @GetMapping("/all")
+    public void checkAndSendAllLinesInfo() {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                try {
-                    initLock.lock();
-                    log.info("initLineInfo....");
-                    HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-                    ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
-                    log.info("total {} lines is ok", lines.size());
-                    //        clean();
-                    sendLinesInfo(lines);
-                } finally {
-                    initLock.unlock();
-                }
+                log.info("check all line....");
+                HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
+                ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
+                log.info("total {} lines is ok", lines.size());
+                //        clean();
+                sendLinesInfo(lines);
             }
         });
     }
@@ -193,15 +196,10 @@ public class MainController {
         } else {
             resultMap.put("status", "ok");
         }
-        try {
-            initLock.lock();
-            executorService.execute(() -> {
-                FutureTask<Line> futureTask = lineService.refreshLine(lineId);
-                lineReturnHandle(lineId, futureTask);
-            });
-        } finally {
-            initLock.unlock();
-        }
+        executorService.execute(() -> {
+            FutureTask<Line> futureTask = lineService.refreshLine(lineId);
+            lineReturnHandle(lineId, futureTask);
+        });
         return resultMap;
     }
 

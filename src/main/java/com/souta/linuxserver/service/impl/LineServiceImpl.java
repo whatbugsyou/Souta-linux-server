@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 public class LineServiceImpl implements LineService {
@@ -20,6 +21,8 @@ public class LineServiceImpl implements LineService {
     private final Socks5Service socks5Service;
     private final ShadowsocksService shadowsocksService;
     private final PPPOEService pppoeService;
+    private static boolean onGettingLines;
+    private static final ReentrantLock lock = new ReentrantLock();
 
     public LineServiceImpl(Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService) {
         this.socks5Service = socks5Service;
@@ -93,31 +96,46 @@ public class LineServiceImpl implements LineService {
         }
     }
 
+    @Override
     public List<Line> getLines(Set<String> lineIdList) {
-        ArrayList<Line> lines = new ArrayList();
-        //sort id (String type)
-        TreeSet<Integer> integers = new TreeSet<>();
-        for (String id : lineIdList
-        ) {
-            integers.add(Integer.valueOf(id));
-        }
-        for (Integer id : integers
-        ) {
-            String lineId = id.toString();
-            Line line = getLine(lineId);
-            if (line != null) {
-                log.info("Line {} is OK", lineId);
-                lines.add(line);
-            } else {
-                log.warn("Line {} is NOT OK", lineId);
-                deleteLine(lineId);
+        try {
+            lock.lock();
+            onGettingLines=true;
+            ArrayList<Line> lines = new ArrayList();
+            //sort id (String type)
+            TreeSet<Integer> integers = new TreeSet<>();
+            for (String id : lineIdList
+            ) {
+                integers.add(Integer.valueOf(id));
             }
+            for (Integer id : integers
+            ) {
+                String lineId = id.toString();
+                Line line = getLine(lineId);
+                if (line != null) {
+                    log.info("Line {} is OK", lineId);
+                    lines.add(line);
+                } else {
+                    log.warn("Line {} is NOT OK", lineId);
+                    deleteLine(lineId);
+                }
+            }
+            return lines;
+        }finally {
+            onGettingLines=false;
+            lock.unlock();
         }
-        return lines;
     }
 
     @Override
     public FutureTask<Line> refreshLine(String lineId) {
+        if (onGettingLines){
+            try {
+                lock.lock();
+            }finally {
+                lock.unlock();
+            }
+        }
         boolean add = dialingLines.add(lineId);
         if (!add) return null;
         socks5Service.stopSocks(lineId);
