@@ -25,6 +25,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final String adslAccountFilePath = "/root/adsl.txt";
     private static final List<ADSL> adslAccountList = new ArrayList<>();
     private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
+    private static final HashSet<String> isCreatedpppFile = new HashSet<>();
     private static final int dilaGapLimit = 8;
     private static final ExecutorService pool = Executors.newCachedThreadPool();
     private static final Timer timer = new Timer();
@@ -328,7 +329,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     private void createMainConfigFile(String pppoeId, String adslUser) {
-        if (checkConfigFileExist(pppoeId)) {
+        if (isCreatedpppFile.contains(pppoeId)) {
             return;
         }
         String configFilePath = "/etc/sysconfig/network-scripts/ifcfg-ppp" + pppoeId;
@@ -348,6 +349,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 cfgfileBufferedWriter.write(line);
                 cfgfileBufferedWriter.newLine();
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -373,12 +375,15 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
             }
         }
+        if (checkConfigFileExist(pppoeId)) {
+            isCreatedpppFile.add(pppoeId);
+        }
     }
 
     @Override
     public FutureTask<PPPOE> dialUp(PPPOE pppoe) {
         Callable<PPPOE> callable = () -> {
-            boolean configFileExist = checkConfigFileExist(pppoe.getId());
+            boolean configFileExist = isCreatedpppFile.contains(pppoe.getId());
             boolean vethCorrect = vethService.checkExist(pppoe.getVeth().getInterfaceName(), "ns" + pppoe.getId());
             if (!configFileExist || !vethCorrect) {
                 return null;
@@ -513,7 +518,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
             }
         } else {
-            boolean exist = checkConfigFileExist(pppoeId);
+            boolean exist = isCreatedpppFile.contains(pppoeId);
             if (!exist) {
                 return null;
             }
