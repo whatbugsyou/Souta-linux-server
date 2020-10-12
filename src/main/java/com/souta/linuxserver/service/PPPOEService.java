@@ -19,8 +19,6 @@ public interface PPPOEService {
      */
     PPPOE createPPPOE(String pppoeId);
 
-    boolean checkConfigFileExist(String pppoeId);
-
     /**
      * start dialing and checking .Once upon the dial is successful ,return the pppoe with ip. The checking process will last  for 1 minute if dial is not successful ,and then shutdown the dial process.
      *

@@ -7,6 +7,7 @@ import com.souta.linuxserver.entity.Veth;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.VethService;
+import com.souta.linuxserver.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final String adslAccountFilePath = "/root/adsl.txt";
     private static final List<ADSL> adslAccountList = new ArrayList<>();
     private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
-    private static final HashSet<String> isCreatedpppFile = new HashSet<>();
+    private static final HashSet<String> isRefreshPPPFile = new HashSet<>();
     private static final int dilaGapLimit = 8;
     private static final ExecutorService pool = Executors.newCachedThreadPool();
     private static final Timer timer = new Timer();
@@ -33,7 +34,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
     private static final ArrayList<Condition> conditionList = new ArrayList<>();
     private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
-
+    private static boolean isAdslFileChanged = true;
     static {
         File adslFile = new File(adslAccountFilePath);
         if (adslFile.exists()) {
@@ -77,6 +78,37 @@ public class PPPOEServiceImpl implements PPPOEService {
         }
         for (int i = 0; i < adslAccountList.size(); i++) {
             conditionList.add(reDialLock.newCondition());
+        }
+        File adslMD5File = new File(adslAccountFilePath+".MD5");
+        String fileMD5 = null;
+        if (adslMD5File.exists()){
+            try {
+                FileReader fileReader = new FileReader(adslMD5File);
+                BufferedReader bufferedReader = new BufferedReader(fileReader);
+                String preMD5 = bufferedReader.readLine();
+                fileMD5 = FileUtil.getFileMD5(adslAccountFilePath);
+                if (preMD5!=null){
+                    if (fileMD5.equals(preMD5)){
+                        isAdslFileChanged = false;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }else {
+            boolean newFile = false;
+            try {
+                newFile = adslMD5File.createNewFile();
+                if (newFile){
+                    if (fileMD5!=null) {
+                        FileWriter fileWriter = new FileWriter(adslMD5File);
+                        fileWriter.write(fileMD5);
+                        fileWriter.flush();
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -207,11 +239,10 @@ public class PPPOEServiceImpl implements PPPOEService {
         return isDialUp(pppoe.getId());
     }
 
-    private boolean hasOutput(InputStream inputStream) {
+    static private boolean hasOutput(InputStream inputStream) {
         return Socks5ServiceImpl.hasOutput(inputStream);
     }
 
-    @Override
     public boolean checkConfigFileExist(String pppoeId) {
         String cmd = "ls /etc/sysconfig/network-scripts | grep ifcfg-ppp" + pppoeId + "$";
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
@@ -329,7 +360,9 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     private void createMainConfigFile(String pppoeId, String adslUser) {
-        if (isCreatedpppFile.contains(pppoeId)) {
+        if (isRefreshPPPFile.contains(pppoeId)) return;
+        if (!isAdslFileChanged && checkConfigFileExist(pppoeId)) {
+            isRefreshPPPFile.add(pppoeId);
             return;
         }
         String configFilePath = "/etc/sysconfig/network-scripts/ifcfg-ppp" + pppoeId;
@@ -376,14 +409,14 @@ public class PPPOEServiceImpl implements PPPOEService {
             }
         }
         if (checkConfigFileExist(pppoeId)) {
-            isCreatedpppFile.add(pppoeId);
+            isRefreshPPPFile.add(pppoeId);
         }
     }
 
     @Override
     public FutureTask<PPPOE> dialUp(PPPOE pppoe) {
         Callable<PPPOE> callable = () -> {
-            boolean configFileExist = isCreatedpppFile.contains(pppoe.getId());
+            boolean configFileExist = isRefreshPPPFile.contains(pppoe.getId());
             boolean vethCorrect = vethService.checkExist(pppoe.getVeth().getInterfaceName(), "ns" + pppoe.getId());
             if (!configFileExist || !vethCorrect) {
                 return null;
@@ -518,7 +551,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
             }
         } else {
-            boolean exist = isCreatedpppFile.contains(pppoeId);
+            boolean exist = isRefreshPPPFile.contains(pppoeId);
             if (!exist) {
                 return null;
             }
