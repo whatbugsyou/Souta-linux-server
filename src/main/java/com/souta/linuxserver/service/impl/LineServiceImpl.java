@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -98,33 +99,39 @@ public class LineServiceImpl implements LineService {
 
     @Override
     public List<Line> getLines(Set<String> lineIdList) {
+        List<Line> lines = Collections.synchronizedList(new ArrayList());
         try {
             lock.lock();
             onGettingLines=true;
-            ArrayList<Line> lines = new ArrayList();
             //sort id (String type)
             TreeSet<Integer> integers = new TreeSet<>();
             for (String id : lineIdList
             ) {
                 integers.add(Integer.valueOf(id));
             }
+            ExecutorService executorService = Executors.newCachedThreadPool();
             for (Integer id : integers
             ) {
-                String lineId = id.toString();
-                Line line = getLine(lineId);
-                if (line != null) {
-                    log.info("Line {} is OK", lineId);
-                    lines.add(line);
-                } else {
-                    log.warn("Line {} is NOT OK", lineId);
-                    deleteLine(lineId);
-                }
+                executorService.submit(() -> {
+                    String lineId = id.toString();
+                    Line line = getLine(lineId);
+                    if (line != null) {
+                        log.info("Line {} is OK", lineId);
+                        lines.add(line);
+                    } else {
+                        log.warn("Line {} is NOT OK", lineId);
+                        deleteLine(lineId);
+                    }
+                });
             }
-            return lines;
-        }finally {
+            executorService.awaitTermination(2l, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
             onGettingLines=false;
             lock.unlock();
         }
+        return lines;
     }
 
     @Override
