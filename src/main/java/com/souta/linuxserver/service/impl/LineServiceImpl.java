@@ -132,7 +132,7 @@ public class LineServiceImpl implements LineService {
             onGettingLines=false;
             lock.unlock();
         }
-        return lines;
+        return new ArrayList<Line>(lines);
     }
 
     @Override
