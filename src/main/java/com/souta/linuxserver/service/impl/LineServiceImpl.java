@@ -124,6 +124,7 @@ public class LineServiceImpl implements LineService {
                     }
                 });
             }
+            executorService.shutdown();
             executorService.awaitTermination(2l, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             e.printStackTrace();
