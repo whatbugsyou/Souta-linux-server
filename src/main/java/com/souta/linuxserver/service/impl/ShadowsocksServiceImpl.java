@@ -63,13 +63,6 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            if (cfgfileBufferedWriter != null) {
-                try {
-                    cfgfileBufferedWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
             if (fileWriter != null) {
                 try {
                     fileWriter.close();
@@ -194,7 +187,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     @Override
     @Deprecated
     public List<Shadowsocks> getAllListenedShadowsocks() {
-        String cmd = "ip -all netns exec netstat -ln -tpe |grep 10809";
+        String cmd = "ip -all netns exec netstat -ln -tpe |grep "+DEFAULT_PORT;
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         String line = null;
         Pattern compile = Pattern.compile(s);
