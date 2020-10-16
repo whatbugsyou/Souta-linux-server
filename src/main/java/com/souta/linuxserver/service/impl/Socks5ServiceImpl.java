@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.souta.linuxserver.entity.Socks5.DEFAULT_PORT;
+import static com.souta.linuxserver.entity.Socks5.DEFAULT_PASSWORD;
+import static com.souta.linuxserver.entity.Socks5.DEFAULT_USERNAME;
+
 @Service
 public class Socks5ServiceImpl implements Socks5Service {
     private static final Logger log = LoggerFactory.getLogger(Socks5ServiceImpl.class);
@@ -28,7 +32,7 @@ public class Socks5ServiceImpl implements Socks5Service {
             File file1 = new File("/root/ss5.passwd");
             if (!file1.exists()) {
                 FileWriter fileWriter = new FileWriter(file1);
-                fileWriter.write("test123 test123");
+                fileWriter.write(DEFAULT_USERNAME+" "+DEFAULT_PASSWORD);
                 fileWriter.flush();
             }
             File file2 = new File("/root/ss5.conf");
@@ -83,7 +87,7 @@ public class Socks5ServiceImpl implements Socks5Service {
     @Override
     public boolean isStart(String id, String ip) {
         if (ip != null) {
-            String cmd = "netstat -ln -tpe |grep 10808 |grep " + ip;
+            String cmd = "netstat -ln -tpe |grep "+DEFAULT_PORT+" |grep " + ip;
             String namespaceName = "ns" + id;
             InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return hasOutput(inputStream);
@@ -119,7 +123,7 @@ public class Socks5ServiceImpl implements Socks5Service {
             fileWriter = new FileWriter(file);
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
             cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR=" + ip + "\n");
-            cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=10808\n");
+            cfgfileBufferedWriter.write("export SS5_SOCKS_PORT="+DEFAULT_PORT+"\n");
             cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/root/ss5.conf\n");
             cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=/root/ss5.passwd\n");
             cfgfileBufferedWriter.write("export SS5_LOG_FILE=/root/ss5.log\n");

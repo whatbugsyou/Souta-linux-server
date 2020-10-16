@@ -1,5 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.entity.Shadowsocks;
 import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
@@ -14,6 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.souta.linuxserver.entity.Shadowsocks.DEFAULT_ENCRYPTION;
+import static com.souta.linuxserver.entity.Shadowsocks.DEFAULT_PASSWORD;
+import static com.souta.linuxserver.entity.Shadowsocks.DEFAULT_PORT;
 
 @Service
 public class ShadowsocksServiceImpl implements ShadowsocksService {
@@ -43,20 +48,18 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
             dir.mkdir();
         }
         File file = new File(dir, String.format("shadowsocks-%s.json", id));
-        BufferedWriter cfgfileBufferedWriter = null;
         FileWriter fileWriter = null;
         try {
+            JSONObject shadowsocksConfigObj = new JSONObject();
+            shadowsocksConfigObj.put("server",ip);
+            shadowsocksConfigObj.put("server_port",DEFAULT_PORT);
+            shadowsocksConfigObj.put("local_address","127.0.0.1");
+            shadowsocksConfigObj.put("local_port","1080");
+            shadowsocksConfigObj.put("password",DEFAULT_PASSWORD);
+            shadowsocksConfigObj.put("timeout",600);
+            shadowsocksConfigObj.put("method",DEFAULT_ENCRYPTION);
             fileWriter = new FileWriter(file);
-            cfgfileBufferedWriter = new BufferedWriter(fileWriter);
-            cfgfileBufferedWriter.write("{\n");
-            cfgfileBufferedWriter.write("\"server\":\"" + ip + "\",\n");
-            cfgfileBufferedWriter.write("\"server_port\":10809,\n");
-            cfgfileBufferedWriter.write("\"local_address\": \"127.0.0.1\",\n");
-            cfgfileBufferedWriter.write("\"local_port\":1080,\n");
-            cfgfileBufferedWriter.write("\"password\":\"test123\",\n");
-            cfgfileBufferedWriter.write("\"timeout\":600,\n");
-            cfgfileBufferedWriter.write("\"method\":\"aes-256-cfb\"\n");
-            cfgfileBufferedWriter.write("}\n");
+            fileWriter.write(shadowsocksConfigObj.toJSONString());
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -85,7 +88,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
 
     @Override
     public boolean stopSocks(String id) {
-        String cmd = "netstat -ln -tpe |grep 10809";
+        String cmd = "netstat -ln -tpe |grep "+DEFAULT_PORT;
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
         String namespace = "ns" + id;
@@ -156,7 +159,7 @@ public class ShadowsocksServiceImpl implements ShadowsocksService {
     public Shadowsocks getSocks(String id, String ip) {
         Shadowsocks shadowsocks = null;
         if (ip != null) {
-            String cmd = "netstat -ln -tpe |grep 10809 |grep " + ip;
+            String cmd = "netstat -ln -tpe |grep "+DEFAULT_PORT+" |grep " + ip;
             String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
             Pattern compile = Pattern.compile(s);
             String namespace = "ns" + id;
