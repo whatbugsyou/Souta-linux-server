@@ -15,7 +15,12 @@
     <description>a web server running on linux exposed interface for java background to monitor socks5 and shadowsocks
         service
     </description>
-
+    <developers>
+        <developer>
+            <name>Zhenliang Huang</name>
+            <email>1050466416@qq.com</email>
+        </developer>
+    </developers>
     <properties>
         <java.version>1.8</java.version>
     </properties>
