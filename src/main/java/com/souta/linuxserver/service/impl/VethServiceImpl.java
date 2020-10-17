@@ -9,9 +9,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Random;
-import java.util.Scanner;
 
 @Service
 public class VethServiceImpl implements VethService {
@@ -94,7 +96,7 @@ public class VethServiceImpl implements VethService {
             return null;
         } else {
             String macAddr = getMacAddr(vethName, namespaceName);
-            return new Veth(null  , vethName, macAddr, new Namespace(namespaceName));
+            return new Veth(null, vethName, macAddr, new Namespace(namespaceName));
         }
     }
 

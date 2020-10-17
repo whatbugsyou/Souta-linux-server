@@ -18,11 +18,11 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LineServiceImpl implements LineService {
     private static final Logger log = LoggerFactory.getLogger(LineServiceImpl.class);
     private static final ExecutorService pool = Executors.newCachedThreadPool();
+    private static final ReentrantLock lock = new ReentrantLock();
+    private static boolean onGettingLines;
     private final Socks5Service socks5Service;
     private final ShadowsocksService shadowsocksService;
     private final PPPOEService pppoeService;
-    private static boolean onGettingLines;
-    private static final ReentrantLock lock = new ReentrantLock();
 
     public LineServiceImpl(Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService) {
         this.socks5Service = socks5Service;
@@ -37,7 +37,7 @@ public class LineServiceImpl implements LineService {
             try {
                 if (line == null) {
                     PPPOE pppoe = pppoeService.createPPPOE(lineId);
-                    if (pppoe==null) return null;
+                    if (pppoe == null) return null;
                     dialingLines.add(lineId);
                     FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
                     PPPOE pppoeR = futureTask.get();
@@ -48,10 +48,10 @@ public class LineServiceImpl implements LineService {
                             Socks5 socks5 = null;
                             Shadowsocks shadowsocks = null;
                             do {
-                                if (socks5==null){
+                                if (socks5 == null) {
                                     socks5 = socks5Service.getSocks(lineId, ip);
                                 }
-                                if (shadowsocks==null){
+                                if (shadowsocks == null) {
                                     shadowsocks = shadowsocksService.getSocks(lineId, ip);
                                 }
                                 if (socks5 != null && shadowsocks != null) {
@@ -60,13 +60,13 @@ public class LineServiceImpl implements LineService {
                                 }
                             } while (++times < 10);
                             if (line == null) {
-                                log.error("line {} create error",lineId);
+                                log.error("line {} create error", lineId);
                                 deleteLine(lineId);
                             }
                         }
                     }
                 }
-            }finally {
+            } finally {
                 dialingLines.remove(lineId);
             }
             return line;
@@ -101,7 +101,7 @@ public class LineServiceImpl implements LineService {
         List<Line> lines = Collections.synchronizedList(new ArrayList());
         try {
             lock.lock();
-            onGettingLines=true;
+            onGettingLines = true;
             //sort id (String type)
             TreeSet<Integer> integers = new TreeSet<>();
             for (String id : lineIdList
@@ -128,7 +128,7 @@ public class LineServiceImpl implements LineService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            onGettingLines=false;
+            onGettingLines = false;
             lock.unlock();
         }
         return new ArrayList<Line>(lines);
@@ -136,10 +136,10 @@ public class LineServiceImpl implements LineService {
 
     @Override
     public FutureTask<Line> refreshLine(String lineId) {
-        if (onGettingLines){
+        if (onGettingLines) {
             try {
                 lock.lock();
-            }finally {
+            } finally {
                 lock.unlock();
             }
         }

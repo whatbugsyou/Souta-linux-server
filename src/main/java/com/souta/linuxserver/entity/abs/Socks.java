@@ -1,6 +1,7 @@
 package com.souta.linuxserver.entity.abs;
 
 import lombok.Data;
+
 import java.util.Objects;
 
 @Data
@@ -9,6 +10,7 @@ public abstract class Socks {
     public String ip;
     public String port;
     public String pid;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

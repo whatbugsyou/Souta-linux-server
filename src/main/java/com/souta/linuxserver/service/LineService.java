@@ -14,7 +14,7 @@ public interface LineService {
      * and the Line will exist in this set forever ,
      * which makes the line out of full dial monitoring
      * when the line is shutdown by the ISP.
-     *
+     * <p>
      * Although the issue above happens in an extreme low possibility,
      * we still make sure to run stably
      */
@@ -31,23 +31,25 @@ public interface LineService {
     FutureTask<Line> createLine(String lineId);
 
     /**
-     *
      * @param lineId
      * @return Line with started socks information,otherwise null.
      */
     Line getLine(String lineId);
+
     List<Line> getLines(Set<String> lineIdList);
+
     FutureTask<Line> refreshLine(String lineId);
+
     boolean deleteLine(String lineId);
 
     /**
-     *
      * @param lineId
      * @param protoId socks5 or shadowsocks
-     * @param action on or off
+     * @param action  on or off
      * @return true if it is dial up.
      */
     boolean editProtoInLine(String lineId, String protoId, String action);
+
     boolean checkExits(String lineId);
 
     /**

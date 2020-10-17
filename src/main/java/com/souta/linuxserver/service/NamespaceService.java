@@ -53,7 +53,7 @@ public interface NamespaceService {
 
 
     /**
-     * @param cmd       --  bash command
+     * @param cmd --  bash command
      * @return an Objcet of InputStream , relating to the cmd exeuting output.
      */
     InputStream exeCmdInDefaultNamespace(String cmd);

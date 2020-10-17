@@ -48,7 +48,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 while ((line = bufferedReader.readLine()) != null) {
                     Matcher matcher = compile.matcher(line);
                     if (matcher.matches()) {
-                        ADSL adsl = new ADSL(matcher.group(1), matcher.group(2),matcher.group(3));
+                        ADSL adsl = new ADSL(matcher.group(1), matcher.group(2), matcher.group(3));
                         adslAccountList.add(adsl);
                     }
                 }
@@ -412,7 +412,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 float sleepGapSec = 0.5f;
                 int dialEndSec = 60;
                 String ip = null;
-                while ((ip = getIP(pppoe.getId()))==null) {
+                while ((ip = getIP(pppoe.getId())) == null) {
                     checkCount++;
                     costSec = checkCount * sleepGapSec;
                     if (costSec % 10 == 0) {
@@ -429,7 +429,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
                 if (ip == null) {
                     shutDown(pppoe);
-                }else {
+                } else {
                     pppoe.setOutIP(ip);
                 }
                 return pppoe;
@@ -441,7 +441,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     private void limitRedialTime(String id) {
-        Condition condition = conditionList.get(Integer.parseInt(id)-1);
+        Condition condition = conditionList.get(Integer.parseInt(id) - 1);
         redialLimitedConditionMap.put(id, condition);
         TimerTask timerTask = new TimerTask() {
             @Override

@@ -69,7 +69,7 @@ public class MainController {
             String lineID = lineService.generateLineID();
             if (lineID != null) {
                 boolean addTrue = dialingLines.add(lineID);
-                if (addTrue){
+                if (addTrue) {
                     executorService.execute(() -> {
                         log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
                         try {
@@ -91,7 +91,7 @@ public class MainController {
                     HashMap<String, Object> data = new HashMap<>();
                     DeadLine deadLine = new DeadLine();
                     deadLine.setLineId(entry.getKey());
-                    ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(entry.getKey())-1);
+                    ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(entry.getKey()) - 1);
                     deadLine.setAdslUser(adsl.getAdslUser());
                     deadLine.setAdslPassword(adsl.getAdslPassword());
                     data.put("hostId", id);
@@ -126,7 +126,7 @@ public class MainController {
     /**
      * scan all lines and filter lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to the Java server.
      */
-    public void initLines(){
+    public void initLines() {
         log.info("initLineInfo....");
         HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
         ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
@@ -179,9 +179,9 @@ public class MainController {
         } else {
             resultMap.put("status", "ok");
         }
-        executorService.execute(() ->  {
-                FutureTask<Line> futureTask = lineService.createLine(lineId);
-                lineReturnHandle(lineId, futureTask);
+        executorService.execute(() -> {
+            FutureTask<Line> futureTask = lineService.createLine(lineId);
+            lineReturnHandle(lineId, futureTask);
         });
         return resultMap;
     }
@@ -287,7 +287,7 @@ public class MainController {
     }
 
     /**
-     *send lines to the Java server. If response status is not OK or catch an exception, will add lines into errorSendLines, ready checking thread to invoke resend.
+     * send lines to the Java server. If response status is not OK or catch an exception, will add lines into errorSendLines, ready checking thread to invoke resend.
      *
      * @param lines
      */

@@ -2,7 +2,6 @@ package com.souta.linuxserver.service;
 
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.PPPOE;
-import com.souta.linuxserver.entity.Veth;
 
 import java.util.HashSet;
 import java.util.List;

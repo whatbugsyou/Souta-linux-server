@@ -183,7 +183,7 @@ public class Host {
                         e.printStackTrace();
                     }
                 }
-                if (nowIp==null || nowIp.equals("")){
+                if (nowIp == null || nowIp.equals("")) {
                     cmd = "curl members.3322.org/dyndns/getip";
                     inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
                     if (inputStream != null) {
@@ -211,7 +211,7 @@ public class Host {
                             log.error("error in refreshing  HostInfo to java server,API(PUT) :  /v1.0/server");
                         }
                     }
-                }else {
+                } else {
                     log.error("HOST IP is not found");
                 }
             }

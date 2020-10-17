@@ -1,11 +1,11 @@
 package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Socks5;
-import com.souta.linuxserver.service.abs.AbstractSocksService;
 import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.Socks5Service;
+import com.souta.linuxserver.service.abs.AbstractSocksService;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +28,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             File file1 = new File("/root/ss5.passwd");
             if (!file1.exists()) {
                 FileWriter fileWriter = new FileWriter(file1);
-                fileWriter.write(DEFAULT_USERNAME+" "+DEFAULT_PASSWORD);
+                fileWriter.write(DEFAULT_USERNAME + " " + DEFAULT_PASSWORD);
                 fileWriter.flush();
             }
             File file2 = new File("/root/ss5.conf");
@@ -58,7 +58,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = "ls "+configFileDir+" |grep socks5-" + id + ".sh";
+        String cmd = "ls " + configFileDir + " |grep socks5-" + id + ".sh";
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
@@ -79,7 +79,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             fileWriter = new FileWriter(file);
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
             cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR=" + ip + "\n");
-            cfgfileBufferedWriter.write("export SS5_SOCKS_PORT="+port+"\n");
+            cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=" + port + "\n");
             cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/root/ss5.conf\n");
             cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=/root/ss5.passwd\n");
             cfgfileBufferedWriter.write("export SS5_LOG_FILE=/root/ss5.log\n");
@@ -118,7 +118,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         Socks5 socks5 = null;
         if (ip != null) {
             String namespaceName = "ns" + id;
-            String cmd = "netstat -ln -tpe |grep "+port+" |grep " + ip;
+            String cmd = "netstat -ln -tpe |grep " + port + " |grep " + ip;
             InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
             String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
             Pattern compile = Pattern.compile(s);
@@ -157,7 +157,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
 
     @Override
     public List<Socks5> getAllListenedSocks() {
-        String cmd = "ip -all netns exec netstat -ln -tpe |grep "+port;
+        String cmd = "ip -all netns exec netstat -ln -tpe |grep " + port;
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         String line;
         Pattern compile = Pattern.compile(s);
@@ -171,7 +171,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
                     String ip = matcher.group(1);
                     String ownerId = matcher.group(2);
                     String pid = matcher.group(3);
-                    Socks5 socks5 = (Socks5)SocksPrototypeManager.getProtoType("Socks5");
+                    Socks5 socks5 = (Socks5) SocksPrototypeManager.getProtoType("Socks5");
                     socks5.setIp(ip);
                     socks5.setPid(pid);
                     socks5.setId(ownerId.substring(2));

@@ -1,9 +1,6 @@
 package com.souta.linuxserver.service.abs;
 
 
-import com.souta.linuxserver.entity.Shadowsocks;
-import com.souta.linuxserver.entity.Socks5;
-import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.SocksService;
@@ -22,20 +19,39 @@ public abstract class AbstractSocksService implements SocksService {
     protected String port;
     protected Logger log;
     protected String configFileDir;
+
     public AbstractSocksService(NamespaceService namespaceService, PPPOEService pppoeService) {
         this.namespaceService = namespaceService;
         this.pppoeService = pppoeService;
     }
 
-    @Override
-    public boolean isStart(String id) {
-        String ip = pppoeService.getIP(id);
-        return isStart(id,ip);
+    public static boolean hasOutput(InputStream inputStream) {
+        int read = 0;
+        try {
+            read = inputStream.read();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return read != -1;
     }
 
     @Override
-    public boolean stopSocks(String id ) {
-        String cmd = "netstat -ln -tpe |grep "+port;
+    public boolean isStart(String id) {
+        String ip = pppoeService.getIP(id);
+        return isStart(id, ip);
+    }
+
+    @Override
+    public boolean stopSocks(String id) {
+        String cmd = "netstat -ln -tpe |grep " + port;
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
         String namespace = "ns" + id;
@@ -56,6 +72,7 @@ public abstract class AbstractSocksService implements SocksService {
         }
         return true;
     }
+
     @Override
     public boolean restartSocks(String id) {
         if (stopSocks(id)) {
@@ -70,6 +87,7 @@ public abstract class AbstractSocksService implements SocksService {
         String ip = pppoeService.getIP(id);
         return startSocks(id, ip);
     }
+
     @Override
     public boolean createConfigFile(String id) {
         String ip = pppoeService.getIP(id);
@@ -77,31 +95,13 @@ public abstract class AbstractSocksService implements SocksService {
     }
 
     @Override
-    public boolean isStart(String id, String ip ) {
+    public boolean isStart(String id, String ip) {
         if (ip != null) {
-            String cmd = "netstat -ln -tpe |grep "+port+" |grep " + ip;
+            String cmd = "netstat -ln -tpe |grep " + port + " |grep " + ip;
             String namespaceName = "ns" + id;
             InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return hasOutput(inputStream);
         }
         return false;
-    }
-
-    public static boolean hasOutput(InputStream inputStream) {
-        int read = 0;
-        try {
-            read = inputStream.read();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return read != -1;
     }
 }

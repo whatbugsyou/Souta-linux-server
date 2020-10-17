@@ -2,11 +2,11 @@ package com.souta.linuxserver.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.entity.Shadowsocks;
-import com.souta.linuxserver.service.abs.AbstractSocksService;
 import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
+import com.souta.linuxserver.service.abs.AbstractSocksService;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 import static com.souta.linuxserver.entity.Shadowsocks.*;
 
 @Service
-public class ShadowsocksServiceImpl extends AbstractSocksService implements ShadowsocksService{
+public class ShadowsocksServiceImpl extends AbstractSocksService implements ShadowsocksService {
 
     public ShadowsocksServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService) {
         super(namespaceService, pppoeService);
@@ -32,7 +32,7 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = String.format("ls "+configFileDir+" |grep shadowsocks-%s.json", id);
+        String cmd = String.format("ls " + configFileDir + " |grep shadowsocks-%s.json", id);
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
@@ -50,13 +50,13 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
         FileWriter fileWriter = null;
         try {
             JSONObject shadowsocksConfigObj = new JSONObject();
-            shadowsocksConfigObj.put("server",ip);
-            shadowsocksConfigObj.put("server_port",Integer.parseInt(port));
-            shadowsocksConfigObj.put("local_address","127.0.0.1");
-            shadowsocksConfigObj.put("local_port","1080");
-            shadowsocksConfigObj.put("password",DEFAULT_PASSWORD);
-            shadowsocksConfigObj.put("timeout",600);
-            shadowsocksConfigObj.put("method",DEFAULT_ENCRYPTION);
+            shadowsocksConfigObj.put("server", ip);
+            shadowsocksConfigObj.put("server_port", Integer.parseInt(port));
+            shadowsocksConfigObj.put("local_address", "127.0.0.1");
+            shadowsocksConfigObj.put("local_port", "1080");
+            shadowsocksConfigObj.put("password", DEFAULT_PASSWORD);
+            shadowsocksConfigObj.put("timeout", 600);
+            shadowsocksConfigObj.put("method", DEFAULT_ENCRYPTION);
             fileWriter = new FileWriter(file);
             fileWriter.write(shadowsocksConfigObj.toJSONString());
         } catch (IOException e) {
@@ -76,7 +76,7 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
     @Override
     public boolean startSocks(String id, String ip) {
         if (createConfigFile(id, ip)) {
-            String cmd = "ssserver -c "+configFileDir+"/shadowsocks-%s.json >/dev/null 2>&1 &";
+            String cmd = "ssserver -c " + configFileDir + "/shadowsocks-%s.json >/dev/null 2>&1 &";
             cmd = String.format(cmd, id, id);
             String namespaceName = "ns" + id;
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
@@ -96,7 +96,7 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
     public Shadowsocks getSocks(String id, String ip) {
         Shadowsocks shadowsocks = null;
         if (ip != null) {
-            String cmd = "netstat -ln -tpe |grep "+port+" |grep " + ip;
+            String cmd = "netstat -ln -tpe |grep " + port + " |grep " + ip;
             String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
             Pattern compile = Pattern.compile(s);
             String namespace = "ns" + id;
@@ -112,7 +112,7 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
                 Matcher matcher = compile.matcher(line);
                 if (matcher.matches()) {
                     String pid = matcher.group(3);
-                    shadowsocks= (Shadowsocks)SocksPrototypeManager.getProtoType("Shadowsocks");
+                    shadowsocks = (Shadowsocks) SocksPrototypeManager.getProtoType("Shadowsocks");
                     shadowsocks.setPid(pid);
                     shadowsocks.setIp(ip);
                     shadowsocks.setId(id);
@@ -124,7 +124,7 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
 
     @Deprecated
     public List<Shadowsocks> getAllListenedShadowsocks() {
-        String cmd = "ip -all netns exec netstat -ln -tpe |grep "+port;
+        String cmd = "ip -all netns exec netstat -ln -tpe |grep " + port;
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         String line = null;
         Pattern compile = Pattern.compile(s);
