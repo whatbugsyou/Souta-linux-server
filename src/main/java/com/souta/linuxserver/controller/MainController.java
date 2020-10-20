@@ -152,6 +152,7 @@ public class MainController {
 
     @DeleteMapping("/all")
     public void clean() {
+        log.info("clean all Line in Java Server");
         int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
                 .execute().getStatus();
         if (status != 200) {
@@ -164,7 +165,9 @@ public class MainController {
         String lineId = lineService.generateLineID();
         if (lineId == null) {
             HashMap<String, Object> resultMap = new HashMap<>();
-            resultMap.put("status", "error GenerateLineID ,  adsl account is used up");
+            String message = "error GenerateLineID, adsl account is used up";
+            log.info("create Line ,{}", message);
+            resultMap.put("status", message);
             return resultMap;
         } else {
             log.info("create Line {}", lineId);
@@ -203,7 +206,7 @@ public class MainController {
     }
 
     /**
-     * if line what furutrTask gets is not null,it will send the line to java server,otherwise it will record the line ID in redialCheckMap.
+     * if line what futureTask gets is not null,it will send the line to java server,otherwise it will record the line ID in redialCheckMap.
      *
      * @param lineId
      * @param futureTask
