@@ -25,7 +25,7 @@ public abstract class AbstractSocksService implements SocksService {
         this.pppoeService = pppoeService;
     }
 
-    public static boolean hasOutput(InputStream inputStream) {
+    public final static boolean hasOutput(InputStream inputStream) {
         int read = 0;
         try {
             read = inputStream.read();
@@ -44,13 +44,13 @@ public abstract class AbstractSocksService implements SocksService {
     }
 
     @Override
-    public boolean isStart(String id) {
+    public final boolean isStart(String id) {
         String ip = pppoeService.getIP(id);
         return isStart(id, ip);
     }
 
     @Override
-    public boolean stopSocks(String id) {
+    public final boolean stopSocks(String id) {
         String cmd = "netstat -ln -tpe |grep " + port;
         String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
@@ -74,7 +74,7 @@ public abstract class AbstractSocksService implements SocksService {
     }
 
     @Override
-    public boolean restartSocks(String id) {
+    public final boolean restartSocks(String id) {
         if (stopSocks(id)) {
             return startSocks(id);
         } else {
@@ -83,19 +83,19 @@ public abstract class AbstractSocksService implements SocksService {
     }
 
     @Override
-    public boolean startSocks(String id) {
+    public final boolean startSocks(String id) {
         String ip = pppoeService.getIP(id);
         return startSocks(id, ip);
     }
 
     @Override
-    public boolean createConfigFile(String id) {
+    public final boolean createConfigFile(String id) {
         String ip = pppoeService.getIP(id);
         return createConfigFile(id, ip);
     }
 
     @Override
-    public boolean isStart(String id, String ip) {
+    public final boolean isStart(String id, String ip) {
         if (ip != null) {
             String cmd = "netstat -ln -tpe |grep " + port + " |grep " + ip;
             String namespaceName = "ns" + id;
