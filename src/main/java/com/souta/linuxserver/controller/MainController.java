@@ -100,11 +100,15 @@ public class MainController {
                     log.info("send deadLine Info :");
                     log.info(body);
                     Runnable runnable = () -> {
-                        int status = HttpRequest.post(java_server_host + "/v1.0/deadLine")
-                                .body(body)
-                                .execute().getStatus();
-                        if (status != 200) {
-                            log.error("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
+                        try {
+                            int status = HttpRequest.post(java_server_host + "/v1.0/deadLine")
+                                    .body(body)
+                                    .execute().getStatus();
+                            if (status != 200) {
+                                throw new ResponseNotOkException("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
+                            }
+                        }catch (Exception e){
+                            log.error(e.getMessage());
                         }
                     };
                     executorService.execute(runnable);
@@ -153,10 +157,14 @@ public class MainController {
     @DeleteMapping("/all")
     public void clean() {
         log.info("clean all Line in Java Server");
-        int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
-                .execute().getStatus();
-        if (status != 200) {
-            log.error("error in deleting All Line from java server,API(DELETE) :  /v1.0/server/lines ");
+        try {
+            int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
+                    .execute().getStatus();
+            if (status != 200) {
+                throw new ResponseNotOkException("error in deleting All Line from java server,API(DELETE) :  /v1.0/server/lines ");
+            }
+        }catch (Exception e){
+            log.error(e.getMessage());
         }
     }
 

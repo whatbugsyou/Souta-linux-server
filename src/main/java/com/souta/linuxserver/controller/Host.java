@@ -200,15 +200,19 @@ public class Host {
                         if (IP != null) {
                             initIPRoute();
                         }
-                        IP = nowIp;
                         log.info("send new HOST IP " + nowIp);
-                        String jsonStr = FileUtil.ReadFile(hostFilePath);
-                        int status = HttpRequest
-                                .put(java_server_host + "/v1.0/server")
-                                .body(jsonStr, "application/json;charset=UTF-8")
-                                .execute().getStatus();
-                        if (status != 200) {
-                            log.error("error in refreshing  HostInfo to java server,API(PUT) :  /v1.0/server");
+                        try {
+                            String jsonStr = FileUtil.ReadFile(hostFilePath);
+                            int status = HttpRequest
+                                    .put(java_server_host + "/v1.0/server")
+                                    .body(jsonStr, "application/json;charset=UTF-8")
+                                    .execute().getStatus();
+                            if (status != 200) {
+                                throw new ResponseNotOkException("error in refreshing  HostInfo to java server,API(PUT) :  /v1.0/server");
+                            }
+                            IP = nowIp;
+                        }catch (Exception e){
+                            log.error(e.getMessage());
                         }
                     }
                 } else {
