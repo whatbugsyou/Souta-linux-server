@@ -43,6 +43,7 @@ public class LineServiceImpl implements LineService {
                     PPPOE pppoeR = futureTask.get();
                     String ip;
                     if (pppoeR != null && (ip = pppoeR.getOutIP()) != null) {
+                        initSocks(lineId);
                         if (startSocks(lineId, ip)) {
                             int times = 0;
                             Socks5 socks5 = null;
@@ -74,6 +75,11 @@ public class LineServiceImpl implements LineService {
         FutureTask<Line> futureTask = new FutureTask(dialHandle);
         pool.execute(futureTask);
         return futureTask;
+    }
+
+    private void initSocks(String lineId) {
+        socks5Service.stopSocks(lineId);
+        shadowsocksService.stopSocks(lineId);
     }
 
     private boolean startSocks(String lineId, String ip) {
