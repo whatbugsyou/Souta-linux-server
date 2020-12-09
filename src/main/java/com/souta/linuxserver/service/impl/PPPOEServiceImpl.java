@@ -32,7 +32,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final ReentrantLock reDialLock = new ReentrantLock();
     private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
     private static final ArrayList<Condition> conditionList = new ArrayList<>();
-    private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");
+    private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+)\\s+dev\\s+(.*).*src\\s+([\\d\\\\.]+).*");
 
     static {
         File adslFile = new File(adslAccountFilePath);
