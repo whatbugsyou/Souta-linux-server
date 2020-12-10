@@ -93,7 +93,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public PPPOE createPPPOE(String pppoeId) {
         ADSL adsl = adslAccountList.get(Integer.parseInt(pppoeId) - 1);
         if (adsl == null) return null;
-        String vethName = "eth" + pppoeId;
+        String vethName = "stv" + pppoeId;
         String namespaceName = "ns" + pppoeId;
         Veth veth = vethService.createVeth(adsl.getEthernetName(), vethName, namespaceName);
         if (!veth.getNamespace().getName().equals(namespaceName)) return null;
@@ -473,7 +473,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public PPPOE getPPPOE(String pppoeId) {
         PPPOE pppoe;
-        String vethName = "eth" + pppoeId;
+        String vethName = "stv" + pppoeId;
         Veth veth = vethService.getVeth(vethName);
         if (veth == null) {
             return null;
