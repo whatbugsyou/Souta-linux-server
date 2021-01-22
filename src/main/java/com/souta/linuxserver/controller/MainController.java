@@ -12,6 +12,8 @@ import com.souta.linuxserver.service.ShadowsocksService;
 import com.souta.linuxserver.service.Socks5Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
@@ -32,7 +34,6 @@ public class MainController {
      * record the times of false dial ,if the times are >= checkingTimesOfDefineDeadLine will send to java server as a dead line
      */
     private static final ConcurrentHashMap<String, Integer> dialFalseTimesMap = new ConcurrentHashMap<>();
-    private static final ExecutorService executorService = Executors.newCachedThreadPool();
     /**
      * the line that is error sent is going to be resent.
      */
@@ -41,6 +42,18 @@ public class MainController {
     private final ShadowsocksService shadowsocksService;
     private final Socks5Service socks5Service;
     private final LineService lineService;
+
+    @Autowired
+    @Qualifier("refreshPool")
+    private ExecutorService refreshPool;
+
+    @Autowired
+    @Qualifier("netPool")
+    private ExecutorService netPool;
+
+    @Autowired
+    @Qualifier("basePool")
+    private ExecutorService basePool;
 
     public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, Socks5Service socks5Service, LineService lineService) {
         this.pppoeService = pppoeService;
@@ -70,7 +83,7 @@ public class MainController {
             if (lineID != null) {
                 boolean addTrue = dialingLines.add(lineID);
                 if (addTrue) {
-                    executorService.execute(() -> {
+                    basePool.execute(() -> {
                         log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
                         try {
                             TimeUnit.SECONDS.sleep(lineRedialWait);
@@ -111,7 +124,7 @@ public class MainController {
                             log.error(e.getMessage());
                         }
                     };
-                    executorService.execute(runnable);
+                    basePool.execute(runnable);
                     dialFalseTimesMap.put(entry.getKey(), value + 1);
                 }
             }
@@ -141,7 +154,7 @@ public class MainController {
 
     @GetMapping("/all")
     public void checkAndSendAllLinesInfo() {
-        executorService.execute(new Runnable() {
+        basePool.execute(new Runnable() {
             @Override
             public void run() {
                 log.info("check all line....");
@@ -190,7 +203,7 @@ public class MainController {
         } else {
             resultMap.put("status", "ok");
         }
-        executorService.execute(() -> {
+        refreshPool.submit(() -> {
             FutureTask<Line> futureTask = lineService.createLine(lineId);
             lineReturnHandle(lineId, futureTask);
         });
@@ -206,7 +219,7 @@ public class MainController {
         } else {
             resultMap.put("status", "ok");
         }
-        executorService.execute(() -> {
+        refreshPool.execute(() -> {
             FutureTask<Line> futureTask = lineService.refreshLine(lineId);
             lineReturnHandle(lineId, futureTask);
         });
@@ -275,7 +288,7 @@ public class MainController {
     public HashMap<String, Object> deleteLine(String lineId) {
         log.info("delete line {}", lineId);
         HashMap<String, Object> resultMap = new HashMap<>();
-        executorService.execute(new Runnable() {
+        basePool.execute(new Runnable() {
             @Override
             public void run() {
                 lineService.deleteLine(lineId);
@@ -328,7 +341,7 @@ public class MainController {
                     log.info(body);
                 }
             };
-            executorService.execute(runnable);
+            netPool.submit(runnable);
         }
     }
 

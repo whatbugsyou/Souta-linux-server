@@ -8,6 +8,8 @@ import com.souta.linuxserver.service.Socks5Service;
 import com.souta.linuxserver.util.LineMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -17,7 +19,6 @@ import java.util.concurrent.locks.ReentrantLock;
 @Service
 public class LineServiceImpl implements LineService {
     private static final Logger log = LoggerFactory.getLogger(LineServiceImpl.class);
-    private static final ExecutorService pool = Executors.newCachedThreadPool();
     private static final ReentrantLock lock = new ReentrantLock();
     private static boolean onGettingLines;
     private final Socks5Service socks5Service;
@@ -29,6 +30,10 @@ public class LineServiceImpl implements LineService {
         this.shadowsocksService = shadowsocksService;
         this.pppoeService = pppoeService;
     }
+
+    @Autowired
+    @Qualifier("linePool")
+    private ExecutorService linePool;
 
     @Override
     public FutureTask<Line> createLine(String lineId) {
@@ -73,7 +78,7 @@ public class LineServiceImpl implements LineService {
             return line;
         };
         FutureTask<Line> futureTask = new FutureTask(dialHandle);
-        pool.execute(futureTask);
+        linePool.submit(futureTask);
         return futureTask;
     }
 
@@ -144,6 +149,7 @@ public class LineServiceImpl implements LineService {
     public FutureTask<Line> refreshLine(String lineId) {
         if (onGettingLines) {
             try {
+                //lock till getLine thread invoking
                 lock.lock();
             } finally {
                 lock.unlock();

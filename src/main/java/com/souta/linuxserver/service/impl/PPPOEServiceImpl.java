@@ -9,6 +9,8 @@ import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.VethService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -27,13 +29,15 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
     private static final HashSet<String> isCreatedpppFile = new HashSet<>();
     private static final int dilaGapLimit = 8;
-    private static final ExecutorService pool = Executors.newCachedThreadPool();
     private static final Timer timer = new Timer();
     private static final ReentrantLock reDialLock = new ReentrantLock();
     private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
     private static final ArrayList<Condition> conditionList = new ArrayList<>();
     private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+)\\s+dev\\s+(.*).*src\\s+([\\d\\\\.]+).*");
 
+    @Autowired
+    @Qualifier("dialingPool")
+    private ExecutorService dialingPool;
     static {
         File adslFile = new File(adslAccountFilePath);
         if (adslFile.exists()) {
@@ -436,7 +440,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             }
         };
         FutureTask<PPPOE> futureTask = new FutureTask(callable);
-        pool.execute(futureTask);
+        dialingPool.execute(futureTask);
         return futureTask;
     }
 
