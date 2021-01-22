@@ -46,7 +46,7 @@ public class ThreadPoolConfig {
 
     @Bean("basePool")
     public ExecutorService basePool(){
-        ThreadFactoryBuilder threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("net-pool-%d");
+        ThreadFactoryBuilder threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("base-pool-%d");
         return new ThreadPoolExecutor(20,
                 20,
                 60,
