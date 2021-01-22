@@ -160,11 +160,6 @@ public class LineServiceImpl implements LineService {
         socks5Service.stopSocks(lineId);
         shadowsocksService.stopSocks(lineId);
         pppoeService.shutDown(lineId);
-        try {
-            TimeUnit.SECONDS.sleep(lineRedialWait);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         return createLine(lineId);
     }
 

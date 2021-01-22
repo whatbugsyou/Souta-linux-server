@@ -84,12 +84,7 @@ public class MainController {
                 boolean addTrue = dialingLines.add(lineID);
                 if (addTrue) {
                     basePool.execute(() -> {
-                        log.info("LineMonitor is going to create line{} after {} seconds...", lineID, lineRedialWait);
-                        try {
-                            TimeUnit.SECONDS.sleep(lineRedialWait);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                        log.info("LineMonitor is going to create line{}...", lineID);
                         createLine(lineID);
                     });
                 }

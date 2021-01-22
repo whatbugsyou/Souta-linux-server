@@ -28,7 +28,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final List<ADSL> adslAccountList = new ArrayList<>();
     private static final HashSet<String> isRecordInSecretFile = new HashSet<>();
     private static final HashSet<String> isCreatedpppFile = new HashSet<>();
-    private static final int dilaGapLimit = 8;
+    private static final int dialGapLimit = 10;
     private static final Timer timer = new Timer();
     private static final ReentrantLock reDialLock = new ReentrantLock();
     private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
@@ -459,7 +459,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
             }
         };
-        timer.schedule(timerTask, TimeUnit.SECONDS.toMillis(dilaGapLimit));
+        timer.schedule(timerTask, TimeUnit.SECONDS.toMillis(dialGapLimit));
     }
 
     @Override
