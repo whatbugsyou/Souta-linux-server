@@ -9,11 +9,15 @@ public class Line {
     private String id;
     private Socks5 socks5;
     private Shadowsocks shadowsocks;
+    private String adslAccount;
+    private String adslPassword;
 
-    public Line(String id, Socks5 socks5, Shadowsocks shadowsocks) {
+    public Line(String id, Socks5 socks5, Shadowsocks shadowsocks, String adslAccount, String adslPassword) {
         this.id = id;
         this.socks5 = socks5;
         this.shadowsocks = shadowsocks;
+        this.adslAccount = adslAccount;
+        this.adslPassword = adslPassword;
     }
 
     @Override

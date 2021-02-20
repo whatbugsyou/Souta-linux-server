@@ -32,6 +32,7 @@ public class MainController {
     private static final int checkingTimesOfDefineDeadLine = 3;
     /**
      * record the times of false dial ,if the times are >= checkingTimesOfDefineDeadLine will send to java server as a dead line
+     * lineId:dialFalseTimes
      */
     private static final ConcurrentHashMap<String, Integer> dialFalseTimesMap = new ConcurrentHashMap<>();
     /**

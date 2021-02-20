@@ -61,7 +61,7 @@ public class LineServiceImpl implements LineService {
                                     shadowsocks = shadowsocksService.getSocks(lineId, ip);
                                 }
                                 if (socks5 != null && shadowsocks != null) {
-                                    line = new Line(lineId, socks5, shadowsocks);
+                                    line = new Line(lineId, socks5, shadowsocks ,pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(),pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
                                     break;
                                 }
                             } while (++times < 10);
@@ -101,7 +101,7 @@ public class LineServiceImpl implements LineService {
         Socks5 socks5 = socks5Service.getSocks(lineId, ip);
         Shadowsocks shadowsocks = shadowsocksService.getSocks(lineId, ip);
         if (socks5 != null && shadowsocks != null) {
-            return new Line(lineId, socks5, shadowsocks);
+            return new Line(lineId, socks5, shadowsocks ,pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(),pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
         } else {
             return null;
         }
