@@ -217,6 +217,8 @@ public class MainController {
             resultMap.put("status", "ok");
         }
         refreshPool.execute(() -> {
+            dialFalseTimesMap.remove(lineId);
+            deadLineIdSet.remove(lineId);
             FutureTask<Line> futureTask = lineService.refreshLine(lineId);
             lineReturnHandle(lineId, futureTask);
         });
