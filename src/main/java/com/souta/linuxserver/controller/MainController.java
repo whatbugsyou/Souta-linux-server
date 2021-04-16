@@ -23,7 +23,6 @@ import java.util.concurrent.*;
 import static com.souta.linuxserver.controller.Host.id;
 import static com.souta.linuxserver.controller.Host.java_server_host;
 import static com.souta.linuxserver.service.LineService.dialingLines;
-import static com.souta.linuxserver.service.LineService.lineRedialWait;
 
 @RestController
 @RequestMapping("/v1.0/line/notify")
@@ -35,6 +34,7 @@ public class MainController {
      * lineId:dialFalseTimes
      */
     private static final ConcurrentHashMap<String, Integer> dialFalseTimesMap = new ConcurrentHashMap<>();
+    private static final Set<String> deadLineIdSet = new HashSet<>();
     /**
      * the line that is error sent is going to be resent.
      */
@@ -81,7 +81,7 @@ public class MainController {
                 Executors.newScheduledThreadPool(3);
         Runnable checkFullDial = () -> {
             String lineID = lineService.generateLineID();
-            if (lineID != null) {
+            if (lineID != null && !deadLineIdSet.contains(lineID)) {
                 boolean addTrue = dialingLines.add(lineID);
                 if (addTrue) {
                     basePool.execute(() -> {
@@ -116,12 +116,13 @@ public class MainController {
                             if (status != 200) {
                                 throw new ResponseNotOkException("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
                             }
-                        }catch (Exception e){
+                        } catch (Exception e) {
                             log.error(e.getMessage());
                         }
                     };
                     basePool.execute(runnable);
                     dialFalseTimesMap.put(entry.getKey(), value + 1);
+                    deadLineIdSet.add(entry.getKey());
                 }
             }
         };
@@ -172,7 +173,7 @@ public class MainController {
             if (status != 200) {
                 throw new ResponseNotOkException("error in deleting All Line from java server,API(DELETE) :  /v1.0/server/lines ");
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error(e.getMessage());
         }
     }
@@ -249,6 +250,7 @@ public class MainController {
         } else {
             sendLineInfo(line);
             dialFalseTimesMap.remove(lineId);
+            deadLineIdSet.remove(lineId);
         }
     }
 
@@ -282,7 +284,8 @@ public class MainController {
 
     @DeleteMapping()
     public HashMap<String, Object> deleteLine(String lineId) {
-        log.info("delete line {}", lineId);
+        log.info("delete line {}, and do not dialing automatically", lineId);
+        deadLineIdSet.add(lineId);
         HashMap<String, Object> resultMap = new HashMap<>();
         basePool.execute(new Runnable() {
             @Override
