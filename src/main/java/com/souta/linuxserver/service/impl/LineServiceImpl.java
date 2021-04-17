@@ -24,16 +24,15 @@ public class LineServiceImpl implements LineService {
     private final Socks5Service socks5Service;
     private final ShadowsocksService shadowsocksService;
     private final PPPOEService pppoeService;
+    @Autowired
+    @Qualifier("linePool")
+    private ExecutorService linePool;
 
     public LineServiceImpl(Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService) {
         this.socks5Service = socks5Service;
         this.shadowsocksService = shadowsocksService;
         this.pppoeService = pppoeService;
     }
-
-    @Autowired
-    @Qualifier("linePool")
-    private ExecutorService linePool;
 
     @Override
     public FutureTask<Line> createLine(String lineId) {
@@ -61,7 +60,7 @@ public class LineServiceImpl implements LineService {
                                     shadowsocks = shadowsocksService.getSocks(lineId, ip);
                                 }
                                 if (socks5 != null && shadowsocks != null) {
-                                    line = new Line(lineId, socks5, shadowsocks ,pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(),pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
+                                    line = new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
                                     break;
                                 }
                             } while (++times < 10);
@@ -101,7 +100,7 @@ public class LineServiceImpl implements LineService {
         Socks5 socks5 = socks5Service.getSocks(lineId, ip);
         Shadowsocks shadowsocks = shadowsocksService.getSocks(lineId, ip);
         if (socks5 != null && shadowsocks != null) {
-            return new Line(lineId, socks5, shadowsocks ,pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(),pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
+            return new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
         } else {
             return null;
         }
@@ -109,10 +108,10 @@ public class LineServiceImpl implements LineService {
 
     @Override
     public List<Line> getLines(Set<String> lineIdList) {
+        onGettingLines = true;
         List<Line> lines = Collections.synchronizedList(new ArrayList());
+        lock.lock();
         try {
-            lock.lock();
-            onGettingLines = true;
             //sort id (String type)
             TreeSet<Integer> integers = new TreeSet<>();
             for (String id : lineIdList
@@ -139,18 +138,19 @@ public class LineServiceImpl implements LineService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            onGettingLines = false;
             lock.unlock();
         }
+        onGettingLines = false;
         return new ArrayList<Line>(lines);
     }
 
     @Override
     public FutureTask<Line> refreshLine(String lineId) {
         if (onGettingLines) {
+            //lock till getLine thread invoking
+            lock.lock();
             try {
-                //lock till getLine thread invoking
-                lock.lock();
+                // do something
             } finally {
                 lock.unlock();
             }
