@@ -146,7 +146,7 @@ public class MainController {
         };
         scheduler.scheduleAtFixedRate(checkErrorSendLines, 0, 30, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
-        scheduler.scheduleAtFixedRate(checkFullSocksStart, 0, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(checkFullSocksStart, 20, 1, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
     }
 
