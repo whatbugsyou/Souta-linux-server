@@ -78,7 +78,7 @@ public class MainController {
     private void monitorLines() {
         log.info("monitorLines starting...");
         ScheduledExecutorService scheduler =
-                Executors.newScheduledThreadPool(3);
+                Executors.newScheduledThreadPool(4);
         Runnable checkFullDial = () -> {
             String lineID = lineService.generateLineID();
             if (lineID != null && !deadLineIdSet.contains(lineID)) {
@@ -90,6 +90,18 @@ public class MainController {
                     });
                 }
             }
+        };
+        Runnable checkFullSocksStart = () -> {
+            HashSet<String> socks5ServiceStartedIdSet = socks5Service.getStartedIdSet();
+            HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
+            dialuppedIdSet.removeAll(socks5ServiceStartedIdSet);
+            dialuppedIdSet.removeAll(dialingLines);
+            dialuppedIdSet.forEach(lineID -> {
+                basePool.execute(() -> {
+                    log.info("SocksMonitor is going to restart socks5-{}...", lineID);
+                    socks5Service.restartSocks(lineID);
+                });
+            });
         };
         Runnable checkDeadLine = () -> {
             Set<Map.Entry<String, Integer>> entries = dialFalseTimesMap.entrySet();
@@ -134,6 +146,7 @@ public class MainController {
         };
         scheduler.scheduleAtFixedRate(checkErrorSendLines, 0, 30, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(checkFullSocksStart, 0, 1, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
     }
 
@@ -243,12 +256,7 @@ public class MainController {
             e.printStackTrace();
         }
         if (line == null) {
-            Integer integer = dialFalseTimesMap.get(lineId);
-            if (integer != null) {
-                dialFalseTimesMap.put(lineId, integer + 1);
-            } else {
-                dialFalseTimesMap.put(lineId, 1);
-            }
+            dialFalseTimesMap.merge(lineId, 1, Integer::sum);
         } else {
             sendLineInfo(line);
             dialFalseTimesMap.remove(lineId);

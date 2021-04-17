@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,7 +85,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=/root/ss5.passwd\n");
             cfgfileBufferedWriter.write("export SS5_LOG_FILE=/root/ss5.log\n");
             cfgfileBufferedWriter.write("export SS5_PROFILE_PATH=/root\n");
-            String startCmd = "/usr/sbin/ss5 -t -m -u root";
+            String startCmd = "/usr/sbin/ss5 -t -m -u root -p /var/run/ss5/ss5-" + id + ".pid";
             cfgfileBufferedWriter.write(startCmd);
         } catch (IOException e) {
             e.printStackTrace();
@@ -182,5 +183,29 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             e.printStackTrace();
         }
         return socks5List;
+    }
+
+    @Override
+    public HashSet<String> getStartedIdSet() {
+        HashSet<String> result = new HashSet<>();
+        String cmd = " pgrep -a ss5|awk '/ss5-[0-9]+\\.pid/ {print $8}'";
+        Pattern compile = Pattern.compile(".*-(\\d+).*");
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
+        if (inputStream != null) {
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            String line;
+            try {
+                while ((line = bufferedReader.readLine()) != null) {
+                    Matcher matcher = compile.matcher(line);
+                    if (matcher.matches()) {
+                        result.add(matcher.group(1));
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return result;
     }
 }
