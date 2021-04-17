@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.DeadLine;
 import com.souta.linuxserver.entity.Line;
+import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.exception.ResponseNotOkException;
 import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
@@ -23,6 +24,7 @@ import java.util.concurrent.*;
 import static com.souta.linuxserver.controller.Host.id;
 import static com.souta.linuxserver.controller.Host.java_server_host;
 import static com.souta.linuxserver.service.LineService.dialingLines;
+import static com.souta.linuxserver.service.Socks5Service.onStartingSocks;
 
 @RestController
 @RequestMapping("/v1.0/line/notify")
@@ -96,11 +98,19 @@ public class MainController {
             HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
             dialuppedIdSet.removeAll(socks5ServiceStartedIdSet);
             dialuppedIdSet.removeAll(dialingLines);
+            dialuppedIdSet.removeAll(onStartingSocks);
             dialuppedIdSet.forEach(lineID -> {
-                basePool.execute(() -> {
-                    log.info("SocksMonitor is going to restart socks5-{}...", lineID);
-                    socks5Service.restartSocks(lineID);
-                });
+                boolean addTrue = onStartingSocks.add(lineID);
+                if (addTrue){
+                    basePool.execute(() -> {
+                        try {
+                            log.info("SocksMonitor is going to restart socks5-{}...", lineID);
+                            socks5Service.restartSocks(lineID);
+                        }finally {
+                            onStartingSocks.remove(lineID);
+                        }
+                    });
+                }
             });
         };
         Runnable checkDeadLine = () -> {

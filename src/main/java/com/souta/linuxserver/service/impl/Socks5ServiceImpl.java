@@ -146,13 +146,18 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
 
     @Override
     public boolean startSocks(String id, String ip) {
-        if (createConfigFile(id, ip)) {
-            String namespaceName = "ns" + id;
-            String cmd = "sh /root/socks5/socks5-" + id + ".sh";
-            namespaceService.exeCmdInNamespace(namespaceName, cmd);
-            return true;
-        } else {
-            return false;
+        onStartingSocks.add(id);
+        try {
+            if (createConfigFile(id, ip)) {
+                String namespaceName = "ns" + id;
+                String cmd = "sh /root/socks5/socks5-" + id + ".sh";
+                namespaceService.exeCmdInNamespace(namespaceName, cmd);
+                return true;
+            } else {
+                return false;
+            }
+        }finally {
+            onStartingSocks.remove(id);
         }
     }
 
