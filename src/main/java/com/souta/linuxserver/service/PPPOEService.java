@@ -63,4 +63,12 @@ public interface PPPOEService {
     List<ADSL> getADSLList();
 
     String getIP(String pppoeId);
+
+    /**
+     * change adsl account and use it in the next dialing process.
+     * @param pppoeId
+     * @param adsl
+     * @return
+     */
+    boolean changeADSLAccount(String pppoeId, ADSL adsl);
 }

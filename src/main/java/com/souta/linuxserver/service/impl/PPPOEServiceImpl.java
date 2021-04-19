@@ -111,6 +111,36 @@ public class PPPOEServiceImpl implements PPPOEService {
     }
 
     @Override
+    public boolean changeADSLAccount(String pppoeId, ADSL adsl) {
+        ADSL origin = adslAccountList.get(Integer.parseInt(pppoeId));
+       if (adsl.getEthernetName() ==null){
+           adsl.setEthernetName(origin.getEthernetName());
+       }
+       adslAccountList.set(Integer.parseInt(pppoeId),adsl);
+        File adslFile = new File(adslAccountFilePath);
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(adslFile);
+            for (ADSL data : adslAccountList) {
+                fileWriter.write(data.toString()+"\n");
+            }
+            isCreatedpppFile.remove(pppoeId);
+            return true;
+        } catch (IOException e) {
+           log.error("refresh adsl file error:{}",e.getMessage());
+        }finally {
+            if (fileWriter == null){
+                try {
+                    fileWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
     public boolean isDialUp(String pppoeId) {
         String cmd = "ip route";
         String namespaceName = "ns" + pppoeId;
@@ -206,6 +236,8 @@ public class PPPOEServiceImpl implements PPPOEService {
         }
         return null;
     }
+
+
 
     @Override
     public boolean isDialUp(PPPOE pppoe) {

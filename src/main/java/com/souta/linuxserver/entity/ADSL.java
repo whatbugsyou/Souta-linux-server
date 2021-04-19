@@ -14,4 +14,9 @@ public class ADSL {
         this.ethernetName = ethernetName;
     }
 
+    @Override
+    public String toString() {
+        String gap = "----";
+        return new StringBuilder().append(adslUser).append(gap).append(adslPassword).append(gap).append(ethernetName).toString();
+    }
 }
