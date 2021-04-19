@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.DeadLine;
 import com.souta.linuxserver.entity.Line;
-import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.exception.ResponseNotOkException;
 import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
@@ -101,12 +100,27 @@ public class MainController {
             dialuppedIdSet.removeAll(onStartingSocks);
             dialuppedIdSet.forEach(lineID -> {
                 boolean addTrue = onStartingSocks.add(lineID);
-                if (addTrue){
+                if (addTrue) {
                     basePool.execute(() -> {
                         try {
                             log.info("SocksMonitor is going to restart socks5-{}...", lineID);
                             socks5Service.restartSocks(lineID);
-                        }finally {
+                            boolean isStart = false;
+                            int testTimes = 0;
+                            while (!isStart) {
+                                try {
+                                    Thread.sleep(1000);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                isStart = socks5Service.isStart(lineID);
+                                testTimes++;
+                                if (testTimes == 3) {
+                                    break;
+                                }
+                            }
+                            log.info("restart socks5-{} {}", lineID, isStart ? "ok" : "failure");
+                        } finally {
                             onStartingSocks.remove(lineID);
                         }
                     });
@@ -371,7 +385,7 @@ public class MainController {
     }
 
     @PutMapping("adsl")
-    public boolean changeAdslAccount(@RequestParam("lineId") String lineId,@RequestBody ADSL adsl){
-        return pppoeService.changeADSLAccount(lineId,adsl);
+    public boolean changeAdslAccount(@RequestParam("lineId") String lineId, @RequestBody ADSL adsl) {
+        return pppoeService.changeADSLAccount(lineId, adsl);
     }
 }
