@@ -48,6 +48,7 @@ public class LineServiceImpl implements LineService {
                     String ip;
                     if (pppoeR != null && (ip = pppoeR.getOutIP()) != null) {
                         initSocks(lineId);
+                        log.info("line {} start socks", lineId);
                         if (startSocks(lineId, ip)) {
                             int times = 0;
                             Socks5 socks5 = null;
@@ -63,6 +64,7 @@ public class LineServiceImpl implements LineService {
                                     line = new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
                                     break;
                                 }
+                                log.info("line {} check socks: {}/10", lineId, times);
                             } while (++times < 10);
                             if (line == null) {
                                 log.error("line {} create error", lineId);

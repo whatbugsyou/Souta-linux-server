@@ -195,7 +195,6 @@ public class MainController {
                 HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
                 ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
                 log.info("total {} lines is ok", lines.size());
-                //        clean();
                 sendLinesInfo(lines);
             }
         });
@@ -354,24 +353,25 @@ public class MainController {
             data.put("hostId", id);
             data.put("lines", lines);
             String body = new JSONObject(data).toJSONString();
-            log.info("send Lines Info ...");
             Runnable runnable = new Runnable() {
                 @Override
                 public void run() {
+                    log.info("send Lines Info ...");
                     try {
                         boolean status = HttpRequest.put(java_server_host + "/v1.0/line")
                                 .body(body)
                                 .execute().isOk();
                         if (status) {
+                            log.info("send Lines Info ok : {}", body);
                             errorSendLines.removeAll(lines);
                         } else {
                             throw new ResponseNotOkException("response not OK in sendLinesInfo to the Java server,API(PUT) :  /v1.0/line ");
                         }
                     } catch (RuntimeException | ResponseNotOkException e) {
                         log.error(e.getMessage());
+                        log.info("send Lines Info NOT ok : {}", body);
                         errorSendLines.addAll(lines);
                     }
-                    log.info(body);
                 }
             };
             netPool.submit(runnable);

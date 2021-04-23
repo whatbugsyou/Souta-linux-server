@@ -463,12 +463,12 @@ public class PPPOEServiceImpl implements PPPOEService {
                     }
                 }
                 limitRedialTime(pppoe.getId());
-                log.info("ppp{} has return , cost {}s", pppoe.getId(), costSec);
                 if (ip == null) {
                     shutDown(pppoe);
                 } else {
                     pppoe.setOutIP(ip);
                 }
+                log.info("ppp{} has return , cost {}s ,ip =[{}]", pppoe.getId(), costSec ,ip == null ? "": ip);
                 return pppoe;
             }
         };
