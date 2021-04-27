@@ -1,6 +1,7 @@
 package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.*;
+import com.souta.linuxserver.entity.abs.Socks;
 import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
@@ -35,44 +36,51 @@ public class LineServiceImpl implements LineService {
     }
 
     @Override
-    public FutureTask<Line> createLine(String lineId) {
+    public FutureTask<Line> createLineWithDefaultListenIP(String lineId) {
         Callable<Line> dialHandle = () -> {
-            Line line = getLine(lineId);
+            Line line = null;
             try {
-                if (line == null) {
-                    PPPOE pppoe = pppoeService.createPPPOE(lineId);
-                    if (pppoe == null) {
-                        return null;
-                    }
-                    dialingLines.add(lineId);
-                    FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
-                    PPPOE pppoeR = futureTask.get();
-                    String ip;
-                    if (pppoeR != null && (ip = pppoeR.getOutIP()) != null) {
-                        initSocks(lineId);
-                        log.info("line {} start socks", lineId);
-                        if (startSocks(lineId, ip)) {
-                            int times = 0;
-                            Socks5 socks5 = null;
-                            Shadowsocks shadowsocks = null;
-                            do {
-                                if (socks5 == null) {
-                                    socks5 = (Socks5) socks5Service.getSocks(lineId, ip);
-                                }
-                                if (shadowsocks == null) {
-                                    shadowsocks = (Shadowsocks) shadowsocksService.getSocks(lineId, ip);
-                                }
-                                if (socks5 != null && shadowsocks != null) {
-                                    line = new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
-                                    break;
-                                }
-                                log.info("line {} check socks: {}/10", lineId, times);
-                            } while (++times < 10);
-                            if (line == null) {
-                                log.error("line {} create error", lineId);
-                                deleteLine(lineId);
+                PPPOE pppoe = pppoeService.createPPPOE(lineId);
+                if (pppoe == null) {
+                    return null;
+                }
+                dialingLines.add(lineId);
+                FutureTask<PPPOE> futureTask = pppoeService.dialUp(pppoe);
+                PPPOE pppoeR = futureTask.get();
+                String outIp;
+                if (pppoeR != null && (outIp = pppoeR.getOutIP()) != null) {
+                    log.info("line {} start socks", lineId);
+                    int times = 1;
+                    Socks5 socks5 = null;
+                    Shadowsocks shadowsocks = null;
+                    do {
+                        if (socks5 == null) {
+                            Socks socks = socks5Service.getSocks(lineId, DEFAULT_LISTEN_IP);
+                            if (socks != null){
+                                socks5 = (Socks5) socks;
+                                socks5.setIp(outIp);
                             }
                         }
+                        if (shadowsocks == null) {
+                            Socks socks = shadowsocksService.getSocks(lineId, DEFAULT_LISTEN_IP);
+                            if (socks != null) {
+                                shadowsocks = (Shadowsocks) socks;
+                                shadowsocks.setIp(outIp);
+                            }
+                        }
+                        if (socks5 != null && shadowsocks != null) {
+                            line = new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
+                            log.info("line {} start socks ok", lineId);
+                            break;
+                        } else if (times == 1) {
+                            startSocks(lineId, DEFAULT_LISTEN_IP);
+                        }
+                        log.info("line {} check socks: {}/10", lineId, times);
+                        Thread.sleep(500);
+                    } while (++times <= 10);
+                    if (line == null) {
+                        log.error("line {} create error", lineId);
+                        deleteLine(lineId);
                     }
                 }
             } finally {
@@ -85,11 +93,6 @@ public class LineServiceImpl implements LineService {
         return futureTask;
     }
 
-    private void initSocks(String lineId) {
-        socks5Service.stopSocks(lineId);
-        shadowsocksService.stopSocks(lineId);
-    }
-
     private boolean startSocks(String lineId, String ip) {
         boolean b = socks5Service.startSocks(lineId, ip);
         boolean b1 = shadowsocksService.startSocks(lineId, ip);
@@ -97,14 +100,12 @@ public class LineServiceImpl implements LineService {
     }
 
     @Override
-    public Line getLine(String lineId) {
-        String ip = pppoeService.getIP(lineId);
-        if (ip == null) {
+    public Line getLine(String lineId, String listenIp) {
+        if (listenIp == null) {
             return null;
         }
-
-        Socks5 socks5 = (Socks5) socks5Service.getSocks(lineId, ip);
-        Shadowsocks shadowsocks = (Shadowsocks) shadowsocksService.getSocks(lineId, ip);
+        Socks5 socks5 = (Socks5) socks5Service.getSocks(lineId, listenIp);
+        Shadowsocks shadowsocks = (Shadowsocks) shadowsocksService.getSocks(lineId, listenIp);
         if (socks5 != null && shadowsocks != null) {
             return new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
         } else {
@@ -113,7 +114,12 @@ public class LineServiceImpl implements LineService {
     }
 
     @Override
-    public List<Line> getLines(Set<String> lineIdList) {
+    public Line getLineWithDefaultListenIP(String lineId) {
+        return getLine(lineId, DEFAULT_LISTEN_IP);
+    }
+
+    @Override
+    public List<Line> getLinesWithDefaultListenIP(Set<String> lineIdList) {
         onGettingLines = true;
         List<Line> lines = Collections.synchronizedList(new ArrayList());
         lock.lock();
@@ -129,9 +135,12 @@ public class LineServiceImpl implements LineService {
             ) {
                 executorService.submit(() -> {
                     String lineId = id.toString();
-                    Line line = getLine(lineId);
+                    String outIP = pppoeService.getIP(lineId);
+                    Line line = getLine(lineId, DEFAULT_LISTEN_IP);
                     if (line != null) {
                         log.info("Line {} is OK", lineId);
+                        line.getShadowsocks().setIp(outIP);
+                        line.getSocks5().setIp(outIP);
                         lines.add(line);
                     } else {
                         log.warn("Line {} is NOT OK", lineId);
@@ -151,7 +160,7 @@ public class LineServiceImpl implements LineService {
     }
 
     @Override
-    public FutureTask<Line> refreshLine(String lineId) {
+    public FutureTask<Line> refreshLineWithDefaultListenIP(String lineId) {
         if (onGettingLines) {
             //lock till getLine thread invoking
             lock.lock();
@@ -165,37 +174,33 @@ public class LineServiceImpl implements LineService {
         if (!add) {
             return null;
         }
-        socks5Service.stopSocks(lineId);
-        shadowsocksService.stopSocks(lineId);
         pppoeService.shutDown(lineId);
-        return createLine(lineId);
+        return createLineWithDefaultListenIP(lineId);
     }
 
     @Override
     public boolean deleteLine(String lineId) {
-        socks5Service.stopSocks(lineId);
-        shadowsocksService.stopSocks(lineId);
         dialingLines.remove(lineId);
         pppoeService.shutDown(lineId);
+        socks5Service.stopSocks(lineId);
+        shadowsocksService.stopSocks(lineId);
         return true;
     }
 
     @Override
-    public boolean editProtoInLine(String lineId, String protoId, String action) {
+    public boolean editProtoInLineWithDefaultListenIP(String lineId, String protoId, String action) {
         if (!pppoeService.isDialUp(lineId)) {
             return false;
         } else {
             if (protoId.equals("socks5")) {
                 if (action.equals("on")) {
-                    socks5Service.createConfigFile(lineId);
-                    socks5Service.startSocks(lineId);
+                    socks5Service.startSocks(lineId, DEFAULT_LISTEN_IP);
                 } else if (action.equals("off")) {
                     socks5Service.stopSocks(lineId);
                 }
             } else {
                 if (action.equals("on")) {
-                    shadowsocksService.createConfigFile(lineId);
-                    shadowsocksService.startSocks(lineId);
+                    shadowsocksService.startSocks(lineId, DEFAULT_LISTEN_IP);
                 } else if (action.equals("off")) {
                     shadowsocksService.stopSocks(lineId);
                 }
@@ -205,13 +210,13 @@ public class LineServiceImpl implements LineService {
     }
 
     @Override
-    public boolean checkExits(String lineId) {
+    public boolean checkExitsWithDefaultListenIP(String lineId) {
         if (!pppoeService.isDialUp(lineId)) {
             return false;
         }
-        String ip = pppoeService.getIP(lineId);
-        boolean startShadowscocks = shadowsocksService.isStart(lineId, ip);
-        boolean startSocks5 = socks5Service.isStart(lineId, ip);
+//        String ip = pppoeService.getIP(lineId);
+        boolean startShadowscocks = shadowsocksService.isStart(lineId, DEFAULT_LISTEN_IP);
+        boolean startSocks5 = socks5Service.isStart(lineId, DEFAULT_LISTEN_IP);
         return startShadowscocks && startSocks5;
     }
 

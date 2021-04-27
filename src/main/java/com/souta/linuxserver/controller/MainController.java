@@ -24,6 +24,7 @@ import static com.souta.linuxserver.controller.Host.id;
 import static com.souta.linuxserver.controller.Host.java_server_host;
 import static com.souta.linuxserver.service.LineService.dialingLines;
 import static com.souta.linuxserver.service.Socks5Service.onStartingSocks;
+import static com.souta.linuxserver.service.impl.LineServiceImpl.DEFAULT_LISTEN_IP;
 
 @RestController
 @RequestMapping("/v1.0/line/notify")
@@ -80,6 +81,7 @@ public class MainController {
         log.info("monitorLines starting...");
         ScheduledExecutorService scheduler =
                 Executors.newScheduledThreadPool(4);
+
         Runnable checkFullDial = () -> {
             String lineID = lineService.generateLineID();
             if (lineID != null && !deadLineIdSet.contains(lineID)) {
@@ -92,6 +94,7 @@ public class MainController {
                 }
             }
         };
+
         Runnable checkFullSocksStart = () -> {
             HashSet<String> socks5ServiceStartedIdSet = socks5Service.getStartedIdSet();
             HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
@@ -104,7 +107,7 @@ public class MainController {
                     basePool.execute(() -> {
                         try {
                             log.info("SocksMonitor is going to restart socks5-{}...", lineID);
-                            socks5Service.restartSocks(lineID);
+                            socks5Service.restartSocks(lineID,DEFAULT_LISTEN_IP);
                             boolean isStart = false;
                             int testTimes = 0;
                             while (!isStart) {
@@ -113,7 +116,7 @@ public class MainController {
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
-                                isStart = socks5Service.isStart(lineID);
+                                isStart = socks5Service.isStart(lineID,DEFAULT_LISTEN_IP);
                                 testTimes++;
                                 if (testTimes == 3) {
                                     break;
@@ -127,6 +130,7 @@ public class MainController {
                 }
             });
         };
+
         Runnable checkDeadLine = () -> {
             Set<Map.Entry<String, Integer>> entries = dialFalseTimesMap.entrySet();
             for (Map.Entry<String, Integer> entry : entries
@@ -168,6 +172,7 @@ public class MainController {
                 sendLinesInfo(new ArrayList<>(errorSendLines));
             }
         };
+
         scheduler.scheduleAtFixedRate(checkErrorSendLines, 0, 30, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(checkFullSocksStart, 20, 1, TimeUnit.SECONDS);
@@ -180,7 +185,7 @@ public class MainController {
     public void initLines() {
         log.info("initLineInfo....");
         HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-        ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
+        ArrayList<Line> lines = (ArrayList<Line>) lineService.getLinesWithDefaultListenIP(lineIdSet);
         log.info("total {} lines is ok", lines.size());
         //        clean();
         sendLinesInfo(lines);
@@ -193,7 +198,7 @@ public class MainController {
             public void run() {
                 log.info("check all line....");
                 HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-                ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
+                ArrayList<Line> lines = (ArrayList<Line>) lineService.getLinesWithDefaultListenIP(lineIdSet);
                 log.info("total {} lines is ok", lines.size());
                 sendLinesInfo(lines);
             }
@@ -231,13 +236,13 @@ public class MainController {
 
     private HashMap<String, Object> createLine(String lineId) {
         HashMap<String, Object> resultMap = new HashMap<>();
-        if (lineService.checkExits(lineId)) {
+        if (lineService.checkExitsWithDefaultListenIP(lineId)) {
             resultMap.put("status", "exist");
         } else {
             resultMap.put("status", "ok");
         }
         refreshPool.submit(() -> {
-            FutureTask<Line> futureTask = lineService.createLine(lineId);
+            FutureTask<Line> futureTask = lineService.createLineWithDefaultListenIP(lineId);
             lineReturnHandle(lineId, futureTask);
         });
         return resultMap;
@@ -255,7 +260,7 @@ public class MainController {
         refreshPool.execute(() -> {
             dialFalseTimesMap.remove(lineId);
             deadLineIdSet.remove(lineId);
-            FutureTask<Line> futureTask = lineService.refreshLine(lineId);
+            FutureTask<Line> futureTask = lineService.refreshLineWithDefaultListenIP(lineId);
             lineReturnHandle(lineId, futureTask);
         });
         return resultMap;
@@ -298,13 +303,13 @@ public class MainController {
         } else {
             resultMap.put("status", "ok");
             HashMap<Object, Object> data = new HashMap<>();
-            boolean start = socks5Service.isStart(lineId);
+            boolean start = socks5Service.isStart(lineId,DEFAULT_LISTEN_IP);
             if (start) {
                 data.put("socks5", "on");
             } else {
                 data.put("socks5", "off");
             }
-            boolean start1 = shadowsocksService.isStart(lineId);
+            boolean start1 = shadowsocksService.isStart(lineId,DEFAULT_LISTEN_IP);
             if (start1) {
                 data.put("shadowsocks", "on");
             } else {
@@ -334,7 +339,7 @@ public class MainController {
     public HashMap<String, Object> proto(String lineId, String protoId, String action) {
         HashMap<String, Object> resultMap = new HashMap<>();
         log.info("proto change : line {} , {} ,{}", lineId, protoId, action);
-        if (lineService.editProtoInLine(lineId, protoId, action)) {
+        if (lineService.editProtoInLineWithDefaultListenIP(lineId, protoId, action)) {
             resultMap.put("status", "ok");
         } else {
             resultMap.put("status", "not exist");

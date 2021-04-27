@@ -125,6 +125,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         return exeCmdInNamespace(namespace.getName(), cmd);
     }
 
+    @Override
     public InputStream exeCmdInNamespace(String namespace, String cmd) {
         if (!namespace.equals("")) {
             if (!checkExist(namespace)) {

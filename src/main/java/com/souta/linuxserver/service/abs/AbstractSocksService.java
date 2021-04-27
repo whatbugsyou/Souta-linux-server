@@ -48,12 +48,6 @@ public abstract class AbstractSocksService implements SocksService {
     }
 
     @Override
-    public final boolean isStart(String id) {
-        String ip = pppoeService.getIP(id);
-        return isStart(id, ip);
-    }
-
-    @Override
     public final boolean stopSocks(String id) {
         String cmd = "netstat -lntp |grep " + port;
         // tcp        0      0 121.230.252.206:10809   0.0.0.0:*               LISTEN      65481/python2
@@ -78,25 +72,14 @@ public abstract class AbstractSocksService implements SocksService {
         return true;
     }
 
+
     @Override
-    public final boolean restartSocks(String id) {
+    public final boolean restartSocks(String id, String listenIp) {
         if (stopSocks(id)) {
-            return startSocks(id);
+            return startSocks(id, listenIp);
         } else {
             return false;
         }
-    }
-
-    @Override
-    public final boolean startSocks(String id) {
-        String ip = pppoeService.getIP(id);
-        return startSocks(id, ip);
-    }
-
-    @Override
-    public final boolean createConfigFile(String id) {
-        String ip = pppoeService.getIP(id);
-        return createConfigFile(id, ip);
     }
 
     @Override
@@ -108,12 +91,6 @@ public abstract class AbstractSocksService implements SocksService {
             return hasOutput(inputStream);
         }
         return false;
-    }
-
-    @Override
-    public Socks getSocks(String id) {
-        String ip = pppoeService.getIP(id);
-        return getSocks(id, ip);
     }
 
     @Override

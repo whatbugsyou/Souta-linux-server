@@ -7,21 +7,13 @@ public interface SocksService {
 
     boolean isStart(String id, String ip);
 
-    boolean isStart(String id);
-
-    boolean createConfigFile(String id);
-
     boolean createConfigFile(String id, String ip);
-
-    Socks getSocks(String id);
 
     Socks getSocks(String id, String ip);
 
     boolean stopSocks(String id);
 
-    boolean restartSocks(String id);
-
-    boolean startSocks(String sid);
+    boolean restartSocks(String id ,String listenIp);
 
     boolean startSocks(String sid, String ip);
 }

@@ -8,6 +8,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.FutureTask;
 
 public interface LineService {
+
+    String DEFAULT_LISTEN_IP = "0.0.0.0";
     /**
      * Using thread safe set to record the dialingLines
      * can avoid recording the same Line repeatedly
@@ -28,17 +30,20 @@ public interface LineService {
      * @param lineId
      * @return FutureTask.gets line if success ,otherwise null.
      */
-    FutureTask<Line> createLine(String lineId);
+    FutureTask<Line> createLineWithDefaultListenIP(String lineId);
 
     /**
      * @param lineId
+     * @param listenIp
      * @return Line with started socks information,otherwise null.
      */
-    Line getLine(String lineId);
+    Line getLine(String lineId ,String listenIp);
 
-    List<Line> getLines(Set<String> lineIdList);
+    Line getLineWithDefaultListenIP(String lineId);
 
-    FutureTask<Line> refreshLine(String lineId);
+    List<Line> getLinesWithDefaultListenIP(Set<String> lineIdList);
+
+    FutureTask<Line> refreshLineWithDefaultListenIP(String lineId);
 
     boolean deleteLine(String lineId);
 
@@ -48,9 +53,9 @@ public interface LineService {
      * @param action  on or off
      * @return true if it is dial up.
      */
-    boolean editProtoInLine(String lineId, String protoId, String action);
+    boolean editProtoInLineWithDefaultListenIP(String lineId, String protoId, String action);
 
-    boolean checkExits(String lineId);
+    boolean checkExitsWithDefaultListenIP(String lineId);
 
     /**
      * @return a number about the max number of not dial-up line numbers
