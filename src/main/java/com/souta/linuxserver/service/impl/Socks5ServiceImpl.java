@@ -1,7 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Socks5;
-import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.Socks5Service;
@@ -10,9 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,6 +17,7 @@ import static com.souta.linuxserver.entity.Socks5.*;
 
 @Service
 public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Service {
+
     static {
         try {
             File file = new File("/var/run/ss5");
@@ -55,6 +53,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         this.port = DEFAULT_PORT;
         this.log = LoggerFactory.getLogger(Socks5ServiceImpl.class);
         this.configFileDir = "/root/socks5";
+        this.socksProtoTypeClass = Socks5.class;
     }
 
     @Override
@@ -109,42 +108,6 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
     }
 
     @Override
-    public Socks5 getSocks(String id) {
-        String ip = pppoeService.getIP(id);
-        return getSocks(id, ip);
-    }
-
-    @Override
-    public Socks5 getSocks(String id, String ip) {
-        Socks5 socks5 = null;
-        if (ip != null) {
-            String namespaceName = "ns" + id;
-            String cmd = "netstat -ln -tpe |grep " + port + " |grep " + ip;
-            InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
-            String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
-            Pattern compile = Pattern.compile(s);
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            String line = null;
-            try {
-                line = bufferedReader.readLine();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (line != null) {
-                Matcher matcher = compile.matcher(line);
-                if (matcher.matches()) {
-                    String pid = matcher.group(3);
-                    socks5 = (Socks5) SocksPrototypeManager.getProtoType("Socks5");
-                    socks5.setPid(pid);
-                    socks5.setId(id);
-                    socks5.setIp(ip);
-                }
-            }
-        }
-        return socks5;
-    }
-
-    @Override
     public boolean startSocks(String id, String ip) {
         if (createConfigFile(id, ip)) {
             String namespaceName = "ns" + id;
@@ -154,35 +117,6 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         } else {
             return false;
         }
-    }
-
-    @Override
-    public List<Socks5> getAllListenedSocks() {
-        String cmd = "ip -all netns exec netstat -ln -tpe |grep " + port;
-        String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
-        String line;
-        Pattern compile = Pattern.compile(s);
-        ArrayList<Socks5> socks5List = new ArrayList<>();
-        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        try {
-            while ((line = bufferedReader.readLine()) != null) {
-                Matcher matcher = compile.matcher(line);
-                if (matcher.matches()) {
-                    String ip = matcher.group(1);
-                    String ownerId = matcher.group(2);
-                    String pid = matcher.group(3);
-                    Socks5 socks5 = (Socks5) SocksPrototypeManager.getProtoType("Socks5");
-                    socks5.setIp(ip);
-                    socks5.setPid(pid);
-                    socks5.setId(ownerId.substring(2));
-                    socks5List.add(socks5);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return socks5List;
     }
 
     @Override

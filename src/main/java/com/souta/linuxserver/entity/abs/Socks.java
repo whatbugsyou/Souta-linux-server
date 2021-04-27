@@ -9,7 +9,6 @@ public abstract class Socks {
     public String id;
     public String ip;
     public String port;
-    public String pid;
 
     @Override
     public boolean equals(Object o) {

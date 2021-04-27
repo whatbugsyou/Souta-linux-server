@@ -1,6 +1,8 @@
 package com.souta.linuxserver.service.abs;
 
 
+import com.souta.linuxserver.entity.abs.Socks;
+import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.SocksService;
@@ -14,11 +16,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class AbstractSocksService implements SocksService {
+
     protected NamespaceService namespaceService;
     protected PPPOEService pppoeService;
     protected String port;
     protected Logger log;
     protected String configFileDir;
+    protected Class<? extends Socks> socksProtoTypeClass;
 
     public AbstractSocksService(NamespaceService namespaceService, PPPOEService pppoeService) {
         this.namespaceService = namespaceService;
@@ -51,8 +55,9 @@ public abstract class AbstractSocksService implements SocksService {
 
     @Override
     public final boolean stopSocks(String id) {
-        String cmd = "netstat -ln -tpe |grep " + port;
-        String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
+        String cmd = "netstat -lntp |grep " + port;
+        // tcp        0      0 121.230.252.206:10809   0.0.0.0:*               LISTEN      65481/python2
+        String s = ".*LISTEN\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
         String namespace = "ns" + id;
         InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
@@ -62,7 +67,7 @@ public abstract class AbstractSocksService implements SocksService {
             while ((line = bufferedReader.readLine()) != null) {
                 Matcher matcher = compile.matcher(line);
                 if (matcher.matches()) {
-                    String pid = matcher.group(3);
+                    String pid = matcher.group(1);
                     String cmd2 = "kill -9 " + pid;
                     namespaceService.exeCmdInDefaultNamespace(cmd2);
                 }
@@ -97,11 +102,29 @@ public abstract class AbstractSocksService implements SocksService {
     @Override
     public final boolean isStart(String id, String ip) {
         if (ip != null) {
-            String cmd = "netstat -ln -tpe |grep " + port + " |grep " + ip;
+            String cmd = "netstat -lnt |grep " + ip + ":" + port;
             String namespaceName = "ns" + id;
             InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return hasOutput(inputStream);
         }
         return false;
+    }
+
+    @Override
+    public Socks getSocks(String id) {
+        String ip = pppoeService.getIP(id);
+        return getSocks(id, ip);
+    }
+
+    @Override
+    public Socks getSocks(String id, String ip) {
+        boolean isStart = isStart(id, ip);
+        Socks socks = null;
+        if (isStart) {
+            socks = SocksPrototypeManager.getProtoType(socksProtoTypeClass);
+            socks.setId(id);
+            socks.setIp(ip);
+        }
+        return socks;
     }
 }

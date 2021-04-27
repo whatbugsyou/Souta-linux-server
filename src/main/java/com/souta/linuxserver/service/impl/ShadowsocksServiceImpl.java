@@ -2,7 +2,6 @@ package com.souta.linuxserver.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.entity.Shadowsocks;
-import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
@@ -10,11 +9,10 @@ import com.souta.linuxserver.service.abs.AbstractSocksService;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 
 import static com.souta.linuxserver.entity.Shadowsocks.*;
 
@@ -28,6 +26,7 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
         this.port = DEFAULT_PORT;
         this.log = LoggerFactory.getLogger(ShadowsocksService.class);
         this.configFileDir = "/root/shadowsocks";
+        this.socksProtoTypeClass = Shadowsocks.class;
     }
 
     @Override
@@ -86,68 +85,4 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
         }
     }
 
-    @Override
-    public Shadowsocks getSocks(String id) {
-        String ip = pppoeService.getIP(id);
-        return getSocks(id, ip);
-    }
-
-    @Override
-    public Shadowsocks getSocks(String id, String ip) {
-        Shadowsocks shadowsocks = null;
-        if (ip != null) {
-            String cmd = "netstat -ln -tpe |grep " + port + " |grep " + ip;
-            String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
-            Pattern compile = Pattern.compile(s);
-            String namespace = "ns" + id;
-            InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            String line = null;
-            try {
-                line = bufferedReader.readLine();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (line != null) {
-                Matcher matcher = compile.matcher(line);
-                if (matcher.matches()) {
-                    String pid = matcher.group(3);
-                    shadowsocks = (Shadowsocks) SocksPrototypeManager.getProtoType("Shadowsocks");
-                    shadowsocks.setPid(pid);
-                    shadowsocks.setIp(ip);
-                    shadowsocks.setId(id);
-                }
-            }
-        }
-        return shadowsocks;
-    }
-
-    @Deprecated
-    public List<Shadowsocks> getAllListenedShadowsocks() {
-        String cmd = "ip -all netns exec netstat -ln -tpe |grep " + port;
-        String s = ".*? ([\\\\.\\d]+?):.*LISTEN\\s+(\\d+)\\s+\\d+\\s+(\\d+)/.*";
-        String line = null;
-        Pattern compile = Pattern.compile(s);
-        ArrayList<Shadowsocks> shadowsocksList = new ArrayList<>();
-        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        try {
-            while ((line = bufferedReader.readLine()) != null) {
-                Matcher matcher = compile.matcher(line);
-                if (matcher.matches()) {
-                    String ip = matcher.group(1);
-                    String ownerId = matcher.group(2);
-                    String pid = matcher.group(3);
-                    Shadowsocks shadowsocks = (Shadowsocks) SocksPrototypeManager.getProtoType("Shadowsocks");
-                    shadowsocks.setPid(pid);
-                    shadowsocks.setIp(ip);
-                    shadowsocks.setId(ownerId.substring(2));
-                    shadowsocksList.add(shadowsocks);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return shadowsocksList;
-    }
 }
