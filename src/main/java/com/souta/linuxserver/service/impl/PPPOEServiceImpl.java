@@ -433,8 +433,8 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 Namespace namespace = pppoe.getVeth().getNamespace();
                 String ifupCMD = "ifup " + "ppp" + pppoe.getId();
+                reDialLock.lock();
                 try {
-                    reDialLock.lock();
                     Condition condition = redialLimitedConditionMap.get(pppoe.getId());
                     if (condition != null) {
                         condition.await();
@@ -483,8 +483,8 @@ public class PPPOEServiceImpl implements PPPOEService {
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
+                reDialLock.lock();
                 try {
-                    reDialLock.lock();
                     condition.signalAll();
                     redialLimitedConditionMap.remove(id);
                 } finally {
