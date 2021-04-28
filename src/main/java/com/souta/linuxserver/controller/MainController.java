@@ -136,7 +136,10 @@ public class MainController {
             for (Map.Entry<String, Integer> entry : entries
             ) {
                 Integer value = entry.getValue();
-                if (value == checkingTimesOfDefineDeadLine) {
+                if (deadLineIdSet.contains(entry.getKey())){
+                    continue;
+                }
+                if (value >= checkingTimesOfDefineDeadLine) {
                     HashMap<String, Object> data = new HashMap<>();
                     DeadLine deadLine = new DeadLine();
                     deadLine.setLineId(entry.getKey());
@@ -156,13 +159,12 @@ public class MainController {
                             if (status != 200) {
                                 throw new ResponseNotOkException("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
                             }
+                            deadLineIdSet.add(entry.getKey());
                         } catch (Exception e) {
                             log.error(e.getMessage());
                         }
                     };
                     basePool.execute(runnable);
-                    dialFalseTimesMap.put(entry.getKey(), value + 1);
-                    deadLineIdSet.add(entry.getKey());
                 }
             }
         };
