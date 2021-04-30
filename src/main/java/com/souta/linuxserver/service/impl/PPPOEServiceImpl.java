@@ -96,11 +96,15 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public PPPOE createPPPOE(String pppoeId) {
         ADSL adsl = adslAccountList.get(Integer.parseInt(pppoeId) - 1);
-        if (adsl == null) return null;
+        if (adsl == null) {
+            return null;
+        }
         String vethName = "stv" + pppoeId;
         String namespaceName = "ns" + pppoeId;
         Veth veth = vethService.createVeth(adsl.getEthernetName(), vethName, namespaceName);
-        if (!veth.getNamespace().getName().equals(namespaceName)) return null;
+        if (!veth.getNamespace().getName().equals(namespaceName)) {
+            return null;
+        }
 
         String adslUser = adsl.getAdslUser();
         String adslPassword = adsl.getAdslPassword();
@@ -445,17 +449,18 @@ public class PPPOEServiceImpl implements PPPOEService {
                 log.info("ppp{} start dialing ...", pppoe.getId());
                 namespaceService.exeCmdInNamespace(namespace, ifupCMD);
                 int checkCount = 0;
-                float costSec = 0;
+                long beginTimeMillis = System.currentTimeMillis();
                 float sleepGapSec = 0.5f;
                 int dialEndSec = 60;
                 String ip = null;
                 while ((ip = getIP(pppoe.getId())) == null) {
                     checkCount++;
-                    costSec = checkCount * sleepGapSec;
-                    if (costSec % 10 == 0) {
-                        log.info("ppp{} dialing {}s ...", pppoe.getId(), costSec);
+                    long now = System.currentTimeMillis();
+                    long cost = now - beginTimeMillis;
+                    if (checkCount % 20 == 0) {
+                        log.info("ppp{} dialing check[{}]...", pppoe.getId(), checkCount);
                     }
-                    if (costSec < dialEndSec) {
+                    if (cost < dialEndSec * 1000) {
                         TimeUnit.MILLISECONDS.sleep((long) (sleepGapSec * 1000));
                     } else {
                         log.warn("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
@@ -468,7 +473,8 @@ public class PPPOEServiceImpl implements PPPOEService {
                 } else {
                     pppoe.setOutIP(ip);
                 }
-                log.info("ppp{} has return , cost {}s ,ip =[{}]", pppoe.getId(), costSec ,ip == null ? "": ip);
+                long costTimeMillis  = System.currentTimeMillis() -beginTimeMillis ;
+                log.info("ppp{} has return , cost {}ms ,ip =[{}]", pppoe.getId(), costTimeMillis ,ip == null ? "": ip);
                 return pppoe;
             }
         };
