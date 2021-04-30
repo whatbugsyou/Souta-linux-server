@@ -509,6 +509,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public boolean reDialup(PPPOE pppoe) {
         shutDown(pppoe);
+        //sleep 3s ?
         dialUp(pppoe);
         return true;
     }
