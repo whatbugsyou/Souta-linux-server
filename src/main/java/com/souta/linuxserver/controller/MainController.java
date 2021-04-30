@@ -149,10 +149,9 @@ public class MainController {
                     data.put("hostId", id);
                     data.put("deadLine", deadLine);
                     String body = new JSONObject(data).toJSONString();
-                    log.info("send deadLine Info :");
-                    log.info(body);
                     Runnable runnable = () -> {
                         try {
+                            log.info("send deadLine Info : {}",body);
                             int status = HttpRequest.post(java_server_host + "/v1.0/deadLine")
                                     .body(body)
                                     .execute().getStatus();
