@@ -228,12 +228,15 @@ public class LineServiceImpl implements LineService {
     @Override
     public String generateLineID() {
         LineMax lineMax = new LineMax();
-        HashSet<String> dialuppedId = pppoeService.getDialuppedIdSet();
-        dialuppedId.addAll(dialingLines);
+        HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
+        Set<String> excludeSet;
+        excludeSet = dialuppedIdSet;
+        excludeSet.addAll(dialingLines);
+        excludeSet.addAll(deadLineIdSet);
         List<ADSL> adslList = pppoeService.getADSLList();
-        if (dialuppedId.size() < adslList.size()) {
+        if (excludeSet.size() < adslList.size()) {
             for (String id :
-                    dialuppedId) {
+                    excludeSet) {
                 lineMax.add(Integer.parseInt(id));
             }
             return String.valueOf(lineMax.getMax());

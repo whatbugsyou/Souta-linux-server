@@ -1,6 +1,7 @@
 package com.souta.linuxserver.controller;
 
 import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.DeadLine;
@@ -22,6 +23,7 @@ import java.util.concurrent.*;
 
 import static com.souta.linuxserver.controller.Host.id;
 import static com.souta.linuxserver.controller.Host.java_server_host;
+import static com.souta.linuxserver.service.LineService.deadLineIdSet;
 import static com.souta.linuxserver.service.LineService.dialingLines;
 import static com.souta.linuxserver.service.Socks5Service.onStartingSocks;
 import static com.souta.linuxserver.service.impl.LineServiceImpl.DEFAULT_LISTEN_IP;
@@ -36,7 +38,6 @@ public class MainController {
      * lineId:dialFalseTimes
      */
     private static final ConcurrentHashMap<String, Integer> dialFalseTimesMap = new ConcurrentHashMap<>();
-    private static final Set<String> deadLineIdSet = new HashSet<>();
     /**
      * the line that is error sent is going to be resent.
      */
@@ -84,7 +85,7 @@ public class MainController {
 
         Runnable checkFullDial = () -> {
             String lineID = lineService.generateLineID();
-            if (lineID != null && !deadLineIdSet.contains(lineID)) {
+            if (lineID != null) {
                 boolean addTrue = dialingLines.add(lineID);
                 if (addTrue) {
                     basePool.execute(() -> {
@@ -107,7 +108,7 @@ public class MainController {
                     basePool.execute(() -> {
                         try {
                             log.info("SocksMonitor is going to restart socks5-{}...", lineID);
-                            socks5Service.restartSocks(lineID,DEFAULT_LISTEN_IP);
+                            socks5Service.restartSocks(lineID, DEFAULT_LISTEN_IP);
                             boolean isStart = false;
                             int testTimes = 0;
                             while (!isStart) {
@@ -116,7 +117,7 @@ public class MainController {
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
-                                isStart = socks5Service.isStart(lineID,DEFAULT_LISTEN_IP);
+                                isStart = socks5Service.isStart(lineID, DEFAULT_LISTEN_IP);
                                 testTimes++;
                                 if (testTimes == 3) {
                                     break;
@@ -136,7 +137,7 @@ public class MainController {
             for (Map.Entry<String, Integer> entry : entries
             ) {
                 Integer value = entry.getValue();
-                if (deadLineIdSet.contains(entry.getKey())){
+                if (deadLineIdSet.contains(entry.getKey())) {
                     continue;
                 }
                 if (value >= checkingTimesOfDefineDeadLine) {
@@ -151,7 +152,7 @@ public class MainController {
                     String body = new JSONObject(data).toJSONString();
                     Runnable runnable = () -> {
                         try {
-                            log.info("send deadLine Info : {}",body);
+                            log.info("send deadLine Info : {}", body);
                             int status = HttpRequest.post(java_server_host + "/v1.0/deadLine")
                                     .body(body)
                                     .execute().getStatus();
@@ -304,13 +305,13 @@ public class MainController {
         } else {
             resultMap.put("status", "ok");
             HashMap<Object, Object> data = new HashMap<>();
-            boolean start = socks5Service.isStart(lineId,DEFAULT_LISTEN_IP);
+            boolean start = socks5Service.isStart(lineId, DEFAULT_LISTEN_IP);
             if (start) {
                 data.put("socks5", "on");
             } else {
                 data.put("socks5", "off");
             }
-            boolean start1 = shadowsocksService.isStart(lineId,DEFAULT_LISTEN_IP);
+            boolean start1 = shadowsocksService.isStart(lineId, DEFAULT_LISTEN_IP);
             if (start1) {
                 data.put("shadowsocks", "on");
             } else {
@@ -364,14 +365,15 @@ public class MainController {
                 public void run() {
                     log.info("send Lines Info ...");
                     try {
-                        boolean status = HttpRequest.put(java_server_host + "/v1.0/line")
+                        HttpResponse response = HttpRequest.put(java_server_host + "/v1.0/line")
                                 .body(body)
-                                .execute().isOk();
+                                .execute();
+                        boolean status = response.isOk();
                         if (status) {
                             log.info("send Lines Info ok : {}", body);
                             errorSendLines.removeAll(lines);
                         } else {
-                            throw new ResponseNotOkException("response not OK in sendLinesInfo to the Java server,API(PUT) :  /v1.0/line ");
+                            throw new ResponseNotOkException("response not OK in sendLinesInfo to the Java server, API(PUT): /v1.0/line, " + response.body());
                         }
                     } catch (RuntimeException | ResponseNotOkException e) {
                         log.error(e.getMessage());

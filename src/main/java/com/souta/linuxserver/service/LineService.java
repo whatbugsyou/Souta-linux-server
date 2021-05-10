@@ -26,6 +26,8 @@ public interface LineService {
      */
     int lineRedialWait = 2;
 
+    Set<String> deadLineIdSet = new CopyOnWriteArraySet<>();
+
     /**
      * @param lineId
      * @return FutureTask.gets line if success ,otherwise null.
@@ -37,7 +39,7 @@ public interface LineService {
      * @param listenIp
      * @return Line with started socks information,otherwise null.
      */
-    Line getLine(String lineId ,String listenIp);
+    Line getLine(String lineId, String listenIp);
 
     Line getLineWithDefaultListenIP(String lineId);
 

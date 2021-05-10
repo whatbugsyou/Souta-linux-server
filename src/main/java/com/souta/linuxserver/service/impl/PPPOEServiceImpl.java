@@ -193,7 +193,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public HashSet<String> getDialuppedIdSet() {
         HashSet<String> result = new HashSet<>();
         String cmd = "ps ax|awk '/ppp\\d/ {print $9}'";
-//        String cmd = "pgrep -a pppoe|awk '{print $4}'";
+//        String cmd = "pgrep -a pppoe|awk '/run/ {print $4}'";
         Pattern compile = Pattern.compile(".*?(\\d+).*");
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         if (inputStream != null) {
