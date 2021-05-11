@@ -56,7 +56,7 @@ public class LineServiceImpl implements LineService {
                     do {
                         if (socks5 == null) {
                             Socks socks = socks5Service.getSocks(lineId, DEFAULT_LISTEN_IP);
-                            if (socks != null){
+                            if (socks != null) {
                                 socks5 = (Socks5) socks;
                                 socks5.setIp(outIp);
                             }
@@ -136,6 +136,9 @@ public class LineServiceImpl implements LineService {
                 executorService.submit(() -> {
                     String lineId = id.toString();
                     String outIP = pppoeService.getIP(lineId);
+                    if (outIP == null || outIP.isEmpty()) {
+                        return;
+                    }
                     Line line = getLine(lineId, DEFAULT_LISTEN_IP);
                     if (line != null) {
                         log.info("Line {} is OK", lineId);
