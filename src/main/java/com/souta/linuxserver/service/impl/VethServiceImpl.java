@@ -172,7 +172,7 @@ public class VethServiceImpl implements VethService {
         if (!exist) {
             return true;
         } else {
-            String cmd = "ip addr del " + vethName;
+            String cmd = "ip link delete " + vethName + " type macvlan";
             namespaceService.exeCmdInNamespace(new Namespace(namespaceName), cmd);
             return true;
         }
