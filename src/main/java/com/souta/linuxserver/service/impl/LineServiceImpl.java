@@ -137,6 +137,9 @@ public class LineServiceImpl implements LineService {
                     String lineId = id.toString();
                     String outIP = pppoeService.getIP(lineId);
                     if (outIP == null || outIP.isEmpty()) {
+                        if ( !dialingLines.contains(lineId)) {
+                            deleteLine(lineId);
+                        }
                         return;
                     }
                     Line line = getLine(lineId, DEFAULT_LISTEN_IP);
