@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 @Data
 public class Host {
-    public static final String java_server_host = "http://106.55.13.147:8088";
+    public static final String java_server_host = "https://i.souta.com";
     private static final Logger log = LoggerFactory.getLogger(Host.class);
     private static final String hostFilePath = "/root/host.json";
     private static final String hostRouteFilePath = "/root/hostRoute.sh";
