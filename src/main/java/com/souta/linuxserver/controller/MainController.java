@@ -367,6 +367,7 @@ public class MainController {
                     try {
                         HttpResponse response = HttpRequest.put(java_server_host + "/v1.0/line")
                                 .body(body)
+                                .timeout(5000)
                                 .execute();
                         boolean status = response.isOk();
                         if (status) {
