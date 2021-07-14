@@ -7,10 +7,7 @@ import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.DeadLine;
 import com.souta.linuxserver.entity.Line;
 import com.souta.linuxserver.exception.ResponseNotOkException;
-import com.souta.linuxserver.service.LineService;
-import com.souta.linuxserver.service.PPPOEService;
-import com.souta.linuxserver.service.ShadowsocksService;
-import com.souta.linuxserver.service.Socks5Service;
+import com.souta.linuxserver.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +15,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.souta.linuxserver.controller.Host.id;
 import static com.souta.linuxserver.controller.Host.java_server_host;
@@ -46,6 +49,7 @@ public class MainController {
     private final ShadowsocksService shadowsocksService;
     private final Socks5Service socks5Service;
     private final LineService lineService;
+    private final NamespaceService namespaceService;
 
     @Autowired
     @Qualifier("refreshPool")
@@ -59,11 +63,12 @@ public class MainController {
     @Qualifier("basePool")
     private ExecutorService basePool;
 
-    public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, Socks5Service socks5Service, LineService lineService) {
+    public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, Socks5Service socks5Service, LineService lineService, NamespaceService namespaceService) {
         this.pppoeService = pppoeService;
         this.shadowsocksService = shadowsocksService;
         this.socks5Service = socks5Service;
         this.lineService = lineService;
+        this.namespaceService = namespaceService;
     }
 
     @PostConstruct
@@ -81,7 +86,7 @@ public class MainController {
     private void monitorLines() {
         log.info("monitorLines starting...");
         ScheduledExecutorService scheduler =
-                Executors.newScheduledThreadPool(4);
+                Executors.newScheduledThreadPool(5);
 
         Runnable checkFullDial = () -> {
             String lineID = lineService.generateLineID();
@@ -94,6 +99,33 @@ public class MainController {
                     });
                 }
             }
+        };
+        Runnable keepCPUHealth = () -> {
+            String cmd = "ps -aux | sort -k3nr | head -1 |awk '{print $2,$3,$11}'";
+            InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
+            if (inputStream != null) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String line;
+                Pattern compile = Pattern.compile("(\\d+) (.+) (.+)");
+                try {
+                    if ((line = bufferedReader.readLine()) != null) {
+                        Matcher matcher = compile.matcher(line);
+                        if (matcher.matches()) {
+                            String pid = matcher.group(1);
+                            Float cpu = Float.valueOf(matcher.group(2));
+                            String command = matcher.group(3);
+                            if (cpu > 100 && command.contains("ss5")) {
+                                namespaceService.exeCmdInDefaultNamespace("kill -9 " + pid);
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
         };
 
         Runnable checkFullSocksStart = () -> {
@@ -179,6 +211,7 @@ public class MainController {
         scheduler.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(checkFullSocksStart, 20, 1, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(keepCPUHealth, 0, 60, TimeUnit.SECONDS);
     }
 
     /**
