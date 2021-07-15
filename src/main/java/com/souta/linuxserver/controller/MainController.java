@@ -116,6 +116,7 @@ public class MainController {
                             Float cpu = Float.valueOf(matcher.group(2));
                             String command = matcher.group(3);
                             if (cpu > 100 && command.contains("ss5")) {
+                                log.info("CPUHealthMonitor is going to kill pid{}---{}%...", pid, cpu);
                                 namespaceService.exeCmdInDefaultNamespace("kill -9 " + pid);
                             }
                         }
