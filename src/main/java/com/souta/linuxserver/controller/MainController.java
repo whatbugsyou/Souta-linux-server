@@ -101,8 +101,13 @@ public class MainController {
             }
         };
         Runnable keepCPUHealth = () -> {
-            String cmd = "ps -aux | sort -k3nr | head -1 |awk '{print $2,$3,$11}'";
+            String cmd = "top -b -n 1 |sed -n '8p'|awk '{print $1,$9,$12}'";
             InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             if (inputStream != null) {
                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
