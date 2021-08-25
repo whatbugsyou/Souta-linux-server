@@ -2,10 +2,7 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.*;
 import com.souta.linuxserver.entity.abs.Socks;
-import com.souta.linuxserver.service.LineService;
-import com.souta.linuxserver.service.PPPOEService;
-import com.souta.linuxserver.service.ShadowsocksService;
-import com.souta.linuxserver.service.Socks5Service;
+import com.souta.linuxserver.service.*;
 import com.souta.linuxserver.util.LineMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,14 +22,16 @@ public class LineServiceImpl implements LineService {
     private final Socks5Service socks5Service;
     private final ShadowsocksService shadowsocksService;
     private final PPPOEService pppoeService;
+    private final NamespaceService namespaceService;
     @Autowired
     @Qualifier("linePool")
     private ExecutorService linePool;
 
-    public LineServiceImpl(Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService) {
+    public LineServiceImpl(Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService) {
         this.socks5Service = socks5Service;
         this.shadowsocksService = shadowsocksService;
         this.pppoeService = pppoeService;
+        this.namespaceService = namespaceService;
     }
 
     @Override
@@ -195,6 +194,7 @@ public class LineServiceImpl implements LineService {
         pppoeService.shutDown(lineId);
         socks5Service.stopSocks(lineId);
         shadowsocksService.stopSocks(lineId);
+        namespaceService.deleteNameSpace("ns"+lineId);
         return true;
     }
 
