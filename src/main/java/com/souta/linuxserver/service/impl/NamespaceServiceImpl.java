@@ -114,7 +114,7 @@ public class NamespaceServiceImpl implements NamespaceService {
     public boolean deleteNameSpace(String name) {
         boolean exist = checkExist(name);
         if (exist) {
-            String cmd = "ip netns del " + name;
+            String cmd = "ip netns delete " + name;
             exeCmdInNamespace(new Namespace(""), cmd);
         }
         return true;
