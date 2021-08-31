@@ -10,6 +10,7 @@ import com.souta.linuxserver.exception.ResponseNotOkException;
 import com.souta.linuxserver.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
@@ -287,6 +288,12 @@ public class MainController {
             lineReturnHandle(lineId, futureTask);
         });
         return resultMap;
+    }
+
+    @RabbitListener(queues = "redialingQueue", concurrency = "5")
+    public void redialingListener(JSONObject jsonObject) {
+        Long lineId = jsonObject.getLong("lineId");
+        refreshLine(lineId.toString());
     }
 
     @PutMapping
