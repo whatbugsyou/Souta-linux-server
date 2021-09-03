@@ -1,0 +1,20 @@
+spring:
+  rabbitmq:
+    addresses: 150.158.190.58:20203
+    username: lolo
+    password: Sun091640.
+    port: 20203
+    listener:
+      simple:
+        prefetch: 50
+
+logging:
+  file:
+    path: /tmp/logfile
+  level: INFO
+
+server:
+  port: 18080
+  tomcat:
+    threads:
+      min-spare: 50
