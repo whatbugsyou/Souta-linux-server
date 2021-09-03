@@ -74,7 +74,6 @@ public class Host {
     public void init() {
         initDNS();
         initFirewall();
-        initIPRoute();
         try {
             initHostId();
         } catch (FileNotFoundException e) {
@@ -82,39 +81,6 @@ public class Host {
             System.exit(1);
         }
         monitorHostIp();
-    }
-
-    private void initIPRoute() {
-        try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
-            String line;
-            boolean flag = false;
-            while ((line = bufferedReader.readLine()) != null) {
-                if (line.equals(String.format("%s %s", hostRouteTablePrio, hostRouteTableName))) {
-                    flag = true;
-                    break;
-                }
-            }
-            if (!flag) {
-                String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
-                namespaceService.exeCmdInDefaultNamespace(cmd);
-            }
-            File file = new File(hostRouteFilePath);
-            String cmd = "ip route";
-            InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-            bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
-            while ((line = bufferedReader.readLine()) != null) {
-                bufferedWriter.write(String.format("ip route add %s table %s", line, hostRouteTableName));
-                bufferedWriter.newLine();
-            }
-            bufferedWriter.flush();
-            namespaceService.exeCmdInDefaultNamespace("sh " + hostRouteFilePath);
-            namespaceService.exeCmdInDefaultNamespace("ip rule del from all table " + hostRouteTableName);
-            namespaceService.exeCmdInDefaultNamespace("ip rule add from all table " + hostRouteTableName);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private void initFirewall() {
@@ -185,9 +151,6 @@ public class Host {
                 }
                 if (nowIp != null && nowIp.matches("[\\\\.\\d]+")) {
                     if (IP == null || !IP.equals(nowIp)) {
-                        if (IP != null) {
-                            initIPRoute();
-                        }
                         log.info("send new HOST IP " + nowIp);
                         try {
                             String jsonStr = FileUtil.ReadFile(hostFilePath);
