@@ -13,6 +13,7 @@ import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.concurrent.Executors;
@@ -20,13 +21,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Data
+@Component
 public class Host {
-    @Value("${center.host}")
-    public static  String java_server_host;
     private static final Logger log = LoggerFactory.getLogger(Host.class);
     private static final String hostFilePath = "/root/host.json";
     private static final String hostRouteFilePath = "/root/hostRoute.sh";
     private static final String DNSFilePath = "/etc/resolv.conf";
+    @Value("${center.host}")
+    public static String java_server_host;
     public static String id;
     @Value("${server.port}")
     public static String port;
