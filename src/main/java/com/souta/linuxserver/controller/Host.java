@@ -12,6 +12,7 @@ import com.souta.linuxserver.util.FileUtil;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.*;
 import java.util.concurrent.Executors;
@@ -20,16 +21,15 @@ import java.util.concurrent.TimeUnit;
 
 @Data
 public class Host {
-    public static final String java_server_host = "https://i.souta.com";
+    @Value("${center.host}")
+    public static  String java_server_host;
     private static final Logger log = LoggerFactory.getLogger(Host.class);
     private static final String hostFilePath = "/root/host.json";
     private static final String hostRouteFilePath = "/root/hostRoute.sh";
     private static final String DNSFilePath = "/etc/resolv.conf";
-    private static final String ipRouteTablePath = "/etc/iproute2/rt_tables";
-    private static final String hostRouteTablePrio = "100";
-    private static final String hostRouteTableName = "hostRouteTable";
     public static String id;
-    public static String port = "18080";
+    @Value("${server.port}")
+    public static String port;
     public static String IP = null;
     private NamespaceService namespaceService = new NamespaceServiceImpl();
 
@@ -162,7 +162,7 @@ public class Host {
                                 throw new ResponseNotOkException("error in refreshing  HostInfo to java server,API(PUT) :  /v1.0/server");
                             }
                             IP = nowIp;
-                        }catch (Exception e){
+                        } catch (Exception e) {
                             log.error(e.getMessage());
                         }
                     }
