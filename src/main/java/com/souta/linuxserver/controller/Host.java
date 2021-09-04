@@ -32,6 +32,14 @@ public class Host {
     public static String IP = null;
     private NamespaceService namespaceService = new NamespaceServiceImpl();
 
+    static {
+        try {
+            initHostId();
+        } catch (FileNotFoundException e) {
+            log.error(e.getMessage());
+            System.exit(1);
+        }
+    }
     private static void registerHost() throws Exception {
         String jsonStr = FileUtil.ReadFile(hostFilePath);
         JSONObject jsonObject = JSON.parseObject(jsonStr);
@@ -73,12 +81,6 @@ public class Host {
     public void init() {
         initDNS();
         initFirewall();
-        try {
-            initHostId();
-        } catch (FileNotFoundException e) {
-            log.error(e.getMessage());
-            System.exit(1);
-        }
         monitorHostIp();
     }
 
@@ -173,7 +175,7 @@ public class Host {
         scheduler.scheduleAtFixedRate(beeper, 0, 10, TimeUnit.SECONDS);
     }
 
-    private void initHostId() throws FileNotFoundException {
+    private static void initHostId() throws FileNotFoundException {
         File file = new File(hostFilePath);
         if (!file.exists()) {
             throw new FileNotFoundException(hostFilePath);

@@ -289,8 +289,8 @@ public class MainController {
         });
         return resultMap;
     }
-    //TODO
-    @RabbitListener(queues = "redialingQueue#?", concurrency = "5")
+
+    @RabbitListener(queues = "#{redialingQueue.name}", concurrency = "5")
     public void redialingListener(JSONObject jsonObject) {
         Long lineId = jsonObject.getLong("lineId");
         refreshLine(lineId.toString());
