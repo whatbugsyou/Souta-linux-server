@@ -74,7 +74,7 @@ public class MainController {
     @PostConstruct
     public void init() {
         new Host().init();
-        initLines();
+        checkAndSendAllLinesInfo();
         monitorLines();
     }
 
@@ -220,30 +220,28 @@ public class MainController {
         scheduler.scheduleAtFixedRate(keepCPUHealth, 0, 60, TimeUnit.SECONDS);
     }
 
-    /**
-     * scan all lines and filter lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to the Java server.
-     */
-    public void initLines() {
-        log.info("initLineInfo....");
-        HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-        ArrayList<Line> lines = (ArrayList<Line>) lineService.getLinesWithDefaultListenIP(lineIdSet);
-        log.info("total {} lines is ok", lines.size());
-        //        clean();
-        sendLinesInfo(lines);
-    }
+
+
 
     @GetMapping("/all")
-    public void checkAndSendAllLinesInfo() {
+    public void getAllLines() {
         basePool.execute(new Runnable() {
             @Override
             public void run() {
-                log.info("check all line....");
-                HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-                ArrayList<Line> lines = (ArrayList<Line>) lineService.getLinesWithDefaultListenIP(lineIdSet);
-                log.info("total {} lines is ok", lines.size());
-                sendLinesInfo(lines);
+                checkAndSendAllLinesInfo();
             }
         });
+    }
+
+    /**
+     * scan all lines and filter lines started socks as ok lines,delete not ok lines.And then ,send the ok lines to the Java server.
+     */
+    public void checkAndSendAllLinesInfo() {
+        log.info("check all line....");
+        HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
+        ArrayList<Line> lines = (ArrayList<Line>) lineService.getLinesWithDefaultListenIP(lineIdSet);
+        log.info("total {} lines is ok", lines.size());
+        sendLinesInfo(lines);
     }
 
     @DeleteMapping("/all")
