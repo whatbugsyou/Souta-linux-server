@@ -41,10 +41,12 @@ public class MainController {
      * lineId:dialFalseTimes
      */
     private static final ConcurrentHashMap<String, Integer> dialFalseTimesMap = new ConcurrentHashMap<>();
+
     /**
      * the line that is error sent is going to be resent.
      */
     private static final Set<Line> errorSendLines = new HashSet<>();
+    private static final Set<String> deadLineToSend = new HashSet<>();
     private final PPPOEService pppoeService;
     private final ShadowsocksService shadowsocksService;
     private final Socks5Service socks5Service;
@@ -87,7 +89,7 @@ public class MainController {
         log.info("monitorLines starting...");
         ScheduledExecutorService scheduler =
                 Executors.newScheduledThreadPool(5);
-
+        // TODO batched create
         Runnable checkFullDial = () -> {
             String lineID = lineService.generateLineID();
             if (lineID != null) {
@@ -171,18 +173,12 @@ public class MainController {
         };
 
         Runnable checkDeadLine = () -> {
-            Set<Map.Entry<String, Integer>> entries = dialFalseTimesMap.entrySet();
-            for (Map.Entry<String, Integer> entry : entries
-            ) {
-                Integer value = entry.getValue();
-                if (deadLineIdSet.contains(entry.getKey())) {
-                    continue;
-                }
-                if (value >= checkingTimesOfDefineDeadLine) {
+            if (!deadLineToSend.isEmpty()){
+                deadLineToSend.forEach(lineId -> {
                     HashMap<String, Object> data = new HashMap<>();
                     DeadLine deadLine = new DeadLine();
-                    deadLine.setLineId(entry.getKey());
-                    ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(entry.getKey()) - 1);
+                    deadLine.setLineId(lineId);
+                    ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(lineId) - 1);
                     deadLine.setAdslUser(adsl.getAdslUser());
                     deadLine.setAdslPassword(adsl.getAdslPassword());
                     data.put("hostId", id);
@@ -197,13 +193,13 @@ public class MainController {
                             if (status != 200) {
                                 throw new ResponseNotOkException("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
                             }
-                            deadLineIdSet.add(entry.getKey());
+                            deadLineToSend.remove(lineId);
                         } catch (Exception e) {
                             log.error(e.getMessage());
                         }
                     };
                     basePool.execute(runnable);
-                }
+                });
             }
         };
 
@@ -324,6 +320,10 @@ public class MainController {
         }
         if (line == null) {
             dialFalseTimesMap.merge(lineId, 1, Integer::sum);
+            if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine){
+                deadLineIdSet.add(lineId);
+                deadLineToSend.add(lineId);
+            }
         } else {
             sendLineInfo(line);
             dialFalseTimesMap.remove(lineId);
