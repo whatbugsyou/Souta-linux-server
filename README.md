@@ -5,7 +5,7 @@
 ```json
 {
     "URL":"/v1.0/line/notify",
-    "port":"10808",
+    "port":"18080",
     "method":"post",
     "param":{
     },
@@ -19,7 +19,7 @@
 ```json
 {
     "URL":"/v1.0/line/notify",
-    "port":"10808",
+    "port":"18080",
     "method":"put",
     "param":{
      "lineId":"01" 
@@ -35,7 +35,7 @@
 ```json
 {
     "URL":"/v1.0/line/notify",
-    "port":"10808",
+    "port":"18080",
     "method":"get",
     "param":{
         "lineId":"01" 
@@ -56,7 +56,7 @@
 {
     "URL":"/v1.0/line/notify",
     "method":"delete",
-    "port":"10808",
+    "port":"18080",
     "param":{
         "lineId":"01"
     },
@@ -71,6 +71,7 @@
 ```json
 {
     "URL":"/v1.0/line/notify/proto",
+    "port":"18080",
     "method":"get",
     "param":{
         "protoId":"socket5|shadowsocks",
@@ -86,6 +87,7 @@
 ```json
 {
     "URL":"/v1.0/line/notify/adsl",
+    "port":"18080",
     "method":"put",
     "param": {
         "lineId": 1    
