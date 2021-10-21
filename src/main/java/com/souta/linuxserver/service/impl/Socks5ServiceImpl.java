@@ -59,8 +59,8 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
     }
 
     @Override
-    public boolean checkConfigFileExist(String id) {
-        String cmd = "ls " + configFileDir + " |grep socks5-" + id + ".json";
+    public boolean checkConfigFileExist(String ip) {
+        String cmd = "ls " + configFileDir + " |grep socks5-" + ip + ".json";
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
         return hasOutput(inputStream);
     }
@@ -72,6 +72,9 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         File dir = new File(configFileDir);
         if (!dir.exists()) {
             dir.mkdir();
+        }
+        if (!checkConfigFileExist(ip)){
+            return false;
         }
         File configFile = new File(dir, "socks5-" + ip + ".json");
         String configJsonString = FileUtil.ReadFile(configFile.getPath());
