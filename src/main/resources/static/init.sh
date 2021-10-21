@@ -1,5 +1,4 @@
-touch init.sh
-echo '#!/bin/bash
+#!/bin/bash
 start=$1
 end=$2
 ip_pref=$3
@@ -13,4 +12,3 @@ do
 	iptables -t mangle -A OUTPUT -m owner --uid-owner $j -j MARK --set-mark $j
 	iptables -t nat -A POSTROUTING -m mark --mark $j -j SNAT --to $ip_pref.$i
 done
-' >> init.sh
