@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.souta</groupId>
-    <artifactId>linux-server</artifactId>
+    <artifactId>91vpn</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>linux-server</name>
     <description>a web server running on linux exposed interface for java background to monitor socks5 and shadowsocks
