@@ -164,14 +164,12 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
     private void changeAuth(String ip, List<AuthInfo> authList) {
         File file1 = new File(authDir + "/ss5-" + ip + ".passwd");
         try {
-            if (!file1.exists()) {
-                FileWriter fileWriter = null;
-                fileWriter = new FileWriter(file1);
-                for (AuthInfo authInfo : authList) {
-                    fileWriter.write(authInfo.getUsername() + " " + authInfo.getPassword());
-                }
-                fileWriter.flush();
+            FileWriter fileWriter = null;
+            fileWriter = new FileWriter(file1);
+            for (AuthInfo authInfo : authList) {
+                fileWriter.write(authInfo.getUsername() + " " + authInfo.getPassword()+"\n");
             }
+            fileWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
