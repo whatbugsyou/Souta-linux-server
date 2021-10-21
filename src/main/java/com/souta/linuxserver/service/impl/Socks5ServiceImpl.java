@@ -22,7 +22,7 @@ import static com.souta.linuxserver.entity.Socks5.*;
 @Service
 public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Service {
 
-    private static String authDir = "/root/socksAuth";
+    private static String authDir = "/etc/socksAuth";
 
     static {
         try {
@@ -30,24 +30,24 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             if (!file.exists()) {
                 file.mkdir();
             }
-            File authDir = new File("/root/socksAuth");
+            File authDir = new File("/etc/socksAuth");
             if (!authDir.exists()) {
                 authDir.mkdir();
             }
-            File file1 = new File("/root/ss5.passwd");
+            File file1 = new File("/etc/ss5.passwd");
             if (!file1.exists()) {
                 FileWriter fileWriter = new FileWriter(file1);
                 fileWriter.write(DEFAULT_USERNAME + " " + DEFAULT_PASSWORD);
                 fileWriter.flush();
             }
-            File file2 = new File("/root/ss5.conf");
+            File file2 = new File("/etc/ss5.conf");
             if (!file2.exists()) {
                 FileWriter fileWriter = new FileWriter(file2);
                 fileWriter.write("auth 0.0.0.0/0 - u\n");
                 fileWriter.write("permit u 0.0.0.0/0 - 0.0.0.0/0 - - - - -\n");
                 fileWriter.flush();
             }
-            File file3 = new File("/root/ss5.log");
+            File file3 = new File("/etc/ss5.log");
             if (!file3.exists()) {
                 file.createNewFile();
             }
@@ -61,7 +61,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         this.namespaceService = namespaceService;
         this.port = DEFAULT_PORT;
         this.log = LoggerFactory.getLogger(Socks5ServiceImpl.class);
-        this.configFileDir = "/root/socks5config";
+        this.configFileDir = "/etc/socks5config";
         this.socksProtoTypeClass = Socks5.class;
     }
 
@@ -96,10 +96,10 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
             cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR=" + ip + "\n");
             cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=" + socks5Info.getPort() + "\n");
-            cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/root/ss5.conf\n");
+            cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/etc/ss5.conf\n");
             cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=" + authDir + "/ss5-" + ip + ".passwd\n");
-            cfgfileBufferedWriter.write("export SS5_LOG_FILE=/root/ss5.log\n");
-            cfgfileBufferedWriter.write("export SS5_PROFILE_PATH=/root\n");
+            cfgfileBufferedWriter.write("export SS5_LOG_FILE=/etc/ss5.log\n");
+            cfgfileBufferedWriter.write("export SS5_PROFILE_PATH=/etc\n");
             String startCmd = "/usr/sbin/ss5 -t -m -u socks" + socksId + " -p /var/run/ss5/ss5-" + ip + ".pid";
             cfgfileBufferedWriter.write(startCmd);
         } catch (IOException e) {
