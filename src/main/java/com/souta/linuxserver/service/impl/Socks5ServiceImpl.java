@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.souta.linuxserver.entity.Socks5.*;
 
@@ -266,7 +268,25 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
     }
 
     @Override
-    public boolean stopSocks(String id) {
-        return false;
+    public boolean stopSocks(String ip) {
+        String cmd = "netstat -lntp | grep ss5 | grep " + ip+":" ;
+        String s = ".*LISTEN\\s+(\\d+)/.*";
+        Pattern compile = Pattern.compile(s);
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        String line;
+        try {
+            while ((line = bufferedReader.readLine()) != null) {
+                Matcher matcher = compile.matcher(line);
+                if (matcher.matches()) {
+                    String pid = matcher.group(1);
+                    String cmd2 = "kill -9 " + pid;
+                    namespaceService.exeCmdInDefaultNamespace(cmd2);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
     }
 }

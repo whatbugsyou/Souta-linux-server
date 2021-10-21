@@ -15,7 +15,7 @@ public interface Socks5Service {
 
     Socks5Info getSocks5(String ip);
 
-    boolean stopSocks(String id);
+    boolean stopSocks(String ip);
 
     boolean checkConfigFileExist(String ip);
 
