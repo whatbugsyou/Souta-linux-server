@@ -87,7 +87,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         String configJsonString = FileUtil.ReadFile(configFile.getPath());
         Socks5Info socks5Info = JSON.parseObject(configJsonString, Socks5Info.class);
         File scriptFile = new File(dir, "socks5-" + ip + ".sh");
-        String[] split = ip.split(".");
+        String[] split = ip.split("\\.");
         String socksId = String.valueOf(Integer.valueOf(split[2]) * 1000 + Integer.valueOf(split[3]));
         BufferedWriter cfgfileBufferedWriter = null;
         FileWriter fileWriter = null;
