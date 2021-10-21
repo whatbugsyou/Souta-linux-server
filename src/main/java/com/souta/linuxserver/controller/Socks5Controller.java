@@ -34,6 +34,8 @@ public class Socks5Controller {
             }
         } catch (ResponseNotOkException e) {
             e.printStackTrace();
+        } catch (Exception e){
+            e.printStackTrace();
         }
     }
 
