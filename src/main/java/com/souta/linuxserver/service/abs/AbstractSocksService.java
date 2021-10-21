@@ -2,10 +2,7 @@ package com.souta.linuxserver.service.abs;
 
 
 import com.souta.linuxserver.entity.abs.Socks;
-import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
-import com.souta.linuxserver.service.PPPOEService;
-import com.souta.linuxserver.service.SocksService;
 import org.slf4j.Logger;
 
 import java.io.BufferedReader;
@@ -15,18 +12,16 @@ import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class AbstractSocksService implements SocksService {
+public abstract class AbstractSocksService {
 
     protected NamespaceService namespaceService;
-    protected PPPOEService pppoeService;
     protected String port;
     protected Logger log;
     protected String configFileDir;
     protected Class<? extends Socks> socksProtoTypeClass;
 
-    public AbstractSocksService(NamespaceService namespaceService, PPPOEService pppoeService) {
+    public AbstractSocksService(NamespaceService namespaceServicee) {
         this.namespaceService = namespaceService;
-        this.pppoeService = pppoeService;
     }
 
     public final static boolean hasOutput(InputStream inputStream) {
@@ -47,43 +42,7 @@ public abstract class AbstractSocksService implements SocksService {
         return read != -1;
     }
 
-    @Override
-    public final boolean stopSocks(String id) {
-        String cmd = "netstat -lntp |grep " + port;
-        // tcp        0      0 121.230.252.206:10809   0.0.0.0:*               LISTEN      65481/python2
-        String s = ".*LISTEN\\s+(\\d+)/.*";
-        Pattern compile = Pattern.compile(s);
-        String namespace = "ns" + id;
-        InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        String line;
-        try {
-            while ((line = bufferedReader.readLine()) != null) {
-                Matcher matcher = compile.matcher(line);
-                if (matcher.matches()) {
-                    String pid = matcher.group(1);
-                    String cmd2 = "kill -9 " + pid;
-                    namespaceService.exeCmdInDefaultNamespace(cmd2);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return true;
-    }
-
-
-    @Override
-    public final boolean restartSocks(String id, String listenIp) {
-        if (stopSocks(id)) {
-            return startSocks(id, listenIp);
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public final boolean isStart(String id, String ip) {
+    public boolean isStart(String id, String ip) {
         if (ip != null) {
             String cmd = "netstat -lnt |grep " + ip + ":" + port;
             String namespaceName = "ns" + id;
@@ -93,15 +52,4 @@ public abstract class AbstractSocksService implements SocksService {
         return false;
     }
 
-    @Override
-    public Socks getSocks(String id, String ip) {
-        boolean isStart = isStart(id, ip);
-        Socks socks = null;
-        if (isStart) {
-            socks = SocksPrototypeManager.getProtoType(socksProtoTypeClass);
-            socks.setId(id);
-            socks.setIp(ip);
-        }
-        return socks;
-    }
 }

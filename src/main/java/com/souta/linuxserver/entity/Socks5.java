@@ -8,7 +8,7 @@ import lombok.Data;
 public class Socks5 extends SocksPrototype {
     public static final String  DEFAULT_USERNAME = "test123";
     public static final String  DEFAULT_PASSWORD = "test123";
-    public static final String DEFAULT_PORT ="10808";
+    public static final String DEFAULT_PORT ="18000";
     private String username;
     private String password;
     public Socks5() {
