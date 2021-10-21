@@ -15,7 +15,7 @@ public class Socks5Controller {
 
     @GetMapping("info")
     public Object getSocks5Info(@RequestParam(value = "ip", defaultValue = "") String ip) {
-        if (ip == "") {
+        if (ip.equals("")) {
             return socks5Service.getAllSocks5();
         }else {
             return socks5Service.getSocks5(ip);
@@ -23,7 +23,7 @@ public class Socks5Controller {
     }
 
     @PutMapping("/config")
-    public void changeConfig(@RequestParam("socks5Config") Socks5Info socks5Info) {
+    public void changeConfig(@RequestBody Socks5Info socks5Info) {
         socks5Service.updateConfig(socks5Info);
     }
 
