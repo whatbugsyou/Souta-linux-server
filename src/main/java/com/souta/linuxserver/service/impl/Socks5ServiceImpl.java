@@ -1,6 +1,7 @@
 package com.souta.linuxserver.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.souta.linuxserver.dto.AuthInfo;
 import com.souta.linuxserver.dto.Socks5Info;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.service.NamespaceService;
@@ -21,11 +22,17 @@ import static com.souta.linuxserver.entity.Socks5.*;
 @Service
 public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Service {
 
+    private static String authDir = "/root/socksAuth";
+
     static {
         try {
             File file = new File("/var/run/ss5");
             if (!file.exists()) {
                 file.mkdir();
+            }
+            File authDir = new File("/root/socksAuth");
+            if (!authDir.exists()) {
+                authDir.mkdir();
             }
             File file1 = new File("/root/ss5.passwd");
             if (!file1.exists()) {
@@ -48,8 +55,6 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             e.printStackTrace();
         }
     }
-
-    private String authDir = "/root/socksAuth";
 
     public Socks5ServiceImpl(NamespaceService namespaceService) {
         super(namespaceService);
@@ -75,13 +80,15 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         if (!dir.exists()) {
             dir.mkdir();
         }
-        if (!checkConfigFileExist(ip)){
+        if (!checkConfigFileExist(ip)) {
             return false;
         }
         File configFile = new File(dir, "socks5-" + ip + ".json");
         String configJsonString = FileUtil.ReadFile(configFile.getPath());
         Socks5Info socks5Info = JSON.parseObject(configJsonString, Socks5Info.class);
         File scriptFile = new File(dir, "socks5-" + ip + ".sh");
+        String[] split = ip.split(".");
+        String socksId = String.valueOf(Integer.valueOf(split[2]) * 1000 + Integer.valueOf(split[3]));
         BufferedWriter cfgfileBufferedWriter = null;
         FileWriter fileWriter = null;
         try {
@@ -90,10 +97,10 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR=" + ip + "\n");
             cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=" + socks5Info.getPort() + "\n");
             cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/root/ss5.conf\n");
-            cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=" + authDir + "ss5-" + ip + ".passwd\n");
+            cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=" + authDir + "/ss5-" + ip + ".passwd\n");
             cfgfileBufferedWriter.write("export SS5_LOG_FILE=/root/ss5.log\n");
             cfgfileBufferedWriter.write("export SS5_PROFILE_PATH=/root\n");
-            String startCmd = "/usr/sbin/ss5 -t -m -u socks" + ip + " -p /var/run/ss5/ss5-" + ip + ".pid";
+            String startCmd = "/usr/sbin/ss5 -t -m -u socks" + socksId + " -p /var/run/ss5/ss5-" + ip + ".pid";
             cfgfileBufferedWriter.write(startCmd);
         } catch (IOException e) {
             e.printStackTrace();
@@ -154,13 +161,13 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         return true;
     }
 
-    private void changeAuth(String ip, List<Socks5Info.authInfo> authList) {
-        File file1 = new File(authDir + "/ss5" + ip + ".passwd");
+    private void changeAuth(String ip, List<AuthInfo> authList) {
+        File file1 = new File(authDir + "/ss5-" + ip + ".passwd");
         try {
             if (!file1.exists()) {
                 FileWriter fileWriter = null;
                 fileWriter = new FileWriter(file1);
-                for (Socks5Info.authInfo authInfo : authList) {
+                for (AuthInfo authInfo : authList) {
                     fileWriter.write(authInfo.getUsername() + " " + authInfo.getPassword());
                 }
                 fileWriter.flush();
@@ -176,7 +183,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             String configJsonString = FileUtil.ReadFile(configFile.getPath());
             Socks5Info socks5InfoOrigin = JSON.parseObject(configJsonString, Socks5Info.class);
             if (!isStart(ip, socks5InfoOrigin.getPort().toString())) {
-                String cmd = "sh " + configFileDir + "socks5-" + ip + ".sh";
+                String cmd = "sh " + configFileDir + "/socks5-" + ip + ".sh";
                 namespaceService.exeCmdInDefaultNamespace(cmd);
             }
             return true;
@@ -242,7 +249,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             String line;
             try {
                 while ((line = bufferedReader.readLine()) != null) {
-                    if (!(line.startsWith("10.") || line.startsWith("100.") || line.startsWith("172.") || line.startsWith("192."))) {
+                    if (!(line.startsWith("10.") || line.startsWith("100.") || line.startsWith("172.") || line.startsWith("192.") || line.startsWith("127."))) {
                         ipList.add(line);
                     }
                 }
@@ -250,7 +257,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
                 e.printStackTrace();
             }
         }
-        return null;
+        return ipList;
     }
 
     @Override
@@ -269,7 +276,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
 
     @Override
     public boolean stopSocks(String ip) {
-        String cmd = "netstat -lntp | grep ss5 | grep " + ip+":" ;
+        String cmd = "netstat -lntp | grep ss5 | grep " + ip + ":";
         String s = ".*LISTEN\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
         InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
