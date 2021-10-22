@@ -26,7 +26,7 @@ public class Socks5Controller {
         Object socks5Info = getSocks5Info("");
         try {
             HttpResponse execute = HttpRequest
-                    .post(Host.java_server_host + "/v1.0/line")
+                    .post(Host.java_server_host + "/v1.0/line/socks5")
                     .body(JSON.toJSONString(socks5Info), "application/json;charset=UTF-8")
                     .execute();
             if (execute.getStatus() != 200) {
