@@ -6,10 +6,14 @@ import com.alibaba.fastjson.JSON;
 import com.souta.linuxserver.dto.Line;
 import com.souta.linuxserver.exception.ResponseNotOkException;
 import com.souta.linuxserver.service.LineService;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
 
+@RestController
+@RequestMapping("/v1.0/line")
 public class LineController {
 
     public static final String java_server_host = "http://91vpn.cc";
@@ -22,7 +26,6 @@ public class LineController {
 
     @PostConstruct()
     public void init() {
-
         List<Line> allLines = lineService.getAllLines();
         try {
             HttpResponse execute = HttpRequest
