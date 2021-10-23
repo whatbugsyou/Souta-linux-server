@@ -1,19 +1,16 @@
 package com.souta.linuxserver.service;
 
-import com.souta.linuxserver.dto.Socks5Info;
+import com.souta.linuxserver.dto.Socks5InfoDTO;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 public interface Socks5Service {
 
-    void updateConfig(Socks5Info socks5Info);
+    void updateConfig(Socks5InfoDTO socks5Info);
 
-    List<Socks5Info> getAllSocks5();
+    List<Socks5InfoDTO> getAllSocks5();
 
-    Socks5Info getSocks5(String ip);
+    Socks5InfoDTO getSocks5(String ip);
 
     boolean stopSocks(String ip);
 

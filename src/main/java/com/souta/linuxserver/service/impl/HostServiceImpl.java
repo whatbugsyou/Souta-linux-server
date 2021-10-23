@@ -1,33 +1,30 @@
-package com.souta.linuxserver.controller;
+package com.souta.linuxserver.service.impl;
 
 import cn.hutool.core.text.StrBuilder;
+import com.souta.linuxserver.service.HostService;
 import com.souta.linuxserver.service.NamespaceService;
-import com.souta.linuxserver.service.impl.NamespaceServiceImpl;
-import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
-@Data
-public class Host {
-    public static final String java_server_host = "http://91vpn.cc";
-    private static final Logger log = LoggerFactory.getLogger(Host.class);
-    private static final String hostFilePath = "/root/host.json";
+@Service
+public class HostServiceImpl implements HostService {
     private static final String DNSFilePath = "/etc/resolv.conf";
     public static String port = "18080";
-    private NamespaceService namespaceService = new NamespaceServiceImpl();
+    private final NamespaceService namespaceService;
+
+    public HostServiceImpl(NamespaceService namespaceService) {
+        this.namespaceService = namespaceService;
+    }
 
     @PostConstruct()
     public void init() {
         initDNS();
         initFirewall();
     }
-
 
     private void initFirewall() {
         String startFirewalldService = "service firewalld start \n";
@@ -79,4 +76,25 @@ public class Host {
 
     }
 
+    @Override
+    public List<String> getAllIp() {
+        ArrayList<String> ipList = new ArrayList<>();
+        String cmd = " ip a|grep 'inet .*'|awk '{print $2}'|awk -F/ '{print $1}'";
+        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
+        if (inputStream != null) {
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            String line;
+            try {
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (!(line.startsWith("10.") || line.startsWith("100.") || line.startsWith("172.") || line.startsWith("192.") || line.startsWith("127."))) {
+                        ipList.add(line);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return ipList;
+    }
 }

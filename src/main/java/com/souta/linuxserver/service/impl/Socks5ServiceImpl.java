@@ -2,8 +2,9 @@ package com.souta.linuxserver.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.souta.linuxserver.dto.AuthInfo;
-import com.souta.linuxserver.dto.Socks5Info;
+import com.souta.linuxserver.dto.Socks5InfoDTO;
 import com.souta.linuxserver.entity.Socks5;
+import com.souta.linuxserver.service.HostService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.Socks5Service;
 import com.souta.linuxserver.service.abs.AbstractSocksService;
@@ -21,7 +22,7 @@ import static com.souta.linuxserver.entity.Socks5.*;
 
 @Service
 public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Service {
-
+    private final HostService hostService;
     private static String authDir = "/etc/socksAuth";
 
     static {
@@ -56,8 +57,9 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         }
     }
 
-    public Socks5ServiceImpl(NamespaceService namespaceService) {
+    public Socks5ServiceImpl(NamespaceService namespaceService, HostService hostService) {
         super(namespaceService);
+        this.hostService = hostService;
         this.namespaceService = namespaceService;
         this.port = DEFAULT_PORT;
         this.log = LoggerFactory.getLogger(Socks5ServiceImpl.class);
@@ -85,7 +87,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         }
         File configFile = new File(dir, "socks5-" + ip + ".json");
         String configJsonString = FileUtil.ReadFile(configFile.getPath());
-        Socks5Info socks5Info = JSON.parseObject(configJsonString, Socks5Info.class);
+        Socks5InfoDTO socks5Info = JSON.parseObject(configJsonString, Socks5InfoDTO.class);
         File scriptFile = new File(dir, "socks5-" + ip + ".sh");
         String[] split = ip.split("\\.");
         String socksId = String.valueOf(Integer.valueOf(split[2]) * 1000 + Integer.valueOf(split[3]));
@@ -123,7 +125,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         return true;
     }
 
-    public boolean createConfigFile(Socks5Info socks5Info) {
+    public boolean createConfigFile(Socks5InfoDTO socks5Info) {
         String ip = socks5Info.getIp();
         if (ip == null) {
             return false;
@@ -179,7 +181,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         if (createStartScript(ip)) {
             File configFile = new File(configFileDir, "socks5-" + ip + ".json");
             String configJsonString = FileUtil.ReadFile(configFile.getPath());
-            Socks5Info socks5InfoOrigin = JSON.parseObject(configJsonString, Socks5Info.class);
+            Socks5InfoDTO socks5InfoOrigin = JSON.parseObject(configJsonString, Socks5InfoDTO.class);
             if (!isStart(ip, socks5InfoOrigin.getPort().toString())) {
                 String cmd = "sh " + configFileDir + "/socks5-" + ip + ".sh";
                 namespaceService.exeCmdInDefaultNamespace(cmd);
@@ -201,14 +203,14 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
     }
 
     @Override
-    public void updateConfig(Socks5Info socks5Info) {
+    public void updateConfig(Socks5InfoDTO socks5Info) {
         File dir = new File(configFileDir);
         if (!dir.exists()) {
             dir.mkdir();
         }
         File configFile = new File(configFileDir, "socks5-" + socks5Info.getIp() + ".json");
         String configJsonString = FileUtil.ReadFile(configFile.getPath());
-        Socks5Info socks5InfoOrigin = JSON.parseObject(configJsonString, Socks5Info.class);
+        Socks5InfoDTO socks5InfoOrigin = JSON.parseObject(configJsonString, Socks5InfoDTO.class);
         if (socks5Info.getAuthList() == null) {
             socks5Info.setAuthList(socks5InfoOrigin.getAuthList());
         }
@@ -227,46 +229,27 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
     }
 
     @Override
-    public List<Socks5Info> getAllSocks5() {
-        ArrayList<Socks5Info> socks5Infos = new ArrayList<>();
-        List<String> allIp = getALLIp();
+    public List<Socks5InfoDTO> getAllSocks5() {
+        ArrayList<Socks5InfoDTO> socks5Infos = new ArrayList<>();
+        List<String> allIp = hostService.getAllIp();
         allIp.forEach(ip -> {
-            Socks5Info socks5Info = getSocks5(ip);
+            Socks5InfoDTO socks5Info = getSocks5(ip);
             socks5Infos.add(socks5Info);
         });
         return socks5Infos;
     }
 
-    private List<String> getALLIp() {
-        ArrayList<String> ipList = new ArrayList<>();
-        String cmd = " ip a|grep 'inet .*'|awk '{print $2}'|awk -F/ '{print $1}'";
-        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-        if (inputStream != null) {
-            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-            String line;
-            try {
-                while ((line = bufferedReader.readLine()) != null) {
-                    if (!(line.startsWith("10.") || line.startsWith("100.") || line.startsWith("172.") || line.startsWith("192.") || line.startsWith("127."))) {
-                        ipList.add(line);
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return ipList;
-    }
+
 
     @Override
-    public Socks5Info getSocks5(String ip) {
+    public Socks5InfoDTO getSocks5(String ip) {
         File configFile = new File(configFileDir, "socks5-" + ip + ".json");
         String configJsonString = FileUtil.ReadFile(configFile.getPath());
-        Socks5Info socks5Info = JSON.parseObject(configJsonString, Socks5Info.class);
+        Socks5InfoDTO socks5Info = JSON.parseObject(configJsonString, Socks5InfoDTO.class);
         if (socks5Info != null) {
             socks5Info.setStatus(isStart(socks5Info.getIp(), socks5Info.getPort().toString()));
         } else {
-            socks5Info = new Socks5Info(ip);
+            socks5Info = new Socks5InfoDTO(ip);
             createConfigFile(socks5Info);
         }
         return socks5Info;
