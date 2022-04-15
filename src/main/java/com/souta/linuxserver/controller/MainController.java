@@ -24,14 +24,15 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.souta.linuxserver.controller.Host.id;
 import static com.souta.linuxserver.controller.Host.java_server_host;
 import static com.souta.linuxserver.service.LineService.deadLineIdSet;
 import static com.souta.linuxserver.service.LineService.dialingLines;
 import static com.souta.linuxserver.service.Socks5Service.onStartingSocks;
 import static com.souta.linuxserver.service.impl.LineServiceImpl.DEFAULT_LISTEN_IP;
 
-//@RestController
-//@RequestMapping("/v1.0/line/notify")
+@RestController
+@RequestMapping("/v1.0/line/notify")
 public class MainController {
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
     private static final int checkingTimesOfDefineDeadLine = 3;
@@ -88,6 +89,19 @@ public class MainController {
         log.info("monitorLines starting...");
         ScheduledExecutorService scheduler =
                 Executors.newScheduledThreadPool(5);
+        // TODO batched create
+        Runnable checkFullDial = () -> {
+            String lineID = lineService.generateLineID();
+            if (lineID != null) {
+                boolean addTrue = dialingLines.add(lineID);
+                if (addTrue) {
+                    basePool.execute(() -> {
+                        log.info("LineMonitor is going to create line{}...", lineID);
+                        createLine(lineID);
+                    });
+                }
+            }
+        };
         Runnable keepCPUHealth = () -> {
             String cmd = "top -b -n 1 |sed -n '8p'|awk '{print $1,$9,$12}'";
             InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
@@ -158,6 +172,36 @@ public class MainController {
             });
         };
 
+        Runnable checkDeadLine = () -> {
+            if (!deadLineToSend.isEmpty()){
+                deadLineToSend.forEach(lineId -> {
+                    HashMap<String, Object> data = new HashMap<>();
+                    DeadLine deadLine = new DeadLine();
+                    deadLine.setLineId(lineId);
+                    ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(lineId) - 1);
+                    deadLine.setAdslUser(adsl.getAdslUser());
+                    deadLine.setAdslPassword(adsl.getAdslPassword());
+                    data.put("hostId", id);
+                    data.put("deadLine", deadLine);
+                    String body = new JSONObject(data).toJSONString();
+                    Runnable runnable = () -> {
+                        try {
+                            log.info("send deadLine Info : {}", body);
+                            int status = HttpRequest.post(java_server_host + "/v1.0/deadLine")
+                                    .body(body)
+                                    .execute().getStatus();
+                            if (status != 200) {
+                                throw new ResponseNotOkException("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
+                            }
+                            deadLineToSend.remove(lineId);
+                        } catch (Exception e) {
+                            log.error(e.getMessage());
+                        }
+                    };
+                    basePool.execute(runnable);
+                });
+            }
+        };
 
         Runnable checkErrorSendLines = () -> {
             if (!errorSendLines.isEmpty()) {
@@ -166,9 +210,13 @@ public class MainController {
         };
 
         scheduler.scheduleAtFixedRate(checkErrorSendLines, 0, 30, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(checkFullSocksStart, 20, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(keepCPUHealth, 0, 60, TimeUnit.SECONDS);
     }
+
+
 
 
     @GetMapping("/all")
@@ -190,6 +238,20 @@ public class MainController {
         ArrayList<Line> lines = (ArrayList<Line>) lineService.getLinesWithDefaultListenIP(lineIdSet);
         log.info("total {} lines is ok", lines.size());
         sendLinesInfo(lines);
+    }
+
+    @DeleteMapping("/all")
+    public void clean() {
+        log.info("clean all Line in Java Server");
+        try {
+            int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
+                    .execute().getStatus();
+            if (status != 200) {
+                throw new ResponseNotOkException("error in deleting All Line from java server,API(DELETE) :  /v1.0/server/lines ");
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
     }
 
     @PostMapping
@@ -221,6 +283,23 @@ public class MainController {
         return resultMap;
     }
 
+    @PutMapping
+    public HashMap<String, Object> refreshLine(String lineId) {
+        HashMap<String, Object> resultMap = new HashMap<>();
+        log.info("refresh Line {}", lineId);
+        if (!pppoeService.isDialUp(lineId)) {
+            resultMap.put("status", "not exist");
+        } else {
+            resultMap.put("status", "ok");
+        }
+        refreshPool.execute(() -> {
+            dialFalseTimesMap.remove(lineId);
+            deadLineIdSet.remove(lineId);
+            FutureTask<Line> futureTask = lineService.refreshLineWithDefaultListenIP(lineId);
+            lineReturnHandle(lineId, futureTask);
+        });
+        return resultMap;
+    }
 
     /**
      * if line what futureTask gets is not null,it will send the line to java server,otherwise it will record the line ID in redialCheckMap.
@@ -241,7 +320,7 @@ public class MainController {
         }
         if (line == null) {
             dialFalseTimesMap.merge(lineId, 1, Integer::sum);
-            if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine) {
+            if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine){
                 deadLineIdSet.add(lineId);
                 deadLineToSend.add(lineId);
             }
@@ -315,6 +394,7 @@ public class MainController {
     private void sendLinesInfo(ArrayList<Line> lines) {
         if (!lines.isEmpty()) {
             HashMap<String, Object> data = new HashMap<>();
+            data.put("hostId", id);
             data.put("lines", lines);
             String body = new JSONObject(data).toJSONString();
             Runnable runnable = new Runnable() {
@@ -348,5 +428,10 @@ public class MainController {
         ArrayList<Line> list = new ArrayList<>();
         list.add(line);
         sendLinesInfo(list);
+    }
+
+    @PutMapping("adsl")
+    public boolean changeAdslAccount(@RequestParam("lineId") String lineId, @RequestBody ADSL adsl) {
+        return pppoeService.changeADSLAccount(lineId, adsl);
     }
 }
