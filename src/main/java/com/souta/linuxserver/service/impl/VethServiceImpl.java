@@ -235,11 +235,14 @@ public class VethServiceImpl implements VethService {
      */
     private String createMacAddr() {
         StringBuilder mac = new StringBuilder();
-        mac.append("00:0c:29:");
+        mac.append("00:");
         char[] ori = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         Random random = new Random();
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 3; i <= 12; i++) {
             int a = random.nextInt(16);
+            if (i == 3) {
+                a = a % 3;
+            }
             mac.append(ori[a]);
             if (i % 2 == 0) {
                 mac.append(':');
