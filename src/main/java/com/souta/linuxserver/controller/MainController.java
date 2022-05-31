@@ -328,6 +328,7 @@ public class MainController {
             sendLineInfo(line);
             dialFalseTimesMap.remove(lineId);
             deadLineIdSet.remove(lineId);
+            deadLineToSend.remove(lineId);
         }
     }
 
