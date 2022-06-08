@@ -86,7 +86,7 @@
 ### change line adsl
 ```json
 {
-    "URL":"/v1.0/line/notify/adsl",
+    "URL":"/v1.0/line/adsl",
     "port":"18080",
     "method":"put",
     "param": {

@@ -430,9 +430,4 @@ public class MainController {
         list.add(line);
         sendLinesInfo(list);
     }
-
-    @PutMapping("adsl")
-    public boolean changeAdslAccount(@RequestParam("lineId") String lineId, @RequestBody ADSL adsl) {
-        return pppoeService.changeADSLAccount(lineId, adsl);
-    }
 }

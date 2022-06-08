@@ -35,9 +35,6 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final ArrayList<Condition> conditionList = new ArrayList<>();
     private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+)\\s+dev\\s+(.*).*src\\s+([\\d\\\\.]+).*");
 
-    @Autowired
-    @Qualifier("dialingPool")
-    private ExecutorService dialingPool;
     static {
         File adslFile = new File(adslAccountFilePath);
         if (adslFile.exists()) {
@@ -86,6 +83,9 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     private final NamespaceService namespaceService;
     private final VethService vethService;
+    @Autowired
+    @Qualifier("dialingPool")
+    private ExecutorService dialingPool;
 
     public PPPOEServiceImpl(NamespaceService namespaceService, VethService vethService) {
         this.namespaceService = namespaceService;
@@ -116,19 +116,32 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public boolean changeADSLAccount(String pppoeId, ADSL adsl) {
-        ADSL origin = adslAccountList.get(Integer.parseInt(pppoeId));
-       if (adsl.getEthernetName() ==null){
-           adsl.setEthernetName(origin.getEthernetName());
-       }
-       adslAccountList.set(Integer.parseInt(pppoeId),adsl);
+        if (pppoeId != null) {
+            ADSL origin = adslAccountList.get(Integer.parseInt(pppoeId) - 1);
+            if (adsl.getEthernetName() == null) {
+                adsl.setEthernetName(origin.getEthernetName());
+            }
+            adslAccountList.set(Integer.parseInt(pppoeId) - 1, adsl);
+        }
+        for (int i = 0; i < adslAccountList.size(); i++) {
+            ADSL origin = adslAccountList.get(i);
+            if (origin.getAdslUser().equals(adsl.getAdslUser())) {
+                if (adsl.getEthernetName() == null) {
+                    adsl.setEthernetName(origin.getEthernetName());
+                }
+                adslAccountList.set(i, adsl);
+                Integer lineId = i + 1;
+                isCreatedpppFile.remove(lineId);
+            }
+        }
+        isRecordInSecretFile.remove(adsl.getAdslUser());
         File adslFile = new File(adslAccountFilePath);
         FileWriter fileWriter = null;
         try {
             fileWriter = new FileWriter(adslFile);
             for (ADSL data : adslAccountList) {
-                fileWriter.write(data.toString()+"\n");
+                fileWriter.write(data.toString() + "\n");
             }
-            isCreatedpppFile.remove(pppoeId);
             return true;
         } catch (IOException e) {
             log.error("refresh adsl file error:{}", e.getMessage());
@@ -240,7 +253,6 @@ public class PPPOEServiceImpl implements PPPOEService {
         }
         return null;
     }
-
 
 
     @Override
@@ -473,8 +485,8 @@ public class PPPOEServiceImpl implements PPPOEService {
                 } else {
                     pppoe.setOutIP(ip);
                 }
-                long costTimeMillis  = System.currentTimeMillis() -beginTimeMillis ;
-                log.info("ppp{} has return , cost {}ms ,ip =[{}]", pppoe.getId(), costTimeMillis ,ip == null ? "": ip);
+                long costTimeMillis = System.currentTimeMillis() - beginTimeMillis;
+                log.info("ppp{} has return , cost {}ms ,ip =[{}]", pppoe.getId(), costTimeMillis, ip == null ? "" : ip);
                 return pppoe;
             }
         };
