@@ -131,9 +131,9 @@ public class PPPOEServiceImpl implements PPPOEService {
             isCreatedpppFile.remove(pppoeId);
             return true;
         } catch (IOException e) {
-           log.error("refresh adsl file error:{}",e.getMessage());
-        }finally {
-            if (fileWriter == null){
+            log.error("refresh adsl file error:{}", e.getMessage());
+        } finally {
+            if (fileWriter != null) {
                 try {
                     fileWriter.close();
                 } catch (IOException e) {
