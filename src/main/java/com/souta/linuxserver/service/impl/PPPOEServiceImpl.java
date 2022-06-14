@@ -1,5 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
+import com.souta.linuxserver.dto.ChangeADSLDTO;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.PPPOE;
@@ -116,15 +117,13 @@ public class PPPOEServiceImpl implements PPPOEService {
 
     @Override
     public boolean changeADSLAccount(String pppoeId, ADSL adsl) {
-        if (pppoeId != null) {
-            ADSL origin = adslAccountList.get(Integer.parseInt(pppoeId) - 1);
-            if (adsl.getEthernetName() == null) {
-                adsl.setEthernetName(origin.getEthernetName());
-            }
-            adslAccountList.set(Integer.parseInt(pppoeId) - 1, adsl);
+        ADSL origin = adslAccountList.get(Integer.parseInt(pppoeId) - 1);
+        if (adsl.getEthernetName() == null) {
+            adsl.setEthernetName(origin.getEthernetName());
         }
+        adslAccountList.set(Integer.parseInt(pppoeId) - 1, adsl);
         for (int i = 0; i < adslAccountList.size(); i++) {
-            ADSL origin = adslAccountList.get(i);
+            origin = adslAccountList.get(i);
             if (origin.getAdslUser().equals(adsl.getAdslUser())) {
                 if (adsl.getEthernetName() == null) {
                     adsl.setEthernetName(origin.getEthernetName());
@@ -155,6 +154,44 @@ public class PPPOEServiceImpl implements PPPOEService {
             }
         }
         return false;
+    }
+
+    @Override
+    public boolean batchedChangeADSLAccount(ChangeADSLDTO adsl) {
+        ADSL update = new ADSL(adsl.getAdslUser(), adsl.getAdslPassword(), adsl.getEthernetName());
+        for (int i = 0; i < adslAccountList.size(); i++) {
+            ADSL origin = adslAccountList.get(i);
+            if (origin.getAdslUser().equals(adsl.getOldAdslUser()) || origin.getAdslUser().equals(adsl.getAdslUser())) {
+                if (update.getEthernetName() == null) {
+                    update.setEthernetName(origin.getEthernetName());
+                }
+                adslAccountList.set(i, update);
+                Integer lineId = i + 1;
+                isCreatedpppFile.remove(lineId);
+            }
+        }
+        isRecordInSecretFile.remove(adsl.getAdslUser());
+        File adslFile = new File(adslAccountFilePath);
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(adslFile);
+            for (ADSL data : adslAccountList) {
+                fileWriter.write(data.toString() + "\n");
+            }
+            return true;
+        } catch (IOException e) {
+            log.error("refresh adsl file error:{}", e.getMessage());
+        } finally {
+            if (fileWriter != null) {
+                try {
+                    fileWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
+
     }
 
     @Override
