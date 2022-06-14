@@ -1,6 +1,7 @@
 package com.souta.linuxserver.service;
 
-import com.souta.linuxserver.dto.ChangeADSLDTO;
+import com.souta.linuxserver.dto.BatchedChangeADSLDTO;
+import com.souta.linuxserver.dto.ChangeOneADSLDTO;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.PPPOE;
 
@@ -71,7 +72,7 @@ public interface PPPOEService {
      * @param adsl
      * @return
      */
-    boolean changeADSLAccount(String pppoeId, ADSL adsl);
+    boolean changeADSLAccount(ChangeOneADSLDTO adsl);
 
 
     /**
@@ -80,5 +81,6 @@ public interface PPPOEService {
      * @param adsl
      * @return
      */
-    boolean batchedChangeADSLAccount(ChangeADSLDTO adsl);
+    boolean batchedChangeADSLAccount(BatchedChangeADSLDTO adsl);
+
 }
