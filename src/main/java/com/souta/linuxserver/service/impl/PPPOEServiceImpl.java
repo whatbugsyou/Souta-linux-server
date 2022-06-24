@@ -121,15 +121,15 @@ public class PPPOEServiceImpl implements PPPOEService {
         ADSL update = new ADSL(adsl.getAdslUsername(), adsl.getAdslPassword(), adsl.getEthernetName());
         Long pppoeId = adsl.getLineId();
         ADSL origin = adslAccountList.get((int) (pppoeId - 1));
-        if (adsl.getEthernetName() == null) {
-            adsl.setEthernetName(origin.getEthernetName());
+        if (update.getEthernetName() == null) {
+            update.setEthernetName(origin.getEthernetName());
         }
         adslAccountList.set((int) (pppoeId - 1), update);
         for (int i = 0; i < adslAccountList.size(); i++) {
             origin = adslAccountList.get(i);
             if (origin.getAdslUser().equals(adsl.getAdslUsername())) {
-                if (adsl.getEthernetName() == null) {
-                    adsl.setEthernetName(origin.getEthernetName());
+                if (update.getEthernetName() == null) {
+                    update.setEthernetName(origin.getEthernetName());
                 }
                 adslAccountList.set(i, update);
                 Integer lineId = i + 1;
