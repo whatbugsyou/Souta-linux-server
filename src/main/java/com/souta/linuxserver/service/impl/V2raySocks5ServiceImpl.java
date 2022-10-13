@@ -99,7 +99,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService implements Sock
     public boolean startSocks(String id, String ip) {
         if (createConfigFile(id, ip)) {
             String namespaceName = "ns" + id;
-            String cmd = "v2ray run -c /root/v2ray/v2ray-" + id + ".json";
+            String cmd = "v2ray run -c /root/v2ray/v2ray-" + id + ".json >/dev/null 2>&1 &";
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
         } else {
