@@ -27,7 +27,7 @@ public class LineServiceImpl implements LineService {
     @Qualifier("linePool")
     private ExecutorService linePool;
 
-    public LineServiceImpl(Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService) {
+    public LineServiceImpl(@Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService) {
         this.socks5Service = socks5Service;
         this.shadowsocksService = shadowsocksService;
         this.pppoeService = pppoeService;
