@@ -65,7 +65,7 @@ public class MainController {
     @Qualifier("basePool")
     private ExecutorService basePool;
 
-    public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, Socks5Service socks5Service, LineService lineService, NamespaceService namespaceService) {
+    public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, @Qualifier("v2raySocks5ServiceImpl")Socks5Service socks5Service, LineService lineService, NamespaceService namespaceService) {
         this.pppoeService = pppoeService;
         this.shadowsocksService = shadowsocksService;
         this.socks5Service = socks5Service;

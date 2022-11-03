@@ -1,0 +1,28 @@
+{
+  "log": {
+    "access": "",
+    "error": "",
+    "loglevel": "none"
+  },
+  "inbound": {
+    "port": 10808,
+    "listen": "0.0.0.0",
+    "protocol": "SOCKS",
+    "settings": {
+      "auth": "password",
+      "accounts": [
+        {
+          "user": "test123",
+          "pass": "test123"
+        }
+      ],
+      "udp": true,
+      "ip": "0.0.0.0",
+      "userLevel": 0
+    }
+  },
+  "outbound": {
+    "protocol": "freedom",
+    "settings": {}
+  }
+}
