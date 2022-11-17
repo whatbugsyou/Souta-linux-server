@@ -1,5 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
+import com.souta.linuxserver.controller.Host;
 import com.souta.linuxserver.entity.*;
 import com.souta.linuxserver.entity.abs.Socks;
 import com.souta.linuxserver.service.*;
@@ -26,12 +27,15 @@ public class LineServiceImpl implements LineService {
     @Autowired
     @Qualifier("linePool")
     private ExecutorService linePool;
+    private RateLimitServiceImpl rateLimitService;
+    private Integer MAX_RATE_LIMIT_KB = 300;
 
-    public LineServiceImpl(@Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService) {
+    public LineServiceImpl(@Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService, RateLimitServiceImpl rateLimitService) {
         this.socks5Service = socks5Service;
         this.shadowsocksService = shadowsocksService;
         this.pppoeService = pppoeService;
         this.namespaceService = namespaceService;
+        this.rateLimitService = rateLimitService;
     }
 
     @Override
@@ -80,6 +84,9 @@ public class LineServiceImpl implements LineService {
                     if (line == null) {
                         log.error("line {} create error", lineId);
                         deleteLine(lineId);
+                    }
+                    if (Host.VERSION == 1) {
+                        rateLimitService.limit(lineId, MAX_RATE_LIMIT_KB);
                     }
                 }
             } finally {
@@ -136,7 +143,7 @@ public class LineServiceImpl implements LineService {
                     String lineId = id.toString();
                     String outIP = pppoeService.getIP(lineId);
                     if (outIP == null || outIP.isEmpty()) {
-                        if ( !dialingLines.contains(lineId)) {
+                        if (!dialingLines.contains(lineId)) {
                             deleteLine(lineId);
                         }
                         return;
@@ -194,7 +201,7 @@ public class LineServiceImpl implements LineService {
         pppoeService.shutDown(lineId);
         socks5Service.stopSocks(lineId);
         shadowsocksService.stopSocks(lineId);
-        namespaceService.deleteNameSpace("ns"+lineId);
+        namespaceService.deleteNameSpace("ns" + lineId);
         return true;
     }
 
