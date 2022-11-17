@@ -31,6 +31,7 @@ public class Host {
     public static String id;
     public static String port = "18080";
     public static String IP = null;
+    public static Integer VERSION = null;
     private NamespaceService namespaceService = new NamespaceServiceImpl();
 
     private static void registerHost() throws Exception {
@@ -50,6 +51,7 @@ public class Host {
             throw new NullPointerException("id is null");
         } else {
             Host.id = String.valueOf(id);
+            VERSION = response.getInteger("version");
             jsonObject.put("id", Host.id);
         }
         FileWriter fileWriter = null;
