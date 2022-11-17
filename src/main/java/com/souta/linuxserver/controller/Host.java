@@ -220,8 +220,9 @@ public class Host {
         }
         String jsonStr = FileUtil.ReadFile(hostFilePath);
         JSONObject jsonObject = JSON.parseObject(jsonStr);
-        port = (String) jsonObject.get("port");
+        port = jsonObject.getString("port");
         id = jsonObject.getString("id");
+        VERSION = jsonObject.getInteger("version");
         if (id == null) {
             try {
                 registerHost();
