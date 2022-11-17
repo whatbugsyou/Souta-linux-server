@@ -8,7 +8,7 @@ import java.util.List;
 public interface NamespaceService {
     /**
      * @param name -namespace name
-     * @return true if the given namespace is exist, false otherwise.
+     * @return true if the given namespace exists, false otherwise.
      */
     boolean checkExist(String name);
 
@@ -40,21 +40,21 @@ public interface NamespaceService {
     /**
      * @param namespace --an Object of namespace
      * @param cmd       --  bash commond
-     * @return an Objcet of InputStream , relating to the cmd exeuting output.
+     * @return an Objcet of InputStream , relating to the cmd executing output.
      */
     InputStream exeCmdInNamespace(Namespace namespace, String cmd);
 
     /**
      * @param namespace --  namespace name
      * @param cmd       --  bash command
-     * @return an Objcet of InputStream , relating to the cmd exeuting output.
+     * @return an Objcet of InputStream , relating to the cmd executing output.
      */
     InputStream exeCmdInNamespace(String namespace, String cmd);
 
 
     /**
      * @param cmd --  bash command
-     * @return an Objcet of InputStream , relating to the cmd exeuting output.
+     * @return an Objcet of InputStream , relating to the cmd executing output.
      */
     InputStream exeCmdInDefaultNamespace(String cmd);
 
