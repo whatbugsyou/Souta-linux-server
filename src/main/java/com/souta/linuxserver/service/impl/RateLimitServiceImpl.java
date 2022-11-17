@@ -16,7 +16,7 @@ public class RateLimitServiceImpl implements RateLimitService {
 
     private final static String TAG_PLACEHOLDER = "{TAG}";
 
-    private final static String configFileDir = "~/limitScript";
+    private final static String configFileDir = "/root/limitScript";
 
     public RateLimitServiceImpl(NamespaceService namespaceService) {
         this.namespaceService = namespaceService;
@@ -25,7 +25,7 @@ public class RateLimitServiceImpl implements RateLimitService {
     @Override
     public boolean limit(String lineId, Integer maxKBPerSec) {
         createLimitScriptFile(lineId, maxKBPerSec);
-        namespaceService.exeCmdInNamespace("ns" + lineId, "sh " + configFileDir + "/" + "limit-" + maxKBPerSec + "kb/s.sh");
+        namespaceService.exeCmdInNamespace("ns" + lineId, "sh " + configFileDir + "/" + "limit-line" + lineId + "-" +maxKBPerSec + "kb.sh");
         return true;
     }
 
@@ -34,7 +34,7 @@ public class RateLimitServiceImpl implements RateLimitService {
         if (!dir.exists()) {
             dir.mkdir();
         }
-        File file = new File(dir, "rate-" + maxKBPerSec + "KB.sh");
+        File file = new File(dir, "limit-line" + lineId + "-" +maxKBPerSec + "kb.sh");
         if (file.exists()) {
             return;
         }
@@ -48,6 +48,7 @@ public class RateLimitServiceImpl implements RateLimitService {
                 cfgfileBufferedWriter.write(line);
                 cfgfileBufferedWriter.newLine();
             }
+            cfgfileBufferedWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
