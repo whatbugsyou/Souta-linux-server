@@ -1,6 +1,7 @@
 package com.souta.linuxserver.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Shadowsocks;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
@@ -77,7 +78,7 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
         if (createConfigFile(id, ip)) {
             String cmd = "ssserver -c " + configFileDir + "/shadowsocks-%s.json >/dev/null 2>&1 &";
             cmd = String.format(cmd, id, id);
-            String namespaceName = "ns" + id;
+            String namespaceName = Namespace.DEFAULT_PREFIX + id;
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;
         } else {

@@ -101,8 +101,8 @@ public class PPPOEServiceImpl implements PPPOEService {
         if (adsl == null) {
             return null;
         }
-        String vethName = "stv" + pppoeId;
-        String namespaceName = "ns" + pppoeId;
+        String vethName = Veth.DEFAULT_PREFIX + pppoeId;
+        String namespaceName = Namespace.DEFAULT_PREFIX + pppoeId;
         Veth veth = vethService.createVeth(adsl.getEthernetName(), vethName, namespaceName);
         if (!veth.getNamespace().getName().equals(namespaceName)) {
             return null;
@@ -200,7 +200,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public boolean isDialUp(String pppoeId) {
         String cmd = "ip route";
-        String namespaceName = "ns" + pppoeId;
+        String namespaceName = Namespace.DEFAULT_PREFIX + pppoeId;
         InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
         if (inputStream == null) {
             return false;
@@ -275,7 +275,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public String getIP(String pppoeId) {
         String cmd = "ip route";
-        InputStream inputStream = namespaceService.exeCmdInNamespace("ns" + pppoeId, cmd);
+        InputStream inputStream = namespaceService.exeCmdInNamespace("Namespace.DEFAULT_PREFIX" + pppoeId, cmd);
         if (inputStream == null) {
             return null;
         }
@@ -477,7 +477,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public FutureTask<PPPOE> dialUp(PPPOE pppoe) {
         Callable<PPPOE> callable = () -> {
             boolean configFileExist = isCreatedpppFile.contains(pppoe.getId());
-            boolean vethCorrect = vethService.checkExist(pppoe.getVeth().getInterfaceName(), "ns" + pppoe.getId());
+            boolean vethCorrect = vethService.checkExist(pppoe.getVeth().getInterfaceName(), Namespace.DEFAULT_PREFIX + pppoe.getId());
             if (!configFileExist || !vethCorrect) {
                 return null;
             }
@@ -569,7 +569,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public PPPOE getPPPOE(String pppoeId) {
         PPPOE pppoe;
-        String vethName = "stv" + pppoeId;
+        String vethName = Veth.DEFAULT_PREFIX + pppoeId;
         Veth veth = vethService.getVeth(vethName);
         if (veth == null) {
             return null;
@@ -579,7 +579,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         boolean dialUp = isDialUp(pppoeId);
         if (dialUp) {
             String cmd = "ip route";
-            InputStream inputStream = namespaceService.exeCmdInNamespace("ns" + pppoeId, cmd);
+            InputStream inputStream = namespaceService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             String line;
             Pattern pattern2 = Pattern.compile("([\\d\\\\.]+) dev (.*) proto kernel scope link src ([\\d\\\\.]+) ");

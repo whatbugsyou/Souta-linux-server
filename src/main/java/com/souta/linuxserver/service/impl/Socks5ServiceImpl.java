@@ -1,5 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
+import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
@@ -110,7 +111,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
     @Override
     public boolean startSocks(String id, String ip) {
         if (createConfigFile(id, ip)) {
-            String namespaceName = "ns" + id;
+            String namespaceName = Namespace.DEFAULT_PREFIX + id;
             String cmd = "sh /root/socks5/socks5-" + id + ".sh";
             namespaceService.exeCmdInNamespace(namespaceName, cmd);
             return true;

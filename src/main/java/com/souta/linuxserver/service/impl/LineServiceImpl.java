@@ -204,7 +204,7 @@ public class LineServiceImpl implements LineService {
         pppoeService.shutDown(lineId);
         socks5Service.stopSocks(lineId);
         shadowsocksService.stopSocks(lineId);
-        namespaceService.deleteNameSpace("ns" + lineId);
+        namespaceService.deleteNameSpace(Namespace.DEFAULT_PREFIX + lineId);
         return true;
     }
 

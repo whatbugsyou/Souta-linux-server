@@ -1,5 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
+import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.RateLimitService;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class RateLimitServiceImpl implements RateLimitService {
     @Override
     public boolean limit(String lineId, Integer maxKBPerSec) {
         createLimitScriptFile(lineId, maxKBPerSec);
-        namespaceService.exeCmdInNamespace("ns" + lineId, "iptables-restore " + configFileDir + "/" + "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf");
+        namespaceService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + lineId, "iptables-restore " + configFileDir + "/" + "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf");
         return true;
     }
 

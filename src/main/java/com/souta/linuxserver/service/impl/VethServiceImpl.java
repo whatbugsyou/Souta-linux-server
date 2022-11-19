@@ -90,7 +90,7 @@ public class VethServiceImpl implements VethService {
 
     @Override
     public Veth getVeth(String vethName) {
-        String namespaceName = "ns" + vethName.substring(3);
+        String namespaceName = Namespace.DEFAULT_PREFIX + vethName.substring(Veth.DEFAULT_PREFIX.length());
         boolean exist = checkExist(vethName, namespaceName);
         if (!exist) {
             return null;

@@ -4,6 +4,8 @@ import lombok.Data;
 
 @Data
 public class Veth {
+
+    public static final String DEFAULT_PREFIX = "stv";
     private String physicalEthName; // Physical ethernet
     private String interfaceName; // virtual ethernet
     private String macAddr;
