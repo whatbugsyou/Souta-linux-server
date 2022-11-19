@@ -25,7 +25,7 @@ public class RateLimitServiceImpl implements RateLimitService {
     @Override
     public boolean limit(String lineId, Integer maxKBPerSec) {
         createLimitScriptFile(lineId, maxKBPerSec);
-        namespaceService.exeCmdInNamespace("ns" + lineId, "sh " + configFileDir + "/" + "limit-line" + lineId + "-" +maxKBPerSec + "kb.sh");
+        namespaceService.exeCmdInNamespace("ns" + lineId, "iptables-restore " + configFileDir + "/" + "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf");
         return true;
     }
 
@@ -34,11 +34,17 @@ public class RateLimitServiceImpl implements RateLimitService {
         if (!dir.exists()) {
             dir.mkdir();
         }
-        File file = new File(dir, "limit-line" + lineId + "-" +maxKBPerSec + "kb.sh");
+        File file = new File(dir, "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf");
         if (file.exists()) {
             return;
         }
-        try (FileWriter fileWriter = new FileWriter(file); BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter); InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/RateLimit.sh"); InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream); BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader);) {
+        try (
+                FileWriter fileWriter = new FileWriter(file);
+                BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter);
+                InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/RateLimit.conf");
+                InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream);
+                BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader);
+        ) {
             String line;
             Integer packagePerSec = maxKBPerSec;
             while (((line = tmpbufferedReader.readLine()) != null)) {
