@@ -275,7 +275,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public String getIP(String pppoeId) {
         String cmd = "ip route";
-        InputStream inputStream = namespaceService.exeCmdInNamespace("Namespace.DEFAULT_PREFIX" + pppoeId, cmd);
+        InputStream inputStream = namespaceService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
         if (inputStream == null) {
             return null;
         }
