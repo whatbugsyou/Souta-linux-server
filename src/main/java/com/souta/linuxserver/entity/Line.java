@@ -1,11 +1,15 @@
 package com.souta.linuxserver.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.util.Objects;
 
 @Data
 public class Line {
+
+    @JsonIgnore
+    public static Integer DEFAULT_RATE_LIMIT_KB = 200;
     private String id;
     private Socks5 socks5;
     private Shadowsocks shadowsocks;

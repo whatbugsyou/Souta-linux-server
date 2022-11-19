@@ -28,7 +28,6 @@ public class LineServiceImpl implements LineService {
     @Qualifier("linePool")
     private ExecutorService linePool;
     private RateLimitServiceImpl rateLimitService;
-    private Integer MAX_RATE_LIMIT_KB = 200;
 
     public LineServiceImpl(@Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService, RateLimitServiceImpl rateLimitService) {
         this.socks5Service = socks5Service;
@@ -86,7 +85,7 @@ public class LineServiceImpl implements LineService {
                         deleteLine(lineId);
                     }
                     if (Host.VERSION == 1) {
-                        rateLimitService.limit(lineId, MAX_RATE_LIMIT_KB);
+                        rateLimitService.limit(lineId, Line.DEFAULT_RATE_LIMIT_KB);
                     }
                 }
             } finally {
@@ -154,9 +153,6 @@ public class LineServiceImpl implements LineService {
                         line.getShadowsocks().setIp(outIP);
                         line.getSocks5().setIp(outIP);
                         lines.add(line);
-                        if (Host.VERSION.equals(1)) {
-                            rateLimitService.limit(lineId, MAX_RATE_LIMIT_KB);
-                        }
                     } else {
                         log.warn("Line {} is NOT OK", lineId);
                         deleteLine(lineId);

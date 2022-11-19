@@ -24,8 +24,7 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.souta.linuxserver.controller.Host.id;
-import static com.souta.linuxserver.controller.Host.java_server_host;
+import static com.souta.linuxserver.controller.Host.*;
 import static com.souta.linuxserver.service.LineService.deadLineIdSet;
 import static com.souta.linuxserver.service.LineService.dialingLines;
 import static com.souta.linuxserver.service.Socks5Service.onStartingSocks;
@@ -53,6 +52,7 @@ public class MainController {
     private final LineService lineService;
     private final NamespaceService namespaceService;
 
+    private final RateLimitService rateLimitService;
     @Autowired
     @Qualifier("refreshPool")
     private ExecutorService refreshPool;
@@ -65,12 +65,14 @@ public class MainController {
     @Qualifier("basePool")
     private ExecutorService basePool;
 
-    public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, @Qualifier("v2raySocks5ServiceImpl")Socks5Service socks5Service, LineService lineService, NamespaceService namespaceService) {
+
+    public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, @Qualifier("v2raySocks5ServiceImpl")Socks5Service socks5Service, LineService lineService, NamespaceService namespaceService, RateLimitService rateLimitService) {
         this.pppoeService = pppoeService;
         this.shadowsocksService = shadowsocksService;
         this.socks5Service = socks5Service;
         this.lineService = lineService;
         this.namespaceService = namespaceService;
+        this.rateLimitService = rateLimitService;
     }
 
     @PostConstruct
@@ -209,11 +211,22 @@ public class MainController {
             }
         };
 
+        Runnable checkRateLimit = () -> {
+            if (VERSION == 1){
+                HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
+                Set<String> limitedLineIdSet = rateLimitService.getLimitedLineIdSet();
+                dialuppedIdSet.removeAll(limitedLineIdSet);
+                Set<String> notLimitedIdSet = dialuppedIdSet;
+                notLimitedIdSet.forEach(id -> rateLimitService.limit(id));
+            }
+        };
+
         scheduler.scheduleAtFixedRate(checkErrorSendLines, 0, 30, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(checkFullSocksStart, 20, 1, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(keepCPUHealth, 0, 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(checkRateLimit, 0, 60, TimeUnit.SECONDS);
     }
 
 
