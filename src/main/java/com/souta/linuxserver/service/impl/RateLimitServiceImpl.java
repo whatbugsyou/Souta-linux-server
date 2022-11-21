@@ -55,15 +55,15 @@ public class RateLimitServiceImpl implements RateLimitService {
         ) {
             String line = null;
             String namespaceId = null;
-            Boolean ACCETP_EXIST = null;
-            Boolean DROP_EXIST = null;
+            Boolean ACCETP_EXIST = false;
+            Boolean DROP_EXIST = false;
             while ((line = bufferedReader.readLine()) != null) {
                 if (line.contains(Namespace.DEFAULT_PREFIX)) {
                     namespaceId = getNumeric(line);
                     ACCETP_EXIST = false;
                     DROP_EXIST = false;
                 }
-                if (line.contains("ACCETP")) {
+                if (line.contains("ACCEPT")) {
                     ACCETP_EXIST = true;
                 }
                 if (line.contains("DROP")) {
@@ -74,7 +74,7 @@ public class RateLimitServiceImpl implements RateLimitService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("getLimitedLineIdSet:{},{}", e.getMessage(), e.getStackTrace());
         }
         return result;
     }
