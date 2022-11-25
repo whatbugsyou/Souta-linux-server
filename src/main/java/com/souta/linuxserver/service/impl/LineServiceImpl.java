@@ -1,5 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
+import com.souta.linuxserver.config.LineConfig;
 import com.souta.linuxserver.controller.Host;
 import com.souta.linuxserver.entity.*;
 import com.souta.linuxserver.entity.abs.Socks;
@@ -24,17 +25,19 @@ public class LineServiceImpl implements LineService {
     private final ShadowsocksService shadowsocksService;
     private final PPPOEService pppoeService;
     private final NamespaceService namespaceService;
+    private final LineConfig lineConfig;
     @Autowired
     @Qualifier("linePool")
     private ExecutorService linePool;
     private RateLimitServiceImpl rateLimitService;
 
-    public LineServiceImpl(@Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService, RateLimitServiceImpl rateLimitService) {
+    public LineServiceImpl(@Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService, RateLimitServiceImpl rateLimitService, LineConfig lineConfig) {
         this.socks5Service = socks5Service;
         this.shadowsocksService = shadowsocksService;
         this.pppoeService = pppoeService;
         this.namespaceService = namespaceService;
         this.rateLimitService = rateLimitService;
+        this.lineConfig = lineConfig;
     }
 
     @Override
@@ -85,7 +88,7 @@ public class LineServiceImpl implements LineService {
                         deleteLine(lineId);
                     }
                     if (Host.VERSION == 1) {
-                        rateLimitService.limit(lineId, Line.DEFAULT_RATE_LIMIT_KB);
+                        rateLimitService.limit(lineId, lineConfig.getDefaultRateLimitKB());
                     }
                 }
             } finally {

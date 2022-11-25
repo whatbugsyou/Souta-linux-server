@@ -1,6 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.entity.Line;
+import com.souta.linuxserver.config.LineConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.RateLimitService;
@@ -16,18 +16,23 @@ import java.util.regex.Pattern;
 @Service
 @Slf4j
 public class RateLimitServiceImpl implements RateLimitService {
-    private final NamespaceService namespaceService;
-
     private final static String UPTO_PLACEHOLDER = "{UPTO_PLACEHOLDER}";
-
     private final static String BURST_PLACEHOLDER = "{BURST_PLACEHOLDER}";
-
     private final static String TAG_PLACEHOLDER = "{TAG}";
-
     private final static String configFileDir = "/root/limitScript";
+    private final NamespaceService namespaceService;
+    private final LineConfig lineConfig;
 
-    public RateLimitServiceImpl(NamespaceService namespaceService) {
+    public RateLimitServiceImpl(NamespaceService namespaceService, LineConfig lineConfig) {
         this.namespaceService = namespaceService;
+        this.lineConfig = lineConfig;
+    }
+
+    public static String getNumeric(String str) {
+        String regEx = "[^0-9]";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(str);
+        return m.replaceAll("").trim();
     }
 
     @Override
@@ -40,7 +45,7 @@ public class RateLimitServiceImpl implements RateLimitService {
 
     @Override
     public boolean limit(String lineId) {
-        return limit(lineId, Line.DEFAULT_RATE_LIMIT_KB);
+        return limit(lineId, lineConfig.getDefaultRateLimitKB());
     }
 
     @Override
@@ -48,11 +53,7 @@ public class RateLimitServiceImpl implements RateLimitService {
         HashSet<String> result = new HashSet<>();
         String cmd = "ip -all netns exec iptables -L RATE-LIMIT";
 
-        try (
-                InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-        ) {
+        try (InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd); InputStreamReader inputStreamReader = new InputStreamReader(inputStream); BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
             String line = null;
             String namespaceId = null;
             Boolean ACCETP_EXIST = false;
@@ -79,14 +80,6 @@ public class RateLimitServiceImpl implements RateLimitService {
         return result;
     }
 
-    public static String getNumeric(String str) {
-        String regEx = "[^0-9]";
-        Pattern p = Pattern.compile(regEx);
-        Matcher m = p.matcher(str);
-        return m.replaceAll("").trim();
-    }
-
-
     private void createLimitScriptFile(String lineId, Integer maxKBPerSec) {
         File dir = new File(configFileDir);
         if (!dir.exists()) {
@@ -96,13 +89,7 @@ public class RateLimitServiceImpl implements RateLimitService {
         if (file.exists()) {
             return;
         }
-        try (
-                FileWriter fileWriter = new FileWriter(file);
-                BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter);
-                InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/RateLimit.conf");
-                InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream);
-                BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader);
-        ) {
+        try (FileWriter fileWriter = new FileWriter(file); BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter); InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/RateLimit.conf"); InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream); BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader)) {
             String line;
             Integer packagePerSec = maxKBPerSec;
             while (((line = tmpbufferedReader.readLine()) != null)) {
