@@ -1,33 +1,45 @@
 package com.souta.linuxserver.service.impl;
 
+import com.souta.linuxserver.config.LineConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Socks5;
+import com.souta.linuxserver.entity.prototype.SocksPrototype;
+import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.Socks5Service;
 import com.souta.linuxserver.service.abs.AbstractSocksService;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.souta.linuxserver.entity.Socks5.DEFAULT_PORT;
-
 @Service()
-public class V2raySocks5ServiceImpl extends AbstractSocksService implements Socks5Service {
+public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> implements Socks5Service {
 
-    public V2raySocks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService) {
-        super(namespaceService, pppoeService);
-        this.namespaceService = namespaceService;
-        this.pppoeService = pppoeService;
-        this.port = DEFAULT_PORT;
-        this.log = LoggerFactory.getLogger(V2raySocks5ServiceImpl.class);
-        this.configFileDir = "/root/v2ray";
-        this.socksProtoTypeClass = Socks5.class;
+    private static final String configFileDir = "/root/v2ray";
+
+    private final LineConfig lineConfig;
+
+    public V2raySocks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, LineConfig lineConfig) {
+        super(namespaceService, pppoeService, lineConfig.getSocks5Config().getPort());
+        this.lineConfig = lineConfig;
     }
+
+    @PostConstruct
+    public void init() {
+        initPrototype();
+    }
+
+    private void initPrototype() {
+        SocksPrototype socks = new Socks5(lineConfig.getSocks5Config().getUsername(), lineConfig.getSocks5Config().getUsername());
+        socks.setPort(lineConfig.getSocks5Config().getPort().toString());
+        SocksPrototypeManager.add(socks);
+    }
+
 
     @Override
     public boolean checkConfigFileExist(String id) {
@@ -58,6 +70,9 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService implements Sock
             InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream);
             tmpbufferedReader = new BufferedReader(inputStreamReader);
             while (((line = tmpbufferedReader.readLine()) != null)) {
+                line.replace("{PORT}", listenPort.toString());
+                line.replace("{USERNAME}", lineConfig.getSocks5Config().getUsername());
+                line.replace("{PASSWORD}", lineConfig.getSocks5Config().getPassword());
                 cfgfileBufferedWriter.write(line);
                 cfgfileBufferedWriter.newLine();
             }

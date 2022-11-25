@@ -1,7 +1,9 @@
 package com.souta.linuxserver.entity.prototype;
 
 import com.souta.linuxserver.entity.abs.Socks;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
 public abstract class SocksPrototype extends Socks implements Cloneable {
 
     @Override

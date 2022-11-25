@@ -1,25 +1,31 @@
 package com.souta.linuxserver.service.impl;
 
+import com.souta.linuxserver.config.LineConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Socks5;
+import com.souta.linuxserver.entity.prototype.SocksPrototype;
+import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.Socks5Service;
 import com.souta.linuxserver.service.abs.AbstractSocksService;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.souta.linuxserver.entity.Socks5.*;
-
 @Service
-public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Service {
+public class Socks5ServiceImpl extends AbstractSocksService<Socks5> implements Socks5Service {
 
-    static {
+    private final LineConfig lineConfig;
+    private static final String configFileDir = "/root/socks5";
+
+    @PostConstruct
+    public void init() {
+        initPrototype();
         try {
             File file = new File("/var/run/ss5");
             if (!file.exists()) {
@@ -28,7 +34,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             File file1 = new File("/root/ss5.passwd");
             if (!file1.exists()) {
                 FileWriter fileWriter = new FileWriter(file1);
-                fileWriter.write(DEFAULT_USERNAME + " " + DEFAULT_PASSWORD);
+                fileWriter.write(lineConfig.getSocks5Config().getUsername() + " " + lineConfig.getSocks5Config().getPassword());
                 fileWriter.flush();
             }
             File file2 = new File("/root/ss5.conf");
@@ -47,14 +53,15 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
         }
     }
 
-    public Socks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService) {
-        super(namespaceService, pppoeService);
-        this.namespaceService = namespaceService;
-        this.pppoeService = pppoeService;
-        this.port = DEFAULT_PORT;
-        this.log = LoggerFactory.getLogger(Socks5ServiceImpl.class);
-        this.configFileDir = "/root/socks5";
-        this.socksProtoTypeClass = Socks5.class;
+    private void initPrototype() {
+        SocksPrototype socks = new Socks5(lineConfig.getSocks5Config().getUsername(), lineConfig.getSocks5Config().getUsername());
+        socks.setPort(lineConfig.getSocks5Config().getPort().toString());
+        SocksPrototypeManager.add(socks);
+    }
+
+    public Socks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, LineConfig lineConfig) {
+        super(namespaceService, pppoeService, lineConfig.getSocks5Config().getPort());
+        this.lineConfig = lineConfig;
     }
 
     @Override
@@ -80,7 +87,7 @@ public class Socks5ServiceImpl extends AbstractSocksService implements Socks5Ser
             fileWriter = new FileWriter(file);
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
             cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR=" + ip + "\n");
-            cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=" + port + "\n");
+            cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=" + listenPort + "\n");
             cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/root/ss5.conf\n");
             cfgfileBufferedWriter.write("export SS5_PASSWORD_FILE=/root/ss5.passwd\n");
             cfgfileBufferedWriter.write("export SS5_LOG_FILE=/root/ss5.log\n");

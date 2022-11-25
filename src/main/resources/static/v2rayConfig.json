@@ -5,15 +5,15 @@
     "loglevel": "none"
   },
   "inbound": {
-    "port": 10808,
+    "port": {PORT},
     "listen": "0.0.0.0",
     "protocol": "SOCKS",
     "settings": {
       "auth": "password",
       "accounts": [
         {
-          "user": "test123",
-          "pass": "test123"
+          "user": "{USERNAME}",
+          "pass": "{PASSWORD}"
         }
       ],
       "udp": true,

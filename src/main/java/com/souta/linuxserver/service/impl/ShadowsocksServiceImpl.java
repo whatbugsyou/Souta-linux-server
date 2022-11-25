@@ -1,33 +1,44 @@
 package com.souta.linuxserver.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.souta.linuxserver.config.LineConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Shadowsocks;
+import com.souta.linuxserver.entity.prototype.SocksPrototype;
+import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
 import com.souta.linuxserver.service.abs.AbstractSocksService;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.souta.linuxserver.entity.Shadowsocks.*;
-
 @Service
-public class ShadowsocksServiceImpl extends AbstractSocksService implements ShadowsocksService {
+public class ShadowsocksServiceImpl extends AbstractSocksService<Shadowsocks> implements ShadowsocksService {
 
-    public ShadowsocksServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService) {
-        super(namespaceService, pppoeService);
-        this.namespaceService = namespaceService;
-        this.pppoeService = pppoeService;
-        this.port = DEFAULT_PORT;
-        this.log = LoggerFactory.getLogger(ShadowsocksService.class);
-        this.configFileDir = "/root/shadowsocks";
+    private static String configFileDir = "/root/shadowsocks";
+    private final LineConfig lineConfig;
+
+    public ShadowsocksServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, LineConfig lineConfig) {
+        super(namespaceService, pppoeService, lineConfig.getShadowsocksConfig().getPort());
+        this.lineConfig = lineConfig;
         this.socksProtoTypeClass = Shadowsocks.class;
+    }
+
+    @PostConstruct
+    public void init() {
+        initPrototype();
+    }
+
+    private void initPrototype() {
+        SocksPrototype socks = new Shadowsocks(lineConfig.getShadowsocksConfig().getPassword(), lineConfig.getShadowsocksConfig().getMethod());
+        socks.setPort(lineConfig.getShadowsocksConfig().getPort().toString());
+        SocksPrototypeManager.add(socks);
     }
 
     @Override
@@ -51,12 +62,12 @@ public class ShadowsocksServiceImpl extends AbstractSocksService implements Shad
         try {
             JSONObject shadowsocksConfigObj = new JSONObject();
             shadowsocksConfigObj.put("server", ip);
-            shadowsocksConfigObj.put("server_port", Integer.parseInt(port));
+            shadowsocksConfigObj.put("server_port", lineConfig.getShadowsocksConfig().getPort());
             shadowsocksConfigObj.put("local_address", "127.0.0.1");
             shadowsocksConfigObj.put("local_port", "1080");
-            shadowsocksConfigObj.put("password", DEFAULT_PASSWORD);
+            shadowsocksConfigObj.put("password", lineConfig.getShadowsocksConfig().getPassword());
             shadowsocksConfigObj.put("timeout", 600);
-            shadowsocksConfigObj.put("method", DEFAULT_ENCRYPTION);
+            shadowsocksConfigObj.put("method", lineConfig.getShadowsocksConfig().getMethod());
             fileWriter = new FileWriter(file);
             fileWriter.write(shadowsocksConfigObj.toJSONString());
         } catch (IOException e) {

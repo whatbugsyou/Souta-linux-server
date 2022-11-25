@@ -1,14 +1,18 @@
 package com.souta.linuxserver.entity.abs;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public abstract class Socks {
-    public String id;
-    public String ip;
-    public String port;
+    private String id;
+    private String ip;
+    private String port;
 
     @Override
     public boolean equals(Object o) {
