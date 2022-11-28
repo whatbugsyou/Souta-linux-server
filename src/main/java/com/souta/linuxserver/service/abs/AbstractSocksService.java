@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.ParameterizedType;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +28,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         this.namespaceService = namespaceService;
         this.pppoeService = pppoeService;
         this.listenPort = listenPort;
+        this.tClass = (Class<T>) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 
     public final static boolean hasOutput(InputStream inputStream) {
