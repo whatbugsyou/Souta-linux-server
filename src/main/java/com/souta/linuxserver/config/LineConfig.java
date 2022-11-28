@@ -15,4 +15,26 @@ public class LineConfig {
 
     @NestedConfigurationProperty
     private ShadowsocksConfig shadowsocksConfig;
+
+    @Data
+    public static class ShadowsocksConfig {
+
+        private Integer port;
+
+        private String password;
+
+        private String method;
+
+    }
+
+    @Data
+    public static class Socks5Config {
+
+        private Integer port;
+
+        private String username;
+
+        private String password;
+
+    }
 }
