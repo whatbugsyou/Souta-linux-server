@@ -167,7 +167,6 @@ public class HostServiceImpl implements HostService {
     public void updateRateLimit(Integer limitKB) {
         hostConfig.getHost().setRateLimitKB(limitKB);
         saveConfigFile();
-        rateLimitService.removeAll();
     }
 
     private void saveConfigFile() {
