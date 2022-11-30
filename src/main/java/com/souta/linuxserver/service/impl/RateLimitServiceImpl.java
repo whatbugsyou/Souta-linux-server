@@ -1,6 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.config.LineConfig;
+import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.RateLimitService;
@@ -21,11 +21,11 @@ public class RateLimitServiceImpl implements RateLimitService {
     private final static String TAG_PLACEHOLDER = "{TAG}";
     private final static String configFileDir = "/root/limitScript";
     private final NamespaceService namespaceService;
-    private final LineConfig lineConfig;
+    private final HostConfig hostConfig;
 
-    public RateLimitServiceImpl(NamespaceService namespaceService, LineConfig lineConfig) {
+    public RateLimitServiceImpl(NamespaceService namespaceService, HostConfig hostConfig) {
         this.namespaceService = namespaceService;
-        this.lineConfig = lineConfig;
+        this.hostConfig = hostConfig;
     }
 
     public static String getNumeric(String str) {
@@ -45,7 +45,13 @@ public class RateLimitServiceImpl implements RateLimitService {
 
     @Override
     public boolean limit(String lineId) {
-        return limit(lineId, lineConfig.getDefaultRateLimitKB());
+        return limit(lineId, hostConfig.getHost().getRateLimitKB());
+    }
+
+    @Override
+    public void removeAll() {
+        String cmd = "ip -all netns exec iptables --flush";
+        namespaceService.exeCmdInDefaultNamespace(cmd);
     }
 
     @Override
@@ -86,9 +92,6 @@ public class RateLimitServiceImpl implements RateLimitService {
             dir.mkdir();
         }
         File file = new File(dir, "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf");
-        if (file.exists()) {
-            return;
-        }
         try (FileWriter fileWriter = new FileWriter(file); BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter); InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/RateLimit.conf"); InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream); BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader)) {
             String line;
             Integer packagePerSec = maxKBPerSec;

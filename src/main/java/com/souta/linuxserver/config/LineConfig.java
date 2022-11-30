@@ -8,7 +8,6 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(prefix = "line")
 @Data
 public class LineConfig {
-    private Integer defaultRateLimitKB;
 
     @NestedConfigurationProperty
     private Socks5Config socks5Config;

@@ -7,5 +7,7 @@ public interface RateLimitService {
 
     boolean limit(String lineId);
 
+    void removeAll();
+
     Set<String> getLimitedLineIdSet();
 }

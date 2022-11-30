@@ -3,6 +3,7 @@ package com.souta.linuxserver.controller;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSONObject;
+import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.DeadLine;
 import com.souta.linuxserver.entity.Line;
@@ -24,7 +25,6 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.souta.linuxserver.controller.Host.*;
 import static com.souta.linuxserver.service.LineService.deadLineIdSet;
 import static com.souta.linuxserver.service.LineService.dialingLines;
 import static com.souta.linuxserver.service.Socks5Service.onStartingSocks;
@@ -32,8 +32,8 @@ import static com.souta.linuxserver.service.impl.LineServiceImpl.DEFAULT_LISTEN_
 
 @RestController
 @RequestMapping("/v1.0/line/notify")
-public class MainController {
-    private static final Logger log = LoggerFactory.getLogger(MainController.class);
+public class LineController {
+    private static final Logger log = LoggerFactory.getLogger(LineController.class);
     private static final int checkingTimesOfDefineDeadLine = 3;
     /**
      * record the times of false dial ,if the times are >= checkingTimesOfDefineDeadLine will send to java server as a dead line
@@ -51,7 +51,7 @@ public class MainController {
     private final Socks5Service socks5Service;
     private final LineService lineService;
     private final NamespaceService namespaceService;
-
+    private final HostConfig hostConfig;
     private final RateLimitService rateLimitService;
     @Autowired
     @Qualifier("refreshPool")
@@ -66,18 +66,18 @@ public class MainController {
     private ExecutorService basePool;
 
 
-    public MainController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, @Qualifier("v2raySocks5ServiceImpl")Socks5Service socks5Service, LineService lineService, NamespaceService namespaceService, RateLimitService rateLimitService) {
+    public LineController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, @Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, LineService lineService, NamespaceService namespaceService, HostConfig hostConfig, RateLimitService rateLimitService) {
         this.pppoeService = pppoeService;
         this.shadowsocksService = shadowsocksService;
         this.socks5Service = socks5Service;
         this.lineService = lineService;
         this.namespaceService = namespaceService;
+        this.hostConfig = hostConfig;
         this.rateLimitService = rateLimitService;
     }
 
     @PostConstruct
     public void init() {
-        new Host().init();
         checkAndSendAllLinesInfo();
         monitorLines();
     }
@@ -183,13 +183,13 @@ public class MainController {
                     ADSL adsl = pppoeService.getADSLList().get(Integer.parseInt(lineId) - 1);
                     deadLine.setAdslUser(adsl.getAdslUser());
                     deadLine.setAdslPassword(adsl.getAdslPassword());
-                    data.put("hostId", id);
+                    data.put("hostId", hostConfig.getHost().getId());
                     data.put("deadLine", deadLine);
                     String body = new JSONObject(data).toJSONString();
                     Runnable runnable = () -> {
                         try {
                             log.info("send deadLine Info : {}", body);
-                            int status = HttpRequest.post(java_server_host + "/v1.0/deadLine")
+                            int status = HttpRequest.post(hostConfig.getJavaServerHost() + "/v1.0/deadLine")
                                     .body(body)
                                     .execute().getStatus();
                             if (status != 200) {
@@ -212,7 +212,7 @@ public class MainController {
         };
 
         Runnable checkRateLimit = () -> {
-            if (VERSION == 1){
+            if (hostConfig.getHost().getVersion() == 1) {
                 HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
                 Set<String> limitedLineIdSet = rateLimitService.getLimitedLineIdSet();
                 dialuppedIdSet.removeAll(limitedLineIdSet);
@@ -257,7 +257,7 @@ public class MainController {
     public void clean() {
         log.info("clean all Line in Java Server");
         try {
-            int status = HttpRequest.delete(java_server_host + "/v1.0/server/lines?" + "hostId=" + id)
+            int status = HttpRequest.delete(hostConfig.getJavaServerHost() + "/v1.0/server/lines?" + "hostId=" + hostConfig.getHost().getId())
                     .execute().getStatus();
             if (status != 200) {
                 throw new ResponseNotOkException("error in deleting All Line from java server,API(DELETE) :  /v1.0/server/lines ");
@@ -408,7 +408,7 @@ public class MainController {
     private void sendLinesInfo(ArrayList<Line> lines) {
         if (!lines.isEmpty()) {
             HashMap<String, Object> data = new HashMap<>();
-            data.put("hostId", id);
+            data.put("hostId", hostConfig.getHost().getId());
             data.put("lines", lines);
             String body = new JSONObject(data).toJSONString();
             Runnable runnable = new Runnable() {
@@ -416,7 +416,7 @@ public class MainController {
                 public void run() {
                     log.info("send Lines Info ...");
                     try {
-                        HttpResponse response = HttpRequest.put(java_server_host + "/v1.0/line")
+                        HttpResponse response = HttpRequest.put(hostConfig.getJavaServerHost() + "/v1.0/line")
                                 .body(body)
                                 .timeout(5000)
                                 .execute();

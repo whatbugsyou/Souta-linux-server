@@ -1,7 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.config.LineConfig;
-import com.souta.linuxserver.controller.Host;
+import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.entity.*;
 import com.souta.linuxserver.entity.abs.Socks;
 import com.souta.linuxserver.service.*;
@@ -25,19 +24,19 @@ public class LineServiceImpl implements LineService {
     private final ShadowsocksService shadowsocksService;
     private final PPPOEService pppoeService;
     private final NamespaceService namespaceService;
-    private final LineConfig lineConfig;
+    private final HostConfig hostConfig;
     @Autowired
     @Qualifier("linePool")
     private ExecutorService linePool;
     private RateLimitServiceImpl rateLimitService;
 
-    public LineServiceImpl(@Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService, RateLimitServiceImpl rateLimitService, LineConfig lineConfig) {
+    public LineServiceImpl(@Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, ShadowsocksService shadowsocksService, PPPOEService pppoeService, NamespaceService namespaceService, RateLimitServiceImpl rateLimitService, HostConfig hostConfig) {
         this.socks5Service = socks5Service;
         this.shadowsocksService = shadowsocksService;
         this.pppoeService = pppoeService;
         this.namespaceService = namespaceService;
         this.rateLimitService = rateLimitService;
-        this.lineConfig = lineConfig;
+        this.hostConfig = hostConfig;
     }
 
     @Override
@@ -87,8 +86,8 @@ public class LineServiceImpl implements LineService {
                         log.error("line {} create error", lineId);
                         deleteLine(lineId);
                     }
-                    if (Host.VERSION == 1) {
-                        rateLimitService.limit(lineId, lineConfig.getDefaultRateLimitKB());
+                    if (hostConfig.getHost().getVersion() == 1) {
+                        rateLimitService.limit(lineId, hostConfig.getHost().getRateLimitKB());
                     }
                 }
             } finally {
