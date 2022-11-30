@@ -70,7 +70,7 @@ public class RateLimitServiceImpl implements RateLimitService {
                     ACCETP_EXIST = false;
                     DROP_EXIST = false;
                 }
-                if (line.contains("ACCEPT")) {
+                if (line.contains("ACCEPT") && line.contains(hostConfig.getHost().getRateLimitKB() + "kb/s")) {
                     ACCETP_EXIST = true;
                 }
                 if (line.contains("DROP")) {
