@@ -92,26 +92,46 @@
     "param": {
         "lineId": 1    
     },
-    "body":{
-        "adslUser":"xxx",
-        "adslPassword":"xxx",  
-        "ethernetName":"xxx"  //nullable and inherit the origin ethernetName
-    },
-    "return":{
-       true|false
-    }
+  "body": {
+    "adslUser": "xxx",
+    "adslPassword": "xxx",
+    "ethernetName": "xxx"
+    //nullable and inherit the origin ethernetName
+  },
+  "return": {
+    true
+    |
+    false
+  }
 }
 ```
-## CallBack Function
-### Return a Line
-After calling `Create a Line` or `Refresh a Line` and the Line is OK,it will be sent it to java server with the following data format :
+
+### change host rate limit
+
 ```json
 {
-    "requestName":"/v1.0/line",
-    "port":"8088",
-    "method":"put",
-    "data":{	
-        "hostId":"01",
+  "URL": "/v1.0/host/rateLimit/{rateLimitKB}",
+  "port": "18080",
+  "method": "put",
+  "return": {
+  }
+}
+```
+
+## CallBack Function
+
+### Return a Line
+
+After calling `Create a Line` or `Refresh a Line` and the Line is OK,it will be sent it to java server with the
+following data format :
+
+```json
+{
+  "requestName": "/v1.0/line",
+  "port": "8088",
+  "method": "put",
+  "data": {
+    "hostId":"01",
         "lines":[{
             "id":"01",
             "socks5":{
