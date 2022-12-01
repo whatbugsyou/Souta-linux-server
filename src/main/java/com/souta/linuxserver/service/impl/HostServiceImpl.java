@@ -130,7 +130,7 @@ public class HostServiceImpl implements HostService {
                 }
                 if (nowIp != null && nowIp.matches("[\\\\.\\d]+")) {
                     String oldIp = hostConfig.getHost().getIp();
-                    Boolean isIpChanged = nowIp.equals(oldIp);
+                    Boolean isIpChanged = !nowIp.equals(oldIp);
                     if (isIpChanged) {
                         refreshIPRoute();
                         log.info("send new HOST IP " + nowIp);
