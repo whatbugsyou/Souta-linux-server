@@ -45,9 +45,6 @@ public class HostConfig {
             if (host.rateLimitKB == null) {
                 host.rateLimitKB = defaultRateLimitKB;
             }
-            if (host.id == null) {
-                registerHost();
-            }
         } catch (Exception e) {
             log.error(e.getMessage());
             System.exit(1);
@@ -61,41 +58,5 @@ public class HostConfig {
         }
         String jsonStr = FileUtil.ReadFile(filePath);
         host = JSON.parseObject(jsonStr, Host.class);
-    }
-
-    private void registerHost() throws Exception {
-        String jsonStr = JSONObject.toJSONString(host);
-        HttpResponse execute = HttpRequest
-                .put(javaServerHost + "/v1.0/server")
-                .body(jsonStr, "application/json;charset=UTF-8")
-                .execute();
-        if (execute.getStatus() != 200) {
-            throw new ResponseNotOkException("error in sending registerHost from java server,API(PUT) :  /v1.0/server");
-        }
-        String responseBody = execute.body();
-        JSONObject response = JSON.parseObject(responseBody);
-        Object id = response.get("id");
-        if (id == null) {
-            throw new NullPointerException("id is null");
-        } else {
-            host.id = String.valueOf(id);
-        }
-        FileWriter fileWriter = null;
-        try {
-            fileWriter = new FileWriter(filePath);
-            fileWriter.write(JSONObject.toJSONString(host));
-            fileWriter.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (fileWriter != null) {
-                try {
-                    fileWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
     }
 }

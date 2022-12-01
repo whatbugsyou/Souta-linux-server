@@ -2,12 +2,13 @@ package com.souta.linuxserver.service.impl;
 
 import cn.hutool.core.text.StrBuilder;
 import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.exception.ResponseNotOkException;
 import com.souta.linuxserver.service.HostService;
 import com.souta.linuxserver.service.NamespaceService;
-import com.souta.linuxserver.service.RateLimitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -29,12 +30,10 @@ public class HostServiceImpl implements HostService {
 
     private final HostConfig hostConfig;
     private final NamespaceService namespaceService;
-    private final RateLimitService rateLimitService;
 
-    public HostServiceImpl(HostConfig hostConfig, NamespaceService namespaceService, RateLimitService rateLimitService) {
+    public HostServiceImpl(HostConfig hostConfig, NamespaceService namespaceService) {
         this.hostConfig = hostConfig;
         this.namespaceService = namespaceService;
-        this.rateLimitService = rateLimitService;
     }
 
 
@@ -43,7 +42,55 @@ public class HostServiceImpl implements HostService {
         initDNS();
         initFirewall();
         refreshIPRoute();
+        initHostId();
         monitorHostIp();
+    }
+
+    private void initHostId() {
+        if (hostConfig.getHost().getId() == null) {
+            try {
+                registerHost();
+            } catch (Exception e) {
+                log.error(e.getMessage());
+                System.exit(1);
+            }
+        }
+    }
+
+    private void registerHost() throws Exception {
+        String jsonStr = JSONObject.toJSONString(hostConfig.getHost());
+        HttpResponse execute = HttpRequest
+                .put(hostConfig.getJavaServerHost() + "/v1.0/server")
+                .body(jsonStr, "application/json;charset=UTF-8")
+                .execute();
+        if (execute.getStatus() != 200) {
+            throw new ResponseNotOkException("error in sending registerHost from java server,API(PUT) :  /v1.0/server");
+        }
+        String responseBody = execute.body();
+        JSONObject response = JSON.parseObject(responseBody);
+        Object id = response.get("id");
+        if (id == null) {
+            throw new NullPointerException("id is null");
+        } else {
+            hostConfig.getHost().setId(String.valueOf(id));
+        }
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(hostConfig.getFilePath());
+            fileWriter.write(JSONObject.toJSONString(hostConfig.getHost()));
+            fileWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fileWriter != null) {
+                try {
+                    fileWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 
     private void refreshIPRoute() {
