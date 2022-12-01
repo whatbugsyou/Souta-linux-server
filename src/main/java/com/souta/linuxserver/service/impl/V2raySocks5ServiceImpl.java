@@ -70,9 +70,9 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
             InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream);
             tmpbufferedReader = new BufferedReader(inputStreamReader);
             while (((line = tmpbufferedReader.readLine()) != null)) {
-                line.replace("{PORT}", listenPort.toString());
-                line.replace("{USERNAME}", lineConfig.getSocks5Config().getUsername());
-                line.replace("{PASSWORD}", lineConfig.getSocks5Config().getPassword());
+                line = line.replace("{PORT}", listenPort.toString());
+                line = line.replace("{USERNAME}", lineConfig.getSocks5Config().getUsername());
+                line = line.replace("{PASSWORD}", lineConfig.getSocks5Config().getPassword());
                 cfgfileBufferedWriter.write(line);
                 cfgfileBufferedWriter.newLine();
             }
