@@ -74,23 +74,7 @@ public class HostServiceImpl implements HostService {
         } else {
             hostConfig.getHost().setId(String.valueOf(id));
         }
-        FileWriter fileWriter = null;
-        try {
-            fileWriter = new FileWriter(hostConfig.getFilePath());
-            fileWriter.write(JSONObject.toJSONString(hostConfig.getHost()));
-            fileWriter.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (fileWriter != null) {
-                try {
-                    fileWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
+        saveConfigFile();
     }
 
     private void refreshIPRoute() {
