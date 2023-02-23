@@ -430,6 +430,7 @@ public class LineController {
                     } catch (RuntimeException | ResponseNotOkException e) {
                         log.error(e.getMessage());
                         log.info("send Lines Info NOT ok : {}", body);
+                        errorSendLines.removeAll(lines);
                         errorSendLines.addAll(lines);
                     }
                 }
