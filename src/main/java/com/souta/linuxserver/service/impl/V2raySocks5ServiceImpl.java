@@ -37,7 +37,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
     private void initPrototype() {
         SocksPrototype socks = new Socks5(lineConfig.getSocks5Config().getUsername(), lineConfig.getSocks5Config().getUsername());
         socks.setPort(lineConfig.getSocks5Config().getPort().toString());
-        SocksPrototypeManager.add(socks);
+        SocksPrototypeManager.registerType(socks);
     }
 
 
@@ -145,5 +145,10 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
             }
         }
         return result;
+    }
+
+    @Override
+    public Socks5 getSocksInstance() {
+        return (Socks5) SocksPrototypeManager.getProtoType(Socks5.class);
     }
 }

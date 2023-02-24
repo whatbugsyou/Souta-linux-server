@@ -17,18 +17,14 @@ import java.util.regex.Pattern;
 
 public abstract class AbstractSocksService<T extends Socks> implements SocksService {
 
-    private Class<T> tClass;
-
     protected NamespaceService namespaceService;
     protected PPPOEService pppoeService;
     protected Integer listenPort;
-    protected Class<? extends Socks> socksProtoTypeClass;
 
     public AbstractSocksService(NamespaceService namespaceService, PPPOEService pppoeService, Integer listenPort) {
         this.namespaceService = namespaceService;
         this.pppoeService = pppoeService;
         this.listenPort = listenPort;
-        this.tClass = (Class<T>) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 
     public final static boolean hasOutput(InputStream inputStream) {
@@ -100,10 +96,14 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         boolean isStart = isStart(id, ip);
         Socks socks = null;
         if (isStart) {
-            socks = SocksPrototypeManager.getProtoType(tClass);
-            socks.setId(id);
-            socks.setIp(ip);
+            socks = getSocksInstance();
+            if (socks != null){
+                socks.setId(id);
+                socks.setIp(ip);
+            }
         }
         return socks;
     }
+
+    public abstract T getSocksInstance();
 }

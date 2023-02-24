@@ -7,7 +7,7 @@ import java.util.HashMap;
 public class SocksPrototypeManager {
     private static final HashMap<Class<? extends Socks>, SocksPrototype> pool = new HashMap<>();
 
-    public static void add(SocksPrototype socksProtoType) {
+    public static void registerType(SocksPrototype socksProtoType) {
         pool.put(socksProtoType.getClass(), socksProtoType);
     }
 
