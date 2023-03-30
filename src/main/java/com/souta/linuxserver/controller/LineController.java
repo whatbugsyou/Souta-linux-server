@@ -20,7 +20,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -122,7 +125,7 @@ public class LineController {
                         Matcher matcher = compile.matcher(line);
                         if (matcher.matches()) {
                             String pid = matcher.group(1);
-                            Float cpu = Float.valueOf(matcher.group(2));
+                            float cpu = Float.parseFloat(matcher.group(2));
                             String command = matcher.group(3);
                             if (cpu > 100 && command.contains("ss5")) {
                                 log.info("CPUHealthMonitor is going to kill pid{}---{}%...", pid, cpu);
@@ -175,7 +178,7 @@ public class LineController {
         };
 
         Runnable checkDeadLine = () -> {
-            if (!deadLineToSend.isEmpty()){
+            if (!deadLineToSend.isEmpty()) {
                 deadLineToSend.forEach(lineId -> {
                     HashMap<String, Object> data = new HashMap<>();
                     DeadLine deadLine = new DeadLine();
@@ -187,11 +190,11 @@ public class LineController {
                     data.put("deadLine", deadLine);
                     String body = new JSONObject(data).toJSONString();
                     Runnable runnable = () -> {
-                        try {
-                            log.info("send deadLine Info : {}", body);
-                            int status = HttpRequest.post(hostConfig.getJavaServerHost() + "/v1.0/deadLine")
-                                    .body(body)
-                                    .execute().getStatus();
+                        log.info("send deadLine Info : {}", body);
+                        try (HttpResponse response = HttpRequest.post(hostConfig.getJavaServerHost() + "/v1.0/deadLine")
+                                .body(body)
+                                .execute()) {
+                            int status = response.getStatus();
                             if (status != 200) {
                                 throw new ResponseNotOkException("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
                             }
@@ -217,7 +220,7 @@ public class LineController {
                 Set<String> limitedLineIdSet = rateLimitService.getLimitedLineIdSet();
                 dialuppedIdSet.removeAll(limitedLineIdSet);
                 Set<String> notLimitedIdSet = dialuppedIdSet;
-                notLimitedIdSet.forEach(id -> rateLimitService.limit(id));
+                notLimitedIdSet.forEach(rateLimitService::limit);
             }
         };
 
@@ -234,12 +237,7 @@ public class LineController {
 
     @GetMapping("/all")
     public void getAllLines() {
-        basePool.execute(new Runnable() {
-            @Override
-            public void run() {
-                checkAndSendAllLinesInfo();
-            }
-        });
+        basePool.execute(this::checkAndSendAllLinesInfo);
     }
 
     /**
@@ -256,9 +254,9 @@ public class LineController {
     @DeleteMapping("/all")
     public void clean() {
         log.info("clean all Line in Java Server");
-        try {
-            int status = HttpRequest.delete(hostConfig.getJavaServerHost() + "/v1.0/server/lines?" + "hostId=" + hostConfig.getHost().getId())
-                    .execute().getStatus();
+        try (HttpResponse response = HttpRequest.delete(hostConfig.getJavaServerHost() + "/v1.0/server/lines?" + "hostId=" + hostConfig.getHost().getId())
+                .execute()) {
+            int status = response.getStatus();
             if (status != 200) {
                 throw new ResponseNotOkException("error in deleting All Line from java server,API(DELETE) :  /v1.0/server/lines ");
             }
@@ -333,7 +331,7 @@ public class LineController {
         }
         if (line == null) {
             dialFalseTimesMap.merge(lineId, 1, Integer::sum);
-            if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine){
+            if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine) {
                 deadLineIdSet.add(lineId);
                 deadLineToSend.add(lineId);
             }
@@ -378,12 +376,7 @@ public class LineController {
         log.info("delete line {}, and do not dialing automatically", lineId);
         deadLineIdSet.add(lineId);
         HashMap<String, Object> resultMap = new HashMap<>();
-        basePool.execute(new Runnable() {
-            @Override
-            public void run() {
-                lineService.deleteLine(lineId);
-            }
-        });
+        basePool.execute(() -> lineService.deleteLine(lineId));
         resultMap.put("status", "ok");
         return resultMap;
     }
@@ -411,28 +404,24 @@ public class LineController {
             data.put("hostId", hostConfig.getHost().getId());
             data.put("lines", lines);
             String body = new JSONObject(data).toJSONString();
-            Runnable runnable = new Runnable() {
-                @Override
-                public void run() {
-                    log.info("send Lines Info ...");
-                    try {
-                        HttpResponse response = HttpRequest.put(hostConfig.getJavaServerHost() + "/v1.0/line")
-                                .body(body)
-                                .timeout(5000)
-                                .execute();
-                        boolean status = response.isOk();
-                        if (status) {
-                            log.info("send Lines Info ok : {}", body);
-                            errorSendLines.removeAll(lines);
-                        } else {
-                            throw new ResponseNotOkException("response not OK in sendLinesInfo to the Java server, API(PUT): /v1.0/line, " + response.body());
-                        }
-                    } catch (RuntimeException | ResponseNotOkException e) {
-                        log.error(e.getMessage());
-                        log.info("send Lines Info NOT ok : {}", body);
-                        errorSendLines.removeAll(lines);
-                        errorSendLines.addAll(lines);
+            Runnable runnable = () -> {
+                log.info("send Lines Info ...");
+                try (HttpResponse response = HttpRequest.put(hostConfig.getJavaServerHost() + "/v1.0/line")
+                        .body(body)
+                        .timeout(5000)
+                        .execute()) {
+                    boolean status = response.isOk();
+                    if (status) {
+                        log.info("send Lines Info ok : {}", body);
+                        lines.forEach(errorSendLines::remove);
+                    } else {
+                        throw new ResponseNotOkException("response not OK in sendLinesInfo to the Java server, API(PUT): /v1.0/line, " + response.body());
                     }
+                } catch (RuntimeException | ResponseNotOkException e) {
+                    log.error(e.getMessage());
+                    log.info("send Lines Info NOT ok : {}", body);
+                    lines.forEach(errorSendLines::remove);
+                    errorSendLines.addAll(lines);
                 }
             };
             netPool.submit(runnable);

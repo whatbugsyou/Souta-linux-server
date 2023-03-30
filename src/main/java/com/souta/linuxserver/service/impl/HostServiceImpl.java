@@ -59,20 +59,22 @@ public class HostServiceImpl implements HostService {
 
     private void registerHost() throws Exception {
         String jsonStr = JSONObject.toJSONString(hostConfig.getHost());
-        HttpResponse execute = HttpRequest
+        try (HttpResponse response = HttpRequest
                 .put(hostConfig.getJavaServerHost() + "/v1.0/server")
                 .body(jsonStr, "application/json;charset=UTF-8")
-                .execute();
-        if (execute.getStatus() != 200) {
-            throw new ResponseNotOkException("error in sending registerHost from java server,API(PUT) :  /v1.0/server");
-        }
-        String responseBody = execute.body();
-        JSONObject response = JSON.parseObject(responseBody);
-        Object id = response.get("id");
-        if (id == null) {
-            throw new NullPointerException("id is null");
-        } else {
-            hostConfig.getHost().setId(String.valueOf(id));
+                .execute()) {
+
+            if (response.getStatus() != 200) {
+                throw new ResponseNotOkException("error in sending registerHost from java server,API(PUT) :  /v1.0/server");
+            }
+            String responseBody = response.body();
+            JSONObject body = JSON.parseObject(responseBody);
+            Object id = body.get("id");
+            if (id == null) {
+                throw new NullPointerException("id is null");
+            } else {
+                hostConfig.getHost().setId(String.valueOf(id));
+            }
         }
         saveConfigFile();
     }
@@ -118,13 +120,6 @@ public class HostServiceImpl implements HostService {
         StrBuilder strBuilder = new StrBuilder();
         strBuilder.append(startFirewalldService).append(openWebservicePort).append(openRemoteDebugPort).append(reloadFirewalld);
         File file = new File("/root/fireWalld.sh");
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
         try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file))) {
             bufferedWriter.write(strBuilder.toString());
         } catch (IOException e) {
@@ -135,7 +130,7 @@ public class HostServiceImpl implements HostService {
 
     private void initDNS() {
         File file = new File(DNSFilePath);
-        try (FileWriter fileWriter = new FileWriter(file);) {
+        try (FileWriter fileWriter = new FileWriter(file)) {
             fileWriter.write("nameserver 114.114.114.114\n");
             fileWriter.write("nameserver 8.8.8.8\n");
         } catch (IOException e) {
@@ -161,7 +156,7 @@ public class HostServiceImpl implements HostService {
                 }
                 if (nowIp != null && nowIp.matches("[\\\\.\\d]+")) {
                     String oldIp = hostConfig.getHost().getIp();
-                    Boolean isIpChanged = !nowIp.equals(oldIp);
+                    boolean isIpChanged = !nowIp.equals(oldIp);
                     if (isIpChanged) {
                         refreshIPRoute();
                         log.info("send new HOST IP " + nowIp);
@@ -178,12 +173,12 @@ public class HostServiceImpl implements HostService {
     }
 
     private boolean sendNewHostIp() {
-        try {
-            String jsonStr = JSONObject.toJSONString(hostConfig.getHost());
-            int status = HttpRequest
-                    .put(hostConfig.getJavaServerHost() + "/v1.0/server")
-                    .body(jsonStr, "application/json;charset=UTF-8")
-                    .execute().getStatus();
+        String jsonStr = JSONObject.toJSONString(hostConfig.getHost());
+        try (HttpResponse response = HttpRequest
+                .put(hostConfig.getJavaServerHost() + "/v1.0/server")
+                .body(jsonStr, "application/json;charset=UTF-8")
+                .execute()) {
+            int status = response.getStatus();
             if (status != 200) {
                 throw new ResponseNotOkException("error in refreshing  HostInfo to java server,API(PUT) :  /v1.0/server");
             }
@@ -201,7 +196,7 @@ public class HostServiceImpl implements HostService {
     }
 
     private void saveConfigFile() {
-        try (FileWriter fileWriter = new FileWriter(hostConfig.getFilePath());) {
+        try (FileWriter fileWriter = new FileWriter(hostConfig.getFilePath())) {
             fileWriter.write(JSONObject.toJSONString(hostConfig.getHost()));
             fileWriter.flush();
         } catch (IOException e) {

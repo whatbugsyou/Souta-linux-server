@@ -112,8 +112,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         String adslPassword = adsl.getAdslPassword();
         createConifgFile(pppoeId, adslUser, adslPassword);
 
-        PPPOE pppoe = new PPPOE(veth, pppoeId, adslUser, adslPassword);
-        return pppoe;
+        return new PPPOE(veth, pppoeId, adslUser, adslPassword);
     }
 
     @Override
@@ -133,7 +132,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 adslAccountList.set(i, update);
                 Integer lineId = i + 1;
-                isCreatedpppFile.remove(lineId);
+                isCreatedpppFile.remove(lineId.toString());
             }
         }
         isRecordInSecretFile.remove(adsl.getAdslUsername());
@@ -170,7 +169,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 adslAccountList.set(i, update);
                 Integer lineId = i + 1;
-                isCreatedpppFile.remove(lineId);
+                isCreatedpppFile.remove(lineId.toString());
             }
         }
         isRecordInSecretFile.remove(adsl.getAdslUsername());
@@ -230,7 +229,10 @@ public class PPPOEServiceImpl implements PPPOEService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            namespaceService.exeCmdInDefaultNamespace("kill -9" + pid.toString());
+            try (InputStream inputStream1 = namespaceService.exeCmdInDefaultNamespace("kill -9" + pid)) {
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         return true;
     }
@@ -248,10 +250,11 @@ public class PPPOEServiceImpl implements PPPOEService {
         String cmd = "ps ax|awk '/ppp\\d/ {print $9}'";
 //        String cmd = "pgrep -a pppoe|awk '/run/ {print $4}'";
         Pattern compile = Pattern.compile(".*?(\\d+).*");
-        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-        if (inputStream != null) {
-            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+        try (
+                InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader)
+        ) {
             String line;
             try {
                 while ((line = bufferedReader.readLine()) != null) {
@@ -263,6 +266,8 @@ public class PPPOEServiceImpl implements PPPOEService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return result;
     }
@@ -284,7 +289,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         try {
             while ((line = bufferedReader.readLine()) != null) {
                 Matcher matcher2 = iproutePattern.matcher(line);
-                if (matcher2.matches() != false) {
+                if (matcher2.matches()) {
                     return matcher2.group(3);
                 }
             }
@@ -429,11 +434,12 @@ public class PPPOEServiceImpl implements PPPOEService {
         BufferedWriter cfgfileBufferedWriter = null;
         BufferedReader tmpbufferedReader = null;
         FileWriter fileWriter = null;
+        InputStream ifcfg_pppX_template = null;
         String line;
         try {
-            fileWriter = new FileWriter(new File(configFilePath));
+            fileWriter = new FileWriter(configFilePath);
             cfgfileBufferedWriter = new BufferedWriter(fileWriter);
-            InputStream ifcfg_pppX_template = this.getClass().getResourceAsStream("/static/ifcfg-pppX-template");
+            ifcfg_pppX_template = this.getClass().getResourceAsStream("/static/ifcfg-pppX-template");
             InputStreamReader inputStreamReader = new InputStreamReader(ifcfg_pppX_template);
             tmpbufferedReader = new BufferedReader(inputStreamReader);
             while (((line = tmpbufferedReader.readLine()) != null)) {
@@ -463,6 +469,13 @@ public class PPPOEServiceImpl implements PPPOEService {
             if (fileWriter != null) {
                 try {
                     fileWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (ifcfg_pppX_template != null) {
+                try {
+                    ifcfg_pppX_template.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -499,34 +512,37 @@ public class PPPOEServiceImpl implements PPPOEService {
                     reDialLock.unlock();
                 }
                 log.info("ppp{} start dialing ...", pppoe.getId());
-                namespaceService.exeCmdInNamespace(namespace, ifupCMD);
-                int checkCount = 0;
-                long beginTimeMillis = System.currentTimeMillis();
-                float sleepGapSec = 0.5f;
-                int dialEndSec = 60;
-                String ip = null;
-                while ((ip = getIP(pppoe.getId())) == null) {
-                    checkCount++;
-                    long now = System.currentTimeMillis();
-                    long cost = now - beginTimeMillis;
-                    if (checkCount % 20 == 0) {
-                        log.info("ppp{} dialing check[{}]...", pppoe.getId(), checkCount);
+                try (InputStream inputStream1 = namespaceService.exeCmdInNamespace(namespace, ifupCMD);) {
+                    int checkCount = 0;
+                    long beginTimeMillis = System.currentTimeMillis();
+                    float sleepGapSec = 0.5f;
+                    int dialEndSec = 60;
+                    String ip;
+                    while ((ip = getIP(pppoe.getId())) == null) {
+                        checkCount++;
+                        long now = System.currentTimeMillis();
+                        long cost = now - beginTimeMillis;
+                        if (checkCount % 20 == 0) {
+                            log.info("ppp{} dialing check[{}]...", pppoe.getId(), checkCount);
+                        }
+                        if (cost < dialEndSec * 1000) {
+                            TimeUnit.MILLISECONDS.sleep((long) (sleepGapSec * 1000));
+                        } else {
+                            log.warn("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
+                            break;
+                        }
                     }
-                    if (cost < dialEndSec * 1000) {
-                        TimeUnit.MILLISECONDS.sleep((long) (sleepGapSec * 1000));
+                    limitRedialTime(pppoe.getId());
+                    if (ip == null) {
+                        shutDown(pppoe);
                     } else {
-                        log.warn("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
-                        break;
+                        pppoe.setOutIP(ip);
                     }
+                    long costTimeMillis = System.currentTimeMillis() - beginTimeMillis;
+                    log.info("ppp{} has return , cost {}ms ,ip =[{}]", pppoe.getId(), costTimeMillis, ip == null ? "" : ip);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-                limitRedialTime(pppoe.getId());
-                if (ip == null) {
-                    shutDown(pppoe);
-                } else {
-                    pppoe.setOutIP(ip);
-                }
-                long costTimeMillis = System.currentTimeMillis() - beginTimeMillis;
-                log.info("ppp{} has return , cost {}ms ,ip =[{}]", pppoe.getId(), costTimeMillis, ip == null ? "" : ip);
                 return pppoe;
             }
         };
@@ -586,7 +602,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             try {
                 while ((line = bufferedReader.readLine()) != null) {
                     Matcher matcher2 = pattern2.matcher(line);
-                    if (matcher2.matches() != false) {
+                    if (matcher2.matches()) {
                         String outIP = matcher2.group(3);
                         String gateWay = matcher2.group(1);
                         String runingOnInterfaceName = matcher2.group(2);
@@ -598,19 +614,15 @@ public class PPPOEServiceImpl implements PPPOEService {
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
-                if (bufferedReader != null) {
-                    try {
-                        bufferedReader.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                if (inputStream != null) {
-                    try {
-                        inputStream.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         } else {

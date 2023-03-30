@@ -39,6 +39,7 @@ public class LineServiceImpl implements LineService {
         this.hostConfig = hostConfig;
     }
 
+    //TODO use design patten to optimize code
     @Override
     public FutureTask<Line> createLineWithDefaultListenIP(String lineId) {
         Callable<Line> dialHandle = () -> {
@@ -73,7 +74,7 @@ public class LineServiceImpl implements LineService {
                             }
                         }
                         if (socks5 != null && shadowsocks != null) {
-                            line = new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
+                            line = new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.parseInt(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.parseInt(lineId) - 1).getAdslPassword());
                             log.info("line {} start socks ok", lineId);
                             break;
                         } else if (times == 1) {
@@ -114,7 +115,7 @@ public class LineServiceImpl implements LineService {
         Socks5 socks5 = (Socks5) socks5Service.getSocks(lineId, listenIp);
         Shadowsocks shadowsocks = (Shadowsocks) shadowsocksService.getSocks(lineId, listenIp);
         if (socks5 != null && shadowsocks != null) {
-            return new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.valueOf(lineId) - 1).getAdslPassword());
+            return new Line(lineId, socks5, shadowsocks, pppoeService.getADSLList().get(Integer.parseInt(lineId) - 1).getAdslUser(), pppoeService.getADSLList().get(Integer.parseInt(lineId) - 1).getAdslPassword());
         } else {
             return null;
         }
@@ -162,14 +163,14 @@ public class LineServiceImpl implements LineService {
                 });
             }
             executorService.shutdown();
-            executorService.awaitTermination(2l, TimeUnit.MINUTES);
+            executorService.awaitTermination(2L, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
             lock.unlock();
         }
         onGettingLines = false;
-        return new ArrayList<Line>(lines);
+        return new ArrayList<>(lines);
     }
 
     @Override
