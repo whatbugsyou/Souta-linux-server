@@ -2,16 +2,11 @@ package com.souta.linuxserver.service.abs;
 
 
 import com.souta.linuxserver.entity.abs.Socks;
-import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.SocksService;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.reflect.ParameterizedType;
+import java.io.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,23 +22,6 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         this.listenPort = listenPort;
     }
 
-    public final static boolean hasOutput(InputStream inputStream) {
-        int read = 0;
-        try {
-            read = inputStream.read();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return read != -1;
-    }
 
     @Override
     public final boolean stopSocks(String id) {
@@ -52,20 +30,24 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         String s = ".*LISTEN\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
         String namespace = "ns" + id;
-        InputStream inputStream = namespaceService.exeCmdInNamespace(namespace, cmd);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        String line;
-        try {
+        Process process = namespaceService.exeCmdInNamespace(namespace, cmd);
+        try (InputStream inputStream = process.getInputStream();
+             OutputStream outputStream = process.getOutputStream();
+             InputStream errorStream = process.getErrorStream();
+             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)
+        ) {
+            String line;
             while ((line = bufferedReader.readLine()) != null) {
                 Matcher matcher = compile.matcher(line);
                 if (matcher.matches()) {
                     String pid = matcher.group(1);
                     String cmd2 = "kill -9 " + pid;
-                    namespaceService.exeCmdInDefaultNamespace(cmd2);
+                    namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd2);
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return true;
     }
@@ -85,8 +67,15 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         if (ip != null) {
             String cmd = "netstat -lnt |grep " + ip + ":" + listenPort;
             String namespaceName = "ns" + id;
-            InputStream inputStream = namespaceService.exeCmdInNamespace(namespaceName, cmd);
-            return hasOutput(inputStream);
+            Process process = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            try (InputStream inputStream = process.getInputStream();
+                 OutputStream outputStream = process.getOutputStream();
+                 InputStream errorStream = process.getErrorStream()
+            ) {
+                return inputStream.read() != -1;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         return false;
     }
@@ -97,7 +86,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         Socks socks = null;
         if (isStart) {
             socks = getSocksInstance();
-            if (socks != null){
+            if (socks != null) {
                 socks.setId(id);
                 socks.setIp(ip);
             }

@@ -51,19 +51,23 @@ public class RateLimitServiceImpl implements RateLimitService {
     @Override
     public void removeAll() {
         String cmd = "ip -all netns exec iptables --flush";
-        namespaceService.exeCmdInDefaultNamespace(cmd);
+        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
     }
 
     @Override
     public Set<String> getLimitedLineIdSet() {
         HashSet<String> result = new HashSet<>();
         String cmd = "ip -all netns exec iptables -L RATE-LIMIT";
-
-        try (InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd); InputStreamReader inputStreamReader = new InputStreamReader(inputStream); BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
-            String line = null;
+        Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+        try (InputStream inputStream = process.getInputStream();
+             OutputStream outputStream = process.getOutputStream();
+             InputStream errorStream = process.getErrorStream();
+             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+            String line;
             String namespaceId = null;
-            Boolean ACCETP_EXIST = false;
-            Boolean DROP_EXIST = false;
+            boolean ACCETP_EXIST = false;
+            boolean DROP_EXIST = false;
             while ((line = bufferedReader.readLine()) != null) {
                 if (line.contains(Namespace.DEFAULT_PREFIX)) {
                     namespaceId = getNumeric(line);
@@ -92,7 +96,11 @@ public class RateLimitServiceImpl implements RateLimitService {
             dir.mkdir();
         }
         File file = new File(dir, "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf");
-        try (FileWriter fileWriter = new FileWriter(file); BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter); InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/RateLimit.conf"); InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream); BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader)) {
+        try (FileWriter fileWriter = new FileWriter(file);
+             BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter);
+             InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/RateLimit.conf");
+             InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream);
+             BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader)) {
             String line;
             Integer packagePerSec = maxKBPerSec;
             while (((line = tmpbufferedReader.readLine()) != null)) {

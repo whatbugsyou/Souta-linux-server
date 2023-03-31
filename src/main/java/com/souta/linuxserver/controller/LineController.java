@@ -16,10 +16,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -109,34 +106,29 @@ public class LineController {
         };
         Runnable keepCPUHealth = () -> {
             String cmd = "top -b -n 1 |sed -n '8p'|awk '{print $1,$9,$12}'";
-            InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-            try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            if (inputStream != null) {
-                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+            try (InputStream inputStream = process.getInputStream();
+                 OutputStream outputStream = process.getOutputStream();
+                 InputStream errorStream = process.getErrorStream();
+                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader)
+            ) {
                 String line;
                 Pattern compile = Pattern.compile("(\\d+) (.+) (.+)");
-                try {
-                    if ((line = bufferedReader.readLine()) != null) {
-                        Matcher matcher = compile.matcher(line);
-                        if (matcher.matches()) {
-                            String pid = matcher.group(1);
-                            float cpu = Float.parseFloat(matcher.group(2));
-                            String command = matcher.group(3);
-                            if (cpu > 100 && command.contains("ss5")) {
-                                log.info("CPUHealthMonitor is going to kill pid{}---{}%...", pid, cpu);
-                                namespaceService.exeCmdInDefaultNamespace("kill -9 " + pid);
-                            }
+                if ((line = bufferedReader.readLine()) != null) {
+                    Matcher matcher = compile.matcher(line);
+                    if (matcher.matches()) {
+                        String pid = matcher.group(1);
+                        float cpu = Float.parseFloat(matcher.group(2));
+                        String command = matcher.group(3);
+                        if (cpu > 100 && command.contains("ss5")) {
+                            log.info("CPUHealthMonitor is going to kill pid{}---{}%...", pid, cpu);
+                            namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("kill -9 " + pid);
                         }
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
-
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
 
         };

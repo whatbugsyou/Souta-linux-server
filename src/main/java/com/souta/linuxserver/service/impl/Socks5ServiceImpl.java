@@ -2,8 +2,6 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.config.LineConfig;
 import com.souta.linuxserver.entity.Namespace;
-import com.souta.linuxserver.entity.Socks5;
-import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.abs.AbstractSocks5Service;
@@ -55,9 +53,8 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = "ls " + configFileDir + " |grep socks5-" + id + ".sh";
-        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-        return hasOutput(inputStream);
+        File file = new File(configFileDir, "socks5-" + id + ".sh");
+        return file.exists();
     }
 
     @Override
@@ -109,7 +106,7 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
         if (createConfigFile(id, ip)) {
             String namespaceName = Namespace.DEFAULT_PREFIX + id;
             String cmd = "sh /root/socks5/socks5-" + id + ".sh";
-            namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            namespaceService.exeCmdAndCloseIOStream(new Namespace(namespaceName), cmd);
             return true;
         } else {
             return false;
@@ -121,21 +118,22 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
         HashSet<String> result = new HashSet<>();
         String cmd = " pgrep -a ss5|awk '/ss5-[0-9]+\\.pid/ {print $8}'";
         Pattern compile = Pattern.compile(".*-(\\d+).*");
-        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-        if (inputStream != null) {
-            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+        Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+        try (InputStream inputStream = process.getInputStream();
+             OutputStream outputStream = process.getOutputStream();
+             InputStream errorStream = process.getErrorStream();
+             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)
+        ) {
             String line;
-            try {
-                while ((line = bufferedReader.readLine()) != null) {
-                    Matcher matcher = compile.matcher(line);
-                    if (matcher.matches()) {
-                        result.add(matcher.group(1));
-                    }
+            while ((line = bufferedReader.readLine()) != null) {
+                Matcher matcher = compile.matcher(line);
+                if (matcher.matches()) {
+                    result.add(matcher.group(1));
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return result;
     }

@@ -80,9 +80,9 @@ public class HostServiceImpl implements HostService {
     }
 
     private void refreshIPRoute() {
-        try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(ipRouteTablePath));
-            String line;
+        String line;
+        try (FileReader fileReader = new FileReader(ipRouteTablePath);
+             BufferedReader bufferedReader = new BufferedReader(fileReader)) {
             boolean flag = false;
             while ((line = bufferedReader.readLine()) != null) {
                 if (line.equals(String.format("%s %s", hostRouteTablePrio, hostRouteTableName))) {
@@ -92,24 +92,34 @@ public class HostServiceImpl implements HostService {
             }
             if (!flag) {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
-                namespaceService.exeCmdInDefaultNamespace(cmd);
+                namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
             }
-            File file = new File(hostRouteFilePath);
-            String cmd = "ip route";
-            InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-            bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        File file = new File(hostRouteFilePath);
+        String cmd = "ip route";
+        Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+        try (InputStream inputStream = process.getInputStream();
+             OutputStream outputStream = process.getOutputStream();
+             InputStream errorStream = process.getErrorStream();
+             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+             FileWriter fileWriter = new FileWriter(file);
+             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)
+        ) {
             while ((line = bufferedReader.readLine()) != null) {
                 bufferedWriter.write(String.format("ip route add %s table %s", line, hostRouteTableName));
                 bufferedWriter.newLine();
             }
             bufferedWriter.flush();
-            namespaceService.exeCmdInDefaultNamespace("sh " + hostRouteFilePath);
-            namespaceService.exeCmdInDefaultNamespace("ip rule del from all table " + hostRouteTableName);
-            namespaceService.exeCmdInDefaultNamespace("ip rule add from all table " + hostRouteTableName);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
+        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("sh " + hostRouteFilePath);
+        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule del from all table " + hostRouteTableName);
+        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule add from all table " + hostRouteTableName);
     }
 
     private void initFirewall() {
@@ -125,7 +135,7 @@ public class HostServiceImpl implements HostService {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        namespaceService.exeCmdInDefaultNamespace("sh /root/fireWalld.sh");
+        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("sh /root/fireWalld.sh");
     }
 
     private void initDNS() {
@@ -144,28 +154,30 @@ public class HostServiceImpl implements HostService {
         Runnable beeper = () -> {
             if (hostConfig.getHost().getId() != null) {
                 String cmd = "ifconfig | grep destination|awk '{print $2}'";
-                InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-                String nowIp = null;
-                if (inputStream != null) {
-                    try {
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                        nowIp = reader.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                if (nowIp != null && nowIp.matches("[\\\\.\\d]+")) {
-                    String oldIp = hostConfig.getHost().getIp();
-                    boolean isIpChanged = !nowIp.equals(oldIp);
-                    if (isIpChanged) {
-                        refreshIPRoute();
-                        log.info("send new HOST IP " + nowIp);
-                        if (sendNewHostIp()) {
-                            hostConfig.getHost().setIp(nowIp);
+                Process process =  namespaceService.exeCmdInDefaultNamespace(cmd);
+                try (InputStream inputStream = process.getInputStream();
+                     OutputStream outputStream = process.getOutputStream();
+                     InputStream errorStream = process.getErrorStream();
+                     InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                     BufferedReader reader = new BufferedReader(inputStreamReader)
+                ) {
+                    String nowIp;
+                    nowIp = reader.readLine();
+                    if (nowIp != null && nowIp.matches("[\\\\.\\d]+")) {
+                        String oldIp = hostConfig.getHost().getIp();
+                        boolean isIpChanged = !nowIp.equals(oldIp);
+                        if (isIpChanged) {
+                            refreshIPRoute();
+                            log.info("send new HOST IP " + nowIp);
+                            if (sendNewHostIp()) {
+                                hostConfig.getHost().setIp(nowIp);
+                            }
                         }
+                    } else {
+                        log.error("HOST IP is not found");
                     }
-                } else {
-                    log.error("HOST IP is not found");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             }
         };

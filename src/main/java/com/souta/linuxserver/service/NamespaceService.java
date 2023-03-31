@@ -2,7 +2,6 @@ package com.souta.linuxserver.service;
 
 import com.souta.linuxserver.entity.Namespace;
 
-import java.io.InputStream;
 import java.util.List;
 
 public interface NamespaceService {
@@ -40,23 +39,27 @@ public interface NamespaceService {
     /**
      * @param namespace --an Object of namespace
      * @param cmd       --  bash commond
-     * @return an Objcet of InputStream , relating to the cmd executing output.
+     * @return Process
      */
-    InputStream exeCmdInNamespace(Namespace namespace, String cmd);
+    Process exeCmdInNamespace(Namespace namespace, String cmd);
 
     /**
      * @param namespace --  namespace name
      * @param cmd       --  bash command
-     * @return an Objcet of InputStream , relating to the cmd executing output.
+     * @return Process
      */
-    InputStream exeCmdInNamespace(String namespace, String cmd);
+    Process exeCmdInNamespace(String namespace, String cmd);
 
 
     /**
      * @param cmd --  bash command
-     * @return an Objcet of InputStream , relating to the cmd executing output.
+     * @return Process
      */
-    InputStream exeCmdInDefaultNamespace(String cmd);
+    Process exeCmdInDefaultNamespace(String cmd);
+
+    void exeCmdInDefaultNamespaceAndCloseIOStream(String cmd);
+
+    void exeCmdAndCloseIOStream(Namespace namespace, String cmd);
 
 
 }

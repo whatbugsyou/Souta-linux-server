@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 
 @Service
 public class ShadowsocksServiceImpl extends AbstractShadowsocksService {
@@ -24,9 +23,8 @@ public class ShadowsocksServiceImpl extends AbstractShadowsocksService {
 
     @Override
     public boolean checkConfigFileExist(String id) {
-        String cmd = String.format("ls " + configFileDir + " |grep shadowsocks-%s.json", id);
-        InputStream inputStream = namespaceService.exeCmdInDefaultNamespace(cmd);
-        return hasOutput(inputStream);
+        File file = new File(configFileDir, String.format("shadowsocks-%s.json", id));
+        return file.exists();
     }
 
     @Override
@@ -71,7 +69,7 @@ public class ShadowsocksServiceImpl extends AbstractShadowsocksService {
             String cmd = "ssserver -c " + configFileDir + "/shadowsocks-%s.json >/dev/null 2>&1 &";
             cmd = String.format(cmd, id, id);
             String namespaceName = Namespace.DEFAULT_PREFIX + id;
-            namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            namespaceService.exeCmdAndCloseIOStream(new Namespace(namespaceName), cmd);
             return true;
         } else {
             return false;
