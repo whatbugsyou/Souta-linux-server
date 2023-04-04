@@ -178,6 +178,9 @@ public class PPPOEServiceImpl implements PPPOEService {
         String cmd = "ip route";
         String namespaceName = Namespace.DEFAULT_PREFIX + pppoeId;
         Process process = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+        if (process == null) {
+            return false;
+        }
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream()
@@ -258,6 +261,9 @@ public class PPPOEServiceImpl implements PPPOEService {
     public String getIP(String pppoeId) {
         String cmd = "ip route";
         Process process = namespaceService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
+        if (process == null) {
+            return null;
+        }
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
