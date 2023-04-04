@@ -28,15 +28,15 @@ public class VethServiceImpl implements VethService {
         boolean vethExistInNamespace = checkExist(vethName, namespaceName);
         String macAddr;
         if (!vethExistInNamespace) {
-            if (checkExist(vethName, "")) {
-                macAddr = getMacAddr(vethName, "");
+            if (checkExist(vethName, Namespace.DEFAULT_NAMESPACE.getName())) {
+                macAddr = getMacAddr(vethName, Namespace.DEFAULT_NAMESPACE.getName());
             } else {
                 macAddr = createMacAddr();
                 String cmd = "ip link add link %s address %s %s type macvlan";
                 cmd = String.format(cmd, physicalEthName, macAddr, vethName);
                 namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
             }
-            veth = new Veth(physicalEthName, vethName, macAddr, new Namespace(""));
+            veth = new Veth(physicalEthName, vethName, macAddr, Namespace.DEFAULT_NAMESPACE);
             moveVethToNamespace(veth, namespace);
         } else {
             macAddr = getMacAddr(vethName, namespaceName);
