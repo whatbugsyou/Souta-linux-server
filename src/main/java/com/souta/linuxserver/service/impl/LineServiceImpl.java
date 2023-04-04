@@ -189,11 +189,6 @@ public class LineServiceImpl implements LineService {
             return null;
         }
         pppoeService.shutDown(lineId);
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         return createLineWithDefaultListenIP(lineId);
     }
 

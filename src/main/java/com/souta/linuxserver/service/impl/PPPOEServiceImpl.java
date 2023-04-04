@@ -215,7 +215,17 @@ public class PPPOEServiceImpl implements PPPOEService {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("kill -9" + pid);
+        process = namespaceService.exeCmdWithNewSh("kill -9" + pid);
+        try (InputStream inputStream = process.getInputStream();
+             OutputStream outputStream = process.getOutputStream();
+             InputStream errorStream = process.getErrorStream()
+        ) {
+            process.waitFor();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return true;
     }
 
