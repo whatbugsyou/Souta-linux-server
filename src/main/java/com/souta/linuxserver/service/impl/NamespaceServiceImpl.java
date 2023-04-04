@@ -1,6 +1,7 @@
 package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Namespace;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,13 +16,18 @@ import java.util.regex.Pattern;
 @Service
 public class NamespaceServiceImpl implements NamespaceService {
     private static final Logger log = LoggerFactory.getLogger(NamespaceServiceImpl.class);
-    private final Runtime runtime = Runtime.getRuntime();
+
+    private final CommandService commandService;
+
+    public NamespaceServiceImpl(CommandService commandService) {
+        this.commandService = commandService;
+    }
 
     @Override
     public boolean checkExist(String name) {
         if (null == name) return true;
         String cmd = "ls /var/run/netns/ |grep " + name + "$";
-        Process process = exeCmdWithNewSh(cmd);
+        Process process = commandService.exeCmdWithNewSh(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream()
@@ -46,7 +52,7 @@ public class NamespaceServiceImpl implements NamespaceService {
     public List<Namespace> getAllNameSpace() {
         ArrayList<Namespace> namespaces = new ArrayList<>();
         String cmd = "ip netns list";
-        Process process = exeCmdInDefaultNamespace(cmd);
+        Process process = commandService.exeCmdInDefaultNamespace(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -83,7 +89,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         boolean exist = checkExist(name);
         if (!exist) {
             String cmd = "ip netns add " + name;
-            exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_NAMESPACE.getName());
         }
         return new Namespace(name);
     }
@@ -93,88 +99,10 @@ public class NamespaceServiceImpl implements NamespaceService {
         boolean exist = checkExist(name);
         if (exist) {
             String cmd = "ip netns delete " + name;
-            exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_NAMESPACE.getName());
         }
         return true;
     }
 
-    @Override
-    public Process exeCmdInNamespace(Namespace namespace, String cmd) {
-        return exeCmdInNamespace(namespace.getName(), cmd);
-    }
-
-    @Override
-    public Process exeCmdInNamespace(String namespace, String cmd) {
-        if (namespace != null) {
-            if (!checkExist(namespace)) {
-                return null;
-            } else {
-                cmd = "ip netns exec " + namespace + " " + cmd;
-            }
-        }
-        Process exec = null;
-        try {
-            exec = runtime.exec(cmd);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return exec;
-    }
-
-    @Override
-    public Process exeCmdWithNewSh(String namespace, String cmd) {
-        if (namespace != Namespace.DEFAULT_NAMESPACE.getName()) {
-            if (!checkExist(namespace)) {
-                return null;
-            } else {
-                cmd = "ip netns exec " + namespace + " " + cmd;
-            }
-        }
-        String[] cmdprep = new String[]{"/bin/sh", "-c", cmd};
-        Process exec = null;
-        try {
-            exec = runtime.exec(cmdprep);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return exec;
-    }
-
-    @Override
-    public Process exeCmdWithNewSh(String cmd) {
-        return exeCmdWithNewSh(Namespace.DEFAULT_NAMESPACE.getName(), cmd);
-    }
-
-    @Override
-    public Process exeCmdInDefaultNamespace(String cmd) {
-        return exeCmdInNamespace(Namespace.DEFAULT_NAMESPACE, cmd);
-    }
-
-    @Override
-    public Process exeCmdInDefaultNamespaceAndCloseIOStream(String cmd) {
-        Process process = exeCmdInDefaultNamespace(cmd);
-        try (InputStream inputStream = process.getInputStream();
-             OutputStream outputStream = process.getOutputStream();
-             InputStream errorStream = process.getErrorStream()
-        ) {
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return process;
-    }
-
-    @Override
-    public Process exeCmdAndCloseIOStream(Namespace namespace, String cmd) {
-        Process process = exeCmdInNamespace(namespace, cmd);
-        try (InputStream inputStream = process.getInputStream();
-             OutputStream outputStream = process.getOutputStream();
-             InputStream errorStream = process.getErrorStream()
-        ) {
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return process;
-    }
 
 }

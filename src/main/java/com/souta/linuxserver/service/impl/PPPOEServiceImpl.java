@@ -6,7 +6,7 @@ import com.souta.linuxserver.entity.ADSL;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.PPPOE;
 import com.souta.linuxserver.entity.Veth;
-import com.souta.linuxserver.service.NamespaceService;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.VethService;
 import org.slf4j.Logger;
@@ -84,14 +84,14 @@ public class PPPOEServiceImpl implements PPPOEService {
         }
     }
 
-    private final NamespaceService namespaceService;
+    private final CommandService commandService;
     private final VethService vethService;
     @Autowired
     @Qualifier("dialingPool")
     private ExecutorService dialingPool;
 
-    public PPPOEServiceImpl(NamespaceService namespaceService, VethService vethService) {
-        this.namespaceService = namespaceService;
+    public PPPOEServiceImpl(CommandService commandService, VethService vethService) {
+        this.commandService = commandService;
         this.vethService = vethService;
     }
 
@@ -177,7 +177,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public boolean isDialUp(String pppoeId) {
         String cmd = "ip route";
         String namespaceName = Namespace.DEFAULT_PREFIX + pppoeId;
-        Process process = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+        Process process = commandService.exeCmdInNamespace(namespaceName, cmd);
         if (process == null) {
             return false;
         }
@@ -201,7 +201,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public boolean shutDown(String pppoeId) {
         StringBuilder pid = new StringBuilder();
         String pidCheckCmd = String.format("ps ax|awk '/(ppp%s$)|(ppp%s )/{print $1}'", pppoeId, pppoeId);
-        Process process = namespaceService.exeCmdWithNewSh(pidCheckCmd);
+        Process process = commandService.exeCmdWithNewSh(pidCheckCmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -215,17 +215,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        process = namespaceService.exeCmdWithNewSh("kill -9" + pid);
-        try (InputStream inputStream = process.getInputStream();
-             OutputStream outputStream = process.getOutputStream();
-             InputStream errorStream = process.getErrorStream()
-        ) {
-            process.waitFor();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        commandService.execCmdAndWaitForAndCloseIOSteam("kill -9" + pid, true, Namespace.DEFAULT_NAMESPACE.getName());
         return true;
     }
 
@@ -242,7 +232,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         String cmd = "ps ax|awk '/ppp\\d/ {print $9}'";
 //        String cmd = "pgrep -a pppoe|awk '/run/ {print $4}'";
         Pattern compile = Pattern.compile(".*?(\\d+).*");
-        Process process = namespaceService.exeCmdWithNewSh(cmd);
+        Process process = commandService.exeCmdWithNewSh(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -270,7 +260,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public String getIP(String pppoeId) {
         String cmd = "ip route";
-        Process process = namespaceService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
+        Process process = commandService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
         if (process == null) {
             return null;
         }
@@ -419,7 +409,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                     reDialLock.unlock();
                 }
                 log.info("ppp{} start dialing ...", pppoe.getId());
-                Process process = namespaceService.exeCmdInNamespace(namespace, ifupCMD);
+                Process process = commandService.exeCmdInNamespace(namespace.getName(), ifupCMD);
                 try (InputStream inputStream = process.getInputStream();
                      OutputStream outputStream = process.getOutputStream();
                      InputStream errorStream = process.getErrorStream()
@@ -498,7 +488,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         pppoe.setVeth(veth);
         if (isDialUp(pppoeId)) {
             String cmd = "ip route";
-            Process process = namespaceService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
+            Process process = commandService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream();

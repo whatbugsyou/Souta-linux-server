@@ -2,6 +2,7 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.entity.Namespace;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.RateLimitService;
 import lombok.extern.slf4j.Slf4j;
@@ -20,12 +21,12 @@ public class RateLimitServiceImpl implements RateLimitService {
     private final static String BURST_PLACEHOLDER = "{BURST_PLACEHOLDER}";
     private final static String TAG_PLACEHOLDER = "{TAG}";
     private final static String configFileDir = "/root/limitScript";
-    private final NamespaceService namespaceService;
     private final HostConfig hostConfig;
+    private final CommandService commandService;
 
-    public RateLimitServiceImpl(NamespaceService namespaceService, HostConfig hostConfig) {
-        this.namespaceService = namespaceService;
+    public RateLimitServiceImpl(HostConfig hostConfig, CommandService commandService) {
         this.hostConfig = hostConfig;
+        this.commandService = commandService;
     }
 
     public static String getNumeric(String str) {
@@ -39,7 +40,13 @@ public class RateLimitServiceImpl implements RateLimitService {
     public boolean limit(String lineId, Integer maxKBPerSec) {
         log.info("rate limit:line{}, {}kb/s ", lineId, maxKBPerSec);
         createLimitScriptFile(lineId, maxKBPerSec);
-        namespaceService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + lineId, "iptables-restore " + configFileDir + "/" + "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf");
+        String cmd = "iptables-restore " + configFileDir + "/" + "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf";
+        Process process = commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_PREFIX + lineId);
+        try {
+            process.waitFor();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return true;
     }
 
@@ -51,14 +58,14 @@ public class RateLimitServiceImpl implements RateLimitService {
     @Override
     public void removeAll() {
         String cmd = "ip -all netns exec iptables --flush";
-        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+        commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
     }
 
     @Override
     public Set<String> getLimitedLineIdSet() {
         HashSet<String> result = new HashSet<>();
         String cmd = "ip -all netns exec iptables -L RATE-LIMIT";
-        Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+        Process process = commandService.exeCmdInDefaultNamespace(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

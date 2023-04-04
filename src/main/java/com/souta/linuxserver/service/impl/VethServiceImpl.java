@@ -2,6 +2,7 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Veth;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.VethService;
 import org.slf4j.Logger;
@@ -15,6 +16,8 @@ import java.util.Random;
 @Service
 public class VethServiceImpl implements VethService {
     private static final Logger log = LoggerFactory.getLogger(VethServiceImpl.class);
+    @Autowired
+    private CommandService commandService;
     @Autowired
     private NamespaceService namespaceService;
 
@@ -34,7 +37,7 @@ public class VethServiceImpl implements VethService {
                 macAddr = createMacAddr();
                 String cmd = "ip link add link %s address %s %s type macvlan";
                 cmd = String.format(cmd, physicalEthName, macAddr, vethName);
-                namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+                commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
             }
             veth = new Veth(physicalEthName, vethName, macAddr, Namespace.DEFAULT_NAMESPACE);
             moveVethToNamespace(veth, namespace);
@@ -52,7 +55,7 @@ public class VethServiceImpl implements VethService {
             Namespace namespace = new Namespace(namespaceName);
             String cmd = "cat /sys/class/net/%s/address";// 00:e5:5d:d3:7d:01
             cmd = String.format(cmd, vethName);
-            Process process = namespaceService.exeCmdInNamespace(namespace, cmd);
+            Process process = commandService.exeCmdInNamespace(namespace.getName(), cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream();
@@ -87,7 +90,7 @@ public class VethServiceImpl implements VethService {
     @Override
     public boolean checkIsUp(String vethName, String namespaceName) {
         String cmd = "ifconfig " + vethName + " |grep inet6";
-        Process process = namespaceService.exeCmdWithNewSh(namespaceName, cmd);
+        Process process = commandService.exeCmdWithNewSh(namespaceName, cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream()
@@ -106,7 +109,7 @@ public class VethServiceImpl implements VethService {
         } else {
             Namespace namespace = new Namespace(namespaceName);
             String cmd = "ls /sys/class/net/|grep " + vethName + "$";
-            Process process = namespaceService.exeCmdWithNewSh(namespace.getName(), cmd);
+            Process process = commandService.exeCmdWithNewSh(namespace.getName(), cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream()
@@ -130,7 +133,7 @@ public class VethServiceImpl implements VethService {
             return true;
         } else {
             String cmd = "ip link delete " + vethName + " type macvlan";
-            namespaceService.exeCmdAndCloseIOStream(new Namespace(namespaceName), cmd);
+            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, namespaceName);
             return true;
         }
     }
@@ -141,7 +144,7 @@ public class VethServiceImpl implements VethService {
         if (exist) {
             Namespace namespace = veth.getNamespace();
             String cmd = "ifconfig " + veth.getInterfaceName() + " up";
-            namespaceService.exeCmdAndCloseIOStream(namespace, cmd);
+            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, namespace.getName());
             return true;
         } else {
             return false;
@@ -154,7 +157,7 @@ public class VethServiceImpl implements VethService {
         if (exist) {
             Namespace namespace = veth.getNamespace();
             String cmd = "ifconfig " + veth.getInterfaceName() + " down";
-            namespaceService.exeCmdAndCloseIOStream(namespace, cmd);
+            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, namespace.getName());
             return true;
         }
         return false;
@@ -165,7 +168,7 @@ public class VethServiceImpl implements VethService {
         if (checkExist(veth) && namespaceService.checkExist(namespace)) {
             String cmd = "ip link set %s netns %s ";
             cmd = String.format(cmd, veth.getInterfaceName(), namespace.getName());
-            namespaceService.exeCmdAndCloseIOStream(veth.getNamespace(), cmd);
+            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_NAMESPACE.getName());
             veth.setNamespace(namespace);
             return true;
         } else {

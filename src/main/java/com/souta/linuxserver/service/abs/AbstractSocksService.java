@@ -1,7 +1,9 @@
 package com.souta.linuxserver.service.abs;
 
 
+import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.abs.Socks;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.SocksService;
@@ -14,11 +16,13 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
 
     protected NamespaceService namespaceService;
     protected PPPOEService pppoeService;
+    protected CommandService commandService;
     protected Integer listenPort;
 
-    public AbstractSocksService(NamespaceService namespaceService, PPPOEService pppoeService, Integer listenPort) {
+    public AbstractSocksService(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, Integer listenPort) {
         this.namespaceService = namespaceService;
         this.pppoeService = pppoeService;
+        this.commandService = commandService;
         this.listenPort = listenPort;
     }
 
@@ -30,7 +34,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         String s = ".*LISTEN\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
         String namespace = "ns" + id;
-        Process process = namespaceService.exeCmdWithNewSh(namespace, cmd);
+        Process process = commandService.exeCmdWithNewSh(namespace, cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -43,7 +47,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
                 if (matcher.matches()) {
                     String pid = matcher.group(1);
                     String cmd2 = "kill -9 " + pid;
-                    namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd2);
+                    commandService.execCmdAndWaitForAndCloseIOSteam(cmd2,false, Namespace.DEFAULT_NAMESPACE.getName());
                 }
             }
         } catch (IOException e) {
@@ -67,7 +71,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         if (ip != null) {
             String cmd = "netstat -lnt |grep " + ip + ":" + listenPort;
             String namespaceName = "ns" + id;
-            Process process = namespaceService.exeCmdWithNewSh(namespaceName, cmd);
+            Process process = commandService.exeCmdWithNewSh(namespaceName, cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream()

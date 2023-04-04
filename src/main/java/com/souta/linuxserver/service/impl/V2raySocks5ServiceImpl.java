@@ -5,6 +5,7 @@ import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.entity.prototype.SocksPrototype;
 import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.Socks5Service;
@@ -24,8 +25,8 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
 
     private final LineConfig lineConfig;
 
-    public V2raySocks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, LineConfig lineConfig) {
-        super(namespaceService, pppoeService, lineConfig.getSocks5Config().getPort());
+    public V2raySocks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, LineConfig lineConfig) {
+        super(namespaceService, pppoeService, commandService, lineConfig.getSocks5Config().getPort());
         this.lineConfig = lineConfig;
     }
 
@@ -82,13 +83,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
         if (createConfigFile(id, ip)) {
             String namespaceName = Namespace.DEFAULT_PREFIX + id;
             String cmd = "v2ray run -c /root/v2ray/v2ray-" + id + ".json >/dev/null 2>&1 &";
-            Process process = namespaceService.exeCmdWithNewSh(namespaceName, cmd);
-            try {
-                process.waitFor();
-
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, true, namespaceName);
             return true;
         } else {
             return false;
@@ -100,7 +95,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
         HashSet<String> result = new HashSet<>();
         String cmd = " pgrep -a v2ray|awk '/v2ray-[0-9]+\\.json/ {print $5}'";
         Pattern compile = Pattern.compile(".*-(\\d+).*");
-        Process process = namespaceService.exeCmdWithNewSh(cmd);
+        Process process = commandService.exeCmdWithNewSh(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

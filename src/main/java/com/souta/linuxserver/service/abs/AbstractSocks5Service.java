@@ -4,6 +4,7 @@ import com.souta.linuxserver.config.LineConfig.Socks5Config;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.entity.prototype.SocksPrototype;
 import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.Socks5Service;
@@ -12,8 +13,8 @@ public abstract class AbstractSocks5Service extends AbstractSocksService<Socks5>
 
     protected Socks5Config socks5Config;
 
-    public AbstractSocks5Service(NamespaceService namespaceService, PPPOEService pppoeService, Integer listenPort, Socks5Config socks5Config) {
-        super(namespaceService, pppoeService, listenPort);
+    public AbstractSocks5Service(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, Integer listenPort, Socks5Config socks5Config) {
+        super(namespaceService, pppoeService, commandService, listenPort);
         this.socks5Config = socks5Config;
         initPrototype();
     }

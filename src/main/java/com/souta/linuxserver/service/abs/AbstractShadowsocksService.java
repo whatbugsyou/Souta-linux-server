@@ -4,6 +4,7 @@ import com.souta.linuxserver.config.LineConfig.ShadowsocksConfig;
 import com.souta.linuxserver.entity.Shadowsocks;
 import com.souta.linuxserver.entity.prototype.SocksPrototype;
 import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.ShadowsocksService;
@@ -12,8 +13,8 @@ public abstract class AbstractShadowsocksService extends AbstractSocksService<Sh
 
     protected ShadowsocksConfig config;
 
-    public AbstractShadowsocksService(NamespaceService namespaceService, PPPOEService pppoeService, Integer listenPort, ShadowsocksConfig config) {
-        super(namespaceService, pppoeService, listenPort);
+    public AbstractShadowsocksService(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, Integer listenPort, ShadowsocksConfig config) {
+        super(namespaceService, pppoeService, commandService, listenPort);
         this.config = config;
         initPrototype();
     }

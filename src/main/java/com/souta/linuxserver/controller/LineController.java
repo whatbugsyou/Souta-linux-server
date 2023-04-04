@@ -50,9 +50,9 @@ public class LineController {
     private final ShadowsocksService shadowsocksService;
     private final Socks5Service socks5Service;
     private final LineService lineService;
-    private final NamespaceService namespaceService;
     private final HostConfig hostConfig;
     private final RateLimitService rateLimitService;
+    private final CommandService commandService;
     @Autowired
     @Qualifier("refreshPool")
     private ExecutorService refreshPool;
@@ -65,15 +65,14 @@ public class LineController {
     @Qualifier("basePool")
     private ExecutorService basePool;
 
-
-    public LineController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, @Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, LineService lineService, NamespaceService namespaceService, HostConfig hostConfig, RateLimitService rateLimitService) {
+    public LineController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, @Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, LineService lineService, HostConfig hostConfig, RateLimitService rateLimitService, CommandService commandService) {
         this.pppoeService = pppoeService;
         this.shadowsocksService = shadowsocksService;
         this.socks5Service = socks5Service;
         this.lineService = lineService;
-        this.namespaceService = namespaceService;
         this.hostConfig = hostConfig;
         this.rateLimitService = rateLimitService;
+        this.commandService = commandService;
     }
 
     @PostConstruct
@@ -106,7 +105,7 @@ public class LineController {
         };
         Runnable keepCPUHealth = () -> {
             String cmd = "top -b -n 1 |sed -n '8p'|awk '{print $1,$9,$12}'";
-            Process process = namespaceService.exeCmdWithNewSh(cmd);
+            Process process = commandService.exeCmdWithNewSh(cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream();
@@ -123,7 +122,7 @@ public class LineController {
                         String command = matcher.group(3);
                         if (cpu > 100 && command.contains("ss5")) {
                             log.info("CPUHealthMonitor is going to kill pid{}---{}%...", pid, cpu);
-                            namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("kill -9 " + pid);
+                            commandService.exeCmdInDefaultNamespaceAndCloseIOStream("kill -9 " + pid);
                         }
                     }
                 }
@@ -223,8 +222,6 @@ public class LineController {
         scheduler.scheduleAtFixedRate(keepCPUHealth, 0, 60, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(checkRateLimit, 0, 60, TimeUnit.SECONDS);
     }
-
-
 
 
     @GetMapping("/all")

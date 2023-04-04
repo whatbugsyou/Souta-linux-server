@@ -36,34 +36,5 @@ public interface NamespaceService {
      */
     boolean deleteNameSpace(String name);
 
-    /**
-     * @param namespace --an Object of namespace
-     * @param cmd       --  bash commond
-     * @return Process
-     */
-    Process exeCmdInNamespace(Namespace namespace, String cmd);
-
-    /**
-     * @param namespace --  namespace name
-     * @param cmd       --  bash command
-     * @return Process
-     */
-    Process exeCmdInNamespace(String namespace, String cmd);
-
-
-    Process exeCmdWithNewSh(String namespace, String cmd);
-
-    Process exeCmdWithNewSh(String cmd);
-
-    /**
-     * @param cmd --  bash command
-     * @return Process
-     */
-    Process exeCmdInDefaultNamespace(String cmd);
-
-    Process exeCmdInDefaultNamespaceAndCloseIOStream(String cmd);
-
-    Process exeCmdAndCloseIOStream(Namespace namespace, String cmd);
-
 
 }

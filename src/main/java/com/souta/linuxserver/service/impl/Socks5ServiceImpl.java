@@ -2,6 +2,7 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.config.LineConfig;
 import com.souta.linuxserver.entity.Namespace;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.abs.AbstractSocks5Service;
@@ -18,8 +19,8 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
 
     private static final String configFileDir = "/root/socks5";
 
-    public Socks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, LineConfig lineConfig) {
-        super(namespaceService, pppoeService, lineConfig.getSocks5Config().getPort(), lineConfig.getSocks5Config());
+    public Socks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, LineConfig lineConfig) {
+        super(namespaceService, pppoeService, commandService, lineConfig.getSocks5Config().getPort(), lineConfig.getSocks5Config());
     }
 
     @PostConstruct
@@ -89,7 +90,7 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
         if (createConfigFile(id, ip)) {
             String namespaceName = Namespace.DEFAULT_PREFIX + id;
             String cmd = "sh /root/socks5/socks5-" + id + ".sh";
-            namespaceService.exeCmdAndCloseIOStream(new Namespace(namespaceName), cmd);
+            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, namespaceName);
             return true;
         } else {
             return false;
@@ -101,7 +102,7 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
         HashSet<String> result = new HashSet<>();
         String cmd = " pgrep -a ss5|awk '/ss5-[0-9]+\\.pid/ {print $8}'";
         Pattern compile = Pattern.compile(".*-(\\d+).*");
-        Process process = namespaceService.exeCmdWithNewSh(cmd);
+        Process process = commandService.exeCmdWithNewSh(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

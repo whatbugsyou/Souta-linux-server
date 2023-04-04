@@ -7,8 +7,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.exception.ResponseNotOkException;
+import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.HostService;
-import com.souta.linuxserver.service.NamespaceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -29,13 +29,12 @@ public class HostServiceImpl implements HostService {
     private static final String hostRouteTableName = "hostRouteTable";
 
     private final HostConfig hostConfig;
-    private final NamespaceService namespaceService;
+    private final CommandService commandService;
 
-    public HostServiceImpl(HostConfig hostConfig, NamespaceService namespaceService) {
+    public HostServiceImpl(HostConfig hostConfig, CommandService commandService) {
         this.hostConfig = hostConfig;
-        this.namespaceService = namespaceService;
+        this.commandService = commandService;
     }
-
 
     @PostConstruct
     public void init() {
@@ -92,7 +91,7 @@ public class HostServiceImpl implements HostService {
             }
             if (!flag) {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
-                namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+                commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -100,7 +99,7 @@ public class HostServiceImpl implements HostService {
 
         File file = new File(hostRouteFilePath);
         String cmd = "ip route";
-        Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+        Process process = commandService.exeCmdInDefaultNamespace(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -117,9 +116,9 @@ public class HostServiceImpl implements HostService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("sh " + hostRouteFilePath);
-        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule del from all table " + hostRouteTableName);
-        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule add from all table " + hostRouteTableName);
+        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("sh " + hostRouteFilePath);
+        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule del from all table " + hostRouteTableName);
+        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule add from all table " + hostRouteTableName);
     }
 
     private void initFirewall() {
@@ -135,7 +134,7 @@ public class HostServiceImpl implements HostService {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        namespaceService.exeCmdInDefaultNamespaceAndCloseIOStream("sh /root/fireWalld.sh");
+        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("sh /root/fireWalld.sh");
     }
 
     private void initDNS() {
@@ -154,7 +153,7 @@ public class HostServiceImpl implements HostService {
         Runnable beeper = () -> {
             if (hostConfig.getHost().getId() != null) {
                 String cmd = "ifconfig | grep destination|awk '{print $2}'";
-                Process process =  namespaceService.exeCmdWithNewSh(cmd);
+                Process process = commandService.exeCmdWithNewSh(cmd);
                 try (InputStream inputStream = process.getInputStream();
                      OutputStream outputStream = process.getOutputStream();
                      InputStream errorStream = process.getErrorStream();
