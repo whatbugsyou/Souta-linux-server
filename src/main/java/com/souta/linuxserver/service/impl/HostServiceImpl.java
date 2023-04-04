@@ -154,14 +154,14 @@ public class HostServiceImpl implements HostService {
         Runnable beeper = () -> {
             if (hostConfig.getHost().getId() != null) {
                 String cmd = "ifconfig | grep destination|awk '{print $2}'";
-                Process process =  namespaceService.exeCmdInDefaultNamespace(cmd);
+                Process process =  namespaceService.exeCmdWithNewSh(cmd);
                 try (InputStream inputStream = process.getInputStream();
                      OutputStream outputStream = process.getOutputStream();
                      InputStream errorStream = process.getErrorStream();
                      InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                      BufferedReader reader = new BufferedReader(inputStreamReader)
                 ) {
-                    String nowIp;
+                    String nowIp = null;
                     nowIp = reader.readLine();
                     if (nowIp != null && nowIp.matches("[\\\\.\\d]+")) {
                         String oldIp = hostConfig.getHost().getIp();

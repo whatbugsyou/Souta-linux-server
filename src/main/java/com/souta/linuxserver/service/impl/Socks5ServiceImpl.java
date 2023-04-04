@@ -67,11 +67,9 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
             dir.mkdir();
         }
         File file = new File(dir, "socks5-" + id + ".sh");
-        BufferedWriter cfgfileBufferedWriter = null;
-        FileWriter fileWriter = null;
-        try {
-            fileWriter = new FileWriter(file);
-            cfgfileBufferedWriter = new BufferedWriter(fileWriter);
+
+        try (FileWriter fileWriter = new FileWriter(file);
+             BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter)) {
             cfgfileBufferedWriter.write("export SS5_SOCKS_ADDR=" + ip + "\n");
             cfgfileBufferedWriter.write("export SS5_SOCKS_PORT=" + listenPort + "\n");
             cfgfileBufferedWriter.write("export SS5_CONFIG_FILE=/root/ss5.conf\n");
@@ -82,21 +80,6 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
             cfgfileBufferedWriter.write(startCmd);
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (cfgfileBufferedWriter != null) {
-                try {
-                    cfgfileBufferedWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (fileWriter != null) {
-                try {
-                    fileWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
         return true;
     }
@@ -118,7 +101,7 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
         HashSet<String> result = new HashSet<>();
         String cmd = " pgrep -a ss5|awk '/ss5-[0-9]+\\.pid/ {print $8}'";
         Pattern compile = Pattern.compile(".*-(\\d+).*");
-        Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+        Process process = namespaceService.exeCmdWithNewSh(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

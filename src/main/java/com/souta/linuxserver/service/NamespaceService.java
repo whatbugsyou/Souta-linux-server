@@ -51,15 +51,19 @@ public interface NamespaceService {
     Process exeCmdInNamespace(String namespace, String cmd);
 
 
+    Process exeCmdWithNewSh(String namespace, String cmd);
+
+    Process exeCmdWithNewSh(String cmd);
+
     /**
      * @param cmd --  bash command
      * @return Process
      */
     Process exeCmdInDefaultNamespace(String cmd);
 
-    void exeCmdInDefaultNamespaceAndCloseIOStream(String cmd);
+    Process exeCmdInDefaultNamespaceAndCloseIOStream(String cmd);
 
-    void exeCmdAndCloseIOStream(Namespace namespace, String cmd);
+    Process exeCmdAndCloseIOStream(Namespace namespace, String cmd);
 
 
 }

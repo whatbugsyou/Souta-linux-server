@@ -87,7 +87,7 @@ public class VethServiceImpl implements VethService {
     @Override
     public boolean checkIsUp(String vethName, String namespaceName) {
         String cmd = "ifconfig " + vethName + " |grep inet6";
-        Process process = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+        Process process = namespaceService.exeCmdWithNewSh(namespaceName, cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream()
@@ -106,7 +106,7 @@ public class VethServiceImpl implements VethService {
         } else {
             Namespace namespace = new Namespace(namespaceName);
             String cmd = "ls /sys/class/net/|grep " + vethName + "$";
-            Process process = namespaceService.exeCmdInNamespace(namespace, cmd);
+            Process process = namespaceService.exeCmdWithNewSh(namespace.getName(), cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream()
@@ -162,11 +162,6 @@ public class VethServiceImpl implements VethService {
 
     @Override
     public boolean moveVethToNamespace(Veth veth, Namespace namespace) {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         if (checkExist(veth) && namespaceService.checkExist(namespace)) {
             String cmd = "ip link set %s netns %s ";
             cmd = String.format(cmd, veth.getInterfaceName(), namespace.getName());

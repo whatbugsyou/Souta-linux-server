@@ -30,7 +30,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         String s = ".*LISTEN\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
         String namespace = "ns" + id;
-        Process process = namespaceService.exeCmdInNamespace(namespace, cmd);
+        Process process = namespaceService.exeCmdWithNewSh(namespace, cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -67,7 +67,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         if (ip != null) {
             String cmd = "netstat -lnt |grep " + ip + ":" + listenPort;
             String namespaceName = "ns" + id;
-            Process process = namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            Process process = namespaceService.exeCmdWithNewSh(namespaceName, cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream()

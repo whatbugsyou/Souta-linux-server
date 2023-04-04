@@ -105,10 +105,6 @@ public class PPPOEServiceImpl implements PPPOEService {
         String vethName = Veth.DEFAULT_PREFIX + pppoeId;
         String namespaceName = Namespace.DEFAULT_PREFIX + pppoeId;
         Veth veth = vethService.createVeth(adsl.getEthernetName(), vethName, namespaceName);
-        if (!veth.getNamespace().getName().equals(namespaceName)) {
-            return null;
-        }
-
         String adslUser = adsl.getAdslUser();
         String adslPassword = adsl.getAdslPassword();
         createConfigFile(pppoeId, adslUser, adslPassword);
@@ -202,7 +198,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public boolean shutDown(String pppoeId) {
         StringBuilder pid = new StringBuilder();
         String pidCheckCmd = String.format("ps ax|awk '/(ppp%s$)|(ppp%s )/{print $1}'", pppoeId, pppoeId);
-        Process process = namespaceService.exeCmdInDefaultNamespace(pidCheckCmd);
+        Process process = namespaceService.exeCmdWithNewSh(pidCheckCmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -233,7 +229,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         String cmd = "ps ax|awk '/ppp\\d/ {print $9}'";
 //        String cmd = "pgrep -a pppoe|awk '/run/ {print $4}'";
         Pattern compile = Pattern.compile(".*?(\\d+).*");
-        Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+        Process process = namespaceService.exeCmdWithNewSh(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

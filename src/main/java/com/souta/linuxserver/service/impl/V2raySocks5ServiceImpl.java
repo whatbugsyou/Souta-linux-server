@@ -58,16 +58,12 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
         }
         File file = new File(dir, "v2ray-" + id + ".json");
         String line;
-        FileWriter fileWriter = null;
-        BufferedWriter cfgfileBufferedWriter = null;
-        BufferedReader tmpbufferedReader = null;
-        InputStream v2rayConfigStream = null;
-        try {
-            fileWriter = new FileWriter(file);
-            cfgfileBufferedWriter = new BufferedWriter(fileWriter);
-            v2rayConfigStream = this.getClass().getResourceAsStream("/static/v2rayConfig.json");
-            InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream);
-            tmpbufferedReader = new BufferedReader(inputStreamReader);
+        try (FileWriter fileWriter = new FileWriter(file);
+             BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter);
+             InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/v2rayConfig.json");
+             InputStreamReader inputStreamReader = new InputStreamReader(v2rayConfigStream);
+             BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader)) {
+
             while (((line = tmpbufferedReader.readLine()) != null)) {
                 line = line.replace("{PORT}", listenPort.toString());
                 line = line.replace("{USERNAME}", lineConfig.getSocks5Config().getUsername());
@@ -77,35 +73,6 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (tmpbufferedReader != null) {
-                try {
-                    tmpbufferedReader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (v2rayConfigStream != null) {
-                try {
-                    v2rayConfigStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (cfgfileBufferedWriter != null) {
-                try {
-                    cfgfileBufferedWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (fileWriter != null) {
-                try {
-                    fileWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
         return true;
     }
@@ -115,7 +82,13 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
         if (createConfigFile(id, ip)) {
             String namespaceName = Namespace.DEFAULT_PREFIX + id;
             String cmd = "v2ray run -c /root/v2ray/v2ray-" + id + ".json >/dev/null 2>&1 &";
-            namespaceService.exeCmdInNamespace(namespaceName, cmd);
+            Process process = namespaceService.exeCmdWithNewSh(namespaceName, cmd);
+            try {
+                process.waitFor();
+
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             return true;
         } else {
             return false;
@@ -127,7 +100,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
         HashSet<String> result = new HashSet<>();
         String cmd = " pgrep -a v2ray|awk '/v2ray-[0-9]+\\.json/ {print $5}'";
         Pattern compile = Pattern.compile(".*-(\\d+).*");
-        Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+        Process process = namespaceService.exeCmdWithNewSh(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

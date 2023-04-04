@@ -106,7 +106,7 @@ public class LineController {
         };
         Runnable keepCPUHealth = () -> {
             String cmd = "top -b -n 1 |sed -n '8p'|awk '{print $1,$9,$12}'";
-            Process process = namespaceService.exeCmdInDefaultNamespace(cmd);
+            Process process = namespaceService.exeCmdWithNewSh(cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream();
