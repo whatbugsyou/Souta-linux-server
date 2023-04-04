@@ -425,8 +425,15 @@ public class PPPOEServiceImpl implements PPPOEService {
                      InputStream errorStream = process.getErrorStream()
                 ) {
                     long beginTimeMillis = System.currentTimeMillis();
-                    boolean complete = process.waitFor(60, TimeUnit.SECONDS);
-                    String ip = getIP(pppoe.getId());
+                    String ip = null;
+                    while (true) {
+                        process.waitFor(1, TimeUnit.SECONDS);
+                        ip = getIP(pppoe.getId());
+                        long costTimeMillis = System.currentTimeMillis() - beginTimeMillis;
+                        if (ip != null || costTimeMillis > 60 * 1000) {
+                            break;
+                        }
+                    }
                     limitRedialTime(pppoe.getId());
                     if (ip == null) {
                         log.warn("ppp{} dialing time reach 60s ,shutdown", pppoe.getId());
