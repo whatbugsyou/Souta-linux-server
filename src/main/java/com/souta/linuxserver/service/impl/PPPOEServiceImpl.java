@@ -200,7 +200,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public boolean shutDown(String pppoeId) {
         StringBuilder pid = new StringBuilder();
-        String pidCheckCmd = String.format("ps ax|awk '/(ppp%s$)|(ppp%s )/{print $1}'", pppoeId, pppoeId);
+        String pidCheckCmd = String.format("ps ax|awk '/(ppp%s$)|(ppp%s )/'|grep -v awk|awk '{print $1}'", pppoeId, pppoeId);
         Process process = commandService.exeCmdWithNewSh(pidCheckCmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
@@ -215,7 +215,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        commandService.execCmdAndWaitForAndCloseIOSteam("kill -9" + pid, true, Namespace.DEFAULT_NAMESPACE.getName());
+        commandService.execCmdAndWaitForAndCloseIOSteam("kill -9" + pid, false, Namespace.DEFAULT_NAMESPACE.getName());
         return true;
     }
 
