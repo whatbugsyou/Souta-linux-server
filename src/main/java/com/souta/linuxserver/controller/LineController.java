@@ -122,7 +122,7 @@ public class LineController {
                         String command = matcher.group(3);
                         if (cpu > 100 && command.contains("ss5")) {
                             log.info("CPUHealthMonitor is going to kill pid{}---{}%...", pid, cpu);
-                            commandService.exeCmdInDefaultNamespaceAndCloseIOStream("kill -9 " + pid);
+                            commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream("kill -9 " + pid);
                         }
                     }
                 }

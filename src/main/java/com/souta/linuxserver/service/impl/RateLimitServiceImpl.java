@@ -3,7 +3,6 @@ package com.souta.linuxserver.service.impl;
 import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.service.CommandService;
-import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.RateLimitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,7 +57,7 @@ public class RateLimitServiceImpl implements RateLimitService {
     @Override
     public void removeAll() {
         String cmd = "ip -all netns exec iptables --flush";
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+        commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream(cmd);
     }
 
     @Override

@@ -20,7 +20,7 @@ public interface CommandService {
      */
     Process exeCmdInDefaultNamespace(String cmd);
 
-    Process exeCmdInDefaultNamespaceAndCloseIOStream(String cmd);
+    Process exeCmdInDefaultNamespaceAndWaitForCloseIOStream(String cmd);
 
 
     Process execCmd(String cmd, boolean isCreateNewSh, String namespaceName);

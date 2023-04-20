@@ -48,16 +48,8 @@ public class CommandServiceImpl implements CommandService {
     }
 
     @Override
-    public Process exeCmdInDefaultNamespaceAndCloseIOStream(String cmd) {
-        Process process = exeCmdInDefaultNamespace(cmd);
-        try (InputStream inputStream = process.getInputStream();
-             OutputStream outputStream = process.getOutputStream();
-             InputStream errorStream = process.getErrorStream()
-        ) {
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return process;
+    public Process exeCmdInDefaultNamespaceAndWaitForCloseIOStream(String cmd) {
+        return execCmdAndWaitForAndCloseIOSteam(cmd,false,Namespace.DEFAULT_NAMESPACE.getName());
     }
 
 

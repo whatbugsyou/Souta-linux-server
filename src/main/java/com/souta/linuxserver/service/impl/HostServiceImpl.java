@@ -91,7 +91,7 @@ public class HostServiceImpl implements HostService {
             }
             if (!flag) {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
-                commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+                commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream(cmd);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -116,9 +116,9 @@ public class HostServiceImpl implements HostService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("sh " + hostRouteFilePath);
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule del from all table " + hostRouteTableName);
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule add from all table " + hostRouteTableName);
+        commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream("sh " + hostRouteFilePath);
+        commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream("ip rule del from all table " + hostRouteTableName);
+        commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream("ip rule add from all table " + hostRouteTableName);
     }
 
     private void initFirewall() {
@@ -134,7 +134,7 @@ public class HostServiceImpl implements HostService {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("sh /root/fireWalld.sh");
+        commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream("sh /root/fireWalld.sh");
     }
 
     private void initDNS() {

@@ -37,7 +37,7 @@ public class VethServiceImpl implements VethService {
                 macAddr = createMacAddr();
                 String cmd = "ip link add link %s address %s %s type macvlan";
                 cmd = String.format(cmd, physicalEthName, macAddr, vethName);
-                commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+                commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream(cmd);
             }
             veth = new Veth(physicalEthName, vethName, macAddr, Namespace.DEFAULT_NAMESPACE);
             moveVethToNamespace(veth, namespace);
