@@ -123,19 +123,26 @@ public class HostServiceImpl implements HostService {
     }
 
     private void initFirewall() {
-        String startFirewalldService = "service firewalld start \n";
-        String openWebservicePort = String.format("firewall-cmd --zone=public --add-port=%s/tcp --permanent \n", hostConfig.getHost().getPort());
-        String openRemoteDebugPort = String.format("firewall-cmd --zone=public --add-port=%s/tcp --permanent \n", "5005");
-        String reloadFirewalld = "service firewalld reload \n";
-        StrBuilder strBuilder = new StrBuilder();
-        strBuilder.append(startFirewalldService).append(openWebservicePort).append(openRemoteDebugPort).append(reloadFirewalld);
-        File file = new File("/root/fireWalld.sh");
-        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file))) {
-            bufferedWriter.write(strBuilder.toString());
+        File file = new File("/root/fireWalld.conf");
+        try (FileWriter fileWriter = new FileWriter(file);
+             BufferedWriter cfgfileBufferedWriter = new BufferedWriter(fileWriter);
+             InputStream configStream = this.getClass().getResourceAsStream("/static/mainFirewalld.conf");
+             InputStreamReader inputStreamReader = new InputStreamReader(configStream);
+             BufferedReader tmpbufferedReader = new BufferedReader(inputStreamReader)) {
+            String line;
+            while (((line = tmpbufferedReader.readLine()) != null)) {
+                line = line.replace("{sshPort}", "22");
+                line = line.replace("{listenPort}", hostConfig.getHost().getPort());
+                line = line.replace("{remoteDebugPort}", "5005");
+                cfgfileBufferedWriter.write(line);
+                cfgfileBufferedWriter.newLine();
+            }
+            cfgfileBufferedWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream("sh /root/fireWalld.sh");
+        String cmd = "iptables-restore " + "/root/fireWalld.conf";
+        commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_NAMESPACE.getName());
     }
 
     private void initDNS() {
