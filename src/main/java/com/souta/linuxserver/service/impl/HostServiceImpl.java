@@ -6,6 +6,7 @@ import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.config.HostConfig;
+import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.exception.ResponseNotOkException;
 import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.HostService;
@@ -91,7 +92,7 @@ public class HostServiceImpl implements HostService {
             }
             if (!flag) {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
-                commandService.exeCmdInDefaultNamespaceAndWaitForCloseIOStream(cmd);
+                commandService.execCmd(cmd, true, Namespace.DEFAULT_NAMESPACE.getName());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
