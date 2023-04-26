@@ -1,15 +1,15 @@
 package com.souta.linuxserver.service;
 
-import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Veth;
+import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 
 public interface VethService {
 
-    Veth createVeth(String physicalEthName, String vthName, String namespaceName);
+    Veth createVeth(String physicalEthName, String vethName, String namespaceName) throws NamespaceNotExistException;
 
-    boolean checkExist(String vethName, String namespaceName);
+    boolean checkExist(String vethName, String namespaceName) throws NamespaceNotExistException;
 
-    boolean checkExist(Veth veth);
+    boolean checkExist(Veth veth) throws NamespaceNotExistException;
 
     boolean deleteVeth(String vethName, String namespaceName);
 
@@ -17,14 +17,10 @@ public interface VethService {
 
     boolean downVeth(Veth veth);
 
-    boolean moveVethToNamespace(Veth veth, Namespace namespace);
+    String getMacAddr(String vethName, String namespaceName) throws NamespaceNotExistException;
 
-    String getMacAddr(String vethName, String namespaceName);
+    boolean checkIsUp(Veth veth) throws NamespaceNotExistException;
 
-    Veth getVeth(String vethName);
-
-    boolean checkIsUp(Veth veth);
-
-    boolean checkIsUp(String vethName, String namespaceName);
+    boolean checkIsUp(String vethName, String namespaceName) throws NamespaceNotExistException;
 
 }

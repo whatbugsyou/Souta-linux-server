@@ -5,6 +5,8 @@ import com.souta.linuxserver.entity.Veth;
 import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.VethService;
+import com.souta.linuxserver.service.exception.EthernetNotExistException;
+import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,40 +24,35 @@ public class VethServiceImpl implements VethService {
     private NamespaceService namespaceService;
 
     @Override
-    public Veth createVeth(String physicalEthName, String vethName, String namespaceName) {
-        Namespace namespace = namespaceService.getNameSpace(namespaceName);
+    public Veth createVeth(String physicalEthName, String vethName, String namespaceName) throws NamespaceNotExistException {
         Veth veth;
-        if (namespace == null) {
-            namespace = namespaceService.createNameSpace(namespaceName);
-        }
-        boolean vethExistInNamespace = checkExist(vethName, namespaceName);
         String macAddr;
-        if (!vethExistInNamespace) {
+        if (!checkExist(vethName, namespaceName)) {
             if (checkExist(vethName, Namespace.DEFAULT_NAMESPACE.getName())) {
                 macAddr = getMacAddr(vethName, Namespace.DEFAULT_NAMESPACE.getName());
             } else {
                 macAddr = createMacAddr();
-                String cmd = "ip link add link %s address %s %s type macvlan";
+                String cmd = "ip link add link %s address %s %s type macvlan mode bridge";
                 cmd = String.format(cmd, physicalEthName, macAddr, vethName);
-                commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+                commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
             }
             veth = new Veth(physicalEthName, vethName, macAddr, Namespace.DEFAULT_NAMESPACE);
-            moveVethToNamespace(veth, namespace);
+            moveVethToNamespace(veth, namespaceName);
         } else {
             macAddr = getMacAddr(vethName, namespaceName);
-            veth = new Veth(physicalEthName, vethName, macAddr, new Namespace(namespaceName));
+            veth = new Veth(physicalEthName, vethName, macAddr, namespaceService.getNameSpace(namespaceName));
         }
         return veth;
     }
 
 
-    public String getMacAddr(String vethName, String namespaceName) {
+    public String getMacAddr(String vethName, String namespaceName) throws NamespaceNotExistException {
         String macaddr = null;
         if (checkExist(vethName, namespaceName)) {
-            Namespace namespace = new Namespace(namespaceName);
+            Namespace namespace = namespaceService.getNameSpace(namespaceName);
             String cmd = "cat /sys/class/net/%s/address";// 00:e5:5d:d3:7d:01
             cmd = String.format(cmd, vethName);
-            Process process = commandService.exec(cmd,namespace.getName());
+            Process process = commandService.exec(cmd, namespace.getName());
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream();
@@ -71,26 +68,15 @@ public class VethServiceImpl implements VethService {
     }
 
     @Override
-    public Veth getVeth(String vethName) {
-        String namespaceName = Namespace.DEFAULT_PREFIX + vethName.substring(Veth.DEFAULT_PREFIX.length());
-        boolean exist = checkExist(vethName, namespaceName);
-        if (!exist) {
-            return null;
-        } else {
-            String macAddr = getMacAddr(vethName, namespaceName);
-            return new Veth(null, vethName, macAddr, new Namespace(namespaceName));
-        }
-    }
-
-    @Override
-    public boolean checkIsUp(Veth veth) {
+    public boolean checkIsUp(Veth veth) throws NamespaceNotExistException {
         return checkIsUp(veth.getInterfaceName(), veth.getNamespace().getName());
     }
 
     @Override
-    public boolean checkIsUp(String vethName, String namespaceName) {
+    public boolean checkIsUp(String vethName, String namespaceName) throws NamespaceNotExistException {
+        Namespace namespace = namespaceService.getNameSpace(namespaceName);
         String cmd = "ifconfig " + vethName + " |grep inet6";
-        Process process = commandService.exec(cmd, namespaceName);
+        Process process = commandService.exec(cmd, namespace.getName());
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream()
@@ -102,37 +88,35 @@ public class VethServiceImpl implements VethService {
     }
 
     @Override
-    public boolean checkExist(String vethName, String namespaceName) {
-        boolean exist = namespaceService.checkExist(namespaceName);
-        if (!exist) {
-            return false;
-        } else {
-            Namespace namespace = new Namespace(namespaceName);
-            String cmd = "ls /sys/class/net/|grep " + vethName + "$";
-            Process process = commandService.exeCmdWithNewSh(namespace.getName(), cmd);
-            try (InputStream inputStream = process.getInputStream();
-                 OutputStream outputStream = process.getOutputStream();
-                 InputStream errorStream = process.getErrorStream()
-            ) {
-                return inputStream.read() != -1;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+    public boolean checkExist(String vethName, String namespaceName) throws NamespaceNotExistException {
+        Namespace namespace = namespaceService.getNameSpace(namespaceName);
+        String cmd = "ls /sys/class/net/|grep " + vethName + "$";
+        Process process = commandService.exec(namespace.getName(), cmd);
+        try (InputStream inputStream = process.getInputStream();
+             OutputStream outputStream = process.getOutputStream();
+             InputStream errorStream = process.getErrorStream()
+        ) {
+            return inputStream.read() != -1;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public boolean checkExist(Veth veth) {
+    public boolean checkExist(Veth veth) throws NamespaceNotExistException {
         return checkExist(veth.getInterfaceName(), veth.getNamespace().getName());
     }
 
     @Override
     public boolean deleteVeth(String vethName, String namespaceName) {
-        boolean exist = checkExist(vethName, namespaceName);
-        if (!exist) {
-            return true;
-        } else {
-            String cmd = "ip link delete " + vethName + " type macvlan";
+        boolean exist = false;
+        try {
+            exist = checkExist(vethName, namespaceName);
+        } catch (NamespaceNotExistException e) {
+
+        }
+        if (exist) {
+            String cmd = "ip link delete " + vethName + " type macvlan  mode bridge";
             commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
         }
         return true;
@@ -140,36 +124,50 @@ public class VethServiceImpl implements VethService {
 
     @Override
     public boolean upVeth(Veth veth) {
-        boolean exist = checkExist(veth);
-        if (exist) {
+        try {
+            assertVethExist(veth);
             Namespace namespace = veth.getNamespace();
             String cmd = "ifconfig " + veth.getInterfaceName() + " up";
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, namespace.getName());
-            return true;
-        } else {
-            return false;
+            Process process = commandService.execAndWaitForAndCloseIOSteam(cmd, namespace.getName());
+            return process.exitValue() == 0;
+        } catch (EthernetNotExistException e) {
+            log.error(e.getMessage());
+        } catch (NamespaceNotExistException e) {
+            log.error(e.getMessage());
+        }
+        return false;
+    }
+
+    private void assertVethExist(Veth veth) throws EthernetNotExistException, NamespaceNotExistException {
+        if (!checkExist(veth)) {
+            throw new EthernetNotExistException(veth.getNamespace() + ":" + veth.getInterfaceName());
         }
     }
 
     @Override
     public boolean downVeth(Veth veth) {
-        boolean exist = checkExist(veth);
-        if (exist) {
-            Namespace namespace = veth.getNamespace();
-            String cmd = "ifconfig " + veth.getInterfaceName() + " down";
-            commandService.execAndWaitForAndCloseIOSteam(cmd, namespace.getName());
-            return true;
+        try {
+            boolean exist = checkExist(veth);
+            if (exist) {
+                Namespace namespace = veth.getNamespace();
+                String cmd = "ifconfig " + veth.getInterfaceName() + " down";
+                Process process = commandService.execAndWaitForAndCloseIOSteam(cmd, namespace.getName());
+                return process.exitValue() == 0;
+            }
+        } catch (NamespaceNotExistException e) {
+            log.error(e.getMessage());
         }
         return false;
     }
 
-    @Override
-    public boolean moveVethToNamespace(Veth veth, Namespace namespace) {
-        if (checkExist(veth) && namespaceService.checkExist(namespace)) {
+
+    public boolean moveVethToNamespace(Veth veth, String namespaceName) throws NamespaceNotExistException {
+        Namespace nameSpace = namespaceService.getNameSpace(namespaceName);
+        if (checkExist(veth)) {
             String cmd = "ip link set %s netns %s ";
-            cmd = String.format(cmd, veth.getInterfaceName(), namespace.getName());
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_NAMESPACE.getName());
-            veth.setNamespace(namespace);
+            cmd = String.format(cmd, veth.getInterfaceName(), namespaceName);
+            commandService.execAndWaitForAndCloseIOSteam(cmd, Namespace.DEFAULT_NAMESPACE.getName());
+            veth.setNamespace(nameSpace);
             return true;
         } else {
             return false;
