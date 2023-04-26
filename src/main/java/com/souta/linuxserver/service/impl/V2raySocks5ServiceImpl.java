@@ -83,7 +83,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
         if (createConfigFile(id, ip)) {
             String namespaceName = Namespace.DEFAULT_PREFIX + id;
             String cmd = "v2ray run -c /root/v2ray/v2ray-" + id + ".json >/dev/null 2>&1 &";
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, true, namespaceName);
+            commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
             return true;
         } else {
             return false;
@@ -95,7 +95,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
         HashSet<String> result = new HashSet<>();
         String cmd = " pgrep -a v2ray|awk '/v2ray-[0-9]+\\.json/ {print $5}'";
         Pattern compile = Pattern.compile(".*-(\\d+).*");
-        Process process = commandService.exeCmdWithNewSh(cmd);
+        Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

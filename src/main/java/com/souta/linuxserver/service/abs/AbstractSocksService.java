@@ -1,7 +1,6 @@
 package com.souta.linuxserver.service.abs;
 
 
-import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.abs.Socks;
 import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
@@ -34,7 +33,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         String s = ".*LISTEN\\s+(\\d+)/.*";
         Pattern compile = Pattern.compile(s);
         String namespace = "ns" + id;
-        Process process = commandService.exeCmdWithNewSh(namespace, cmd);
+        Process process = commandService.exec(namespace, cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -47,7 +46,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
                 if (matcher.matches()) {
                     String pid = matcher.group(1);
                     String cmd2 = "kill -9 " + pid;
-                    commandService.execCmdAndWaitForAndCloseIOSteam(cmd2,false, Namespace.DEFAULT_NAMESPACE.getName());
+                    commandService.execAndWaitForAndCloseIOSteam(cmd2);
                 }
             }
         } catch (IOException e) {
@@ -71,7 +70,7 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
         if (ip != null) {
             String cmd = "netstat -lnt |grep " + ip + ":" + listenPort;
             String namespaceName = "ns" + id;
-            Process process = commandService.exeCmdWithNewSh(namespaceName, cmd);
+            Process process = commandService.exec(namespaceName, cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream()

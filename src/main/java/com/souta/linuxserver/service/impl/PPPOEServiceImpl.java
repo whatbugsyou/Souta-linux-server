@@ -176,7 +176,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public boolean isDialUp(String pppoeId) {
         String cmd = "ip route";
         String namespaceName = Namespace.DEFAULT_PREFIX + pppoeId;
-        Process process = commandService.exeCmdInNamespace(namespaceName, cmd);
+        Process process = commandService.exec(namespaceName, cmd);
         if (process == null) {
             return false;
         }
@@ -200,7 +200,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     public boolean shutDown(String pppoeId) {
         StringBuilder pid = new StringBuilder();
         String pidCheckCmd = String.format("ps ax|awk '/(ppp%s$)|(ppp%s )/'|grep -v awk|awk '{print $1}'", pppoeId, pppoeId);
-        Process process = commandService.exeCmdWithNewSh(pidCheckCmd);
+        Process process = commandService.exec(pidCheckCmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -214,7 +214,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        commandService.execCmdAndWaitForAndCloseIOSteam("kill -9" + pid, false, Namespace.DEFAULT_NAMESPACE.getName());
+        commandService.execAndWaitForAndCloseIOSteam("kill -9" + pid, Namespace.DEFAULT_NAMESPACE.getName());
         return true;
     }
 
@@ -231,7 +231,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         String cmd = "ps ax|awk '/ppp\\d/ {print $9}'";
 //        String cmd = "pgrep -a pppoe|awk '/run/ {print $4}'";
         Pattern compile = Pattern.compile(".*?(\\d+).*");
-        Process process = commandService.exeCmdWithNewSh(cmd);
+        Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -259,7 +259,7 @@ public class PPPOEServiceImpl implements PPPOEService {
     @Override
     public String getIP(String pppoeId) {
         String cmd = "ip route";
-        Process process = commandService.exeCmdInNamespace(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
+        Process process = commandService.exec(Namespace.DEFAULT_PREFIX + pppoeId, cmd);
         if (process == null) {
             return null;
         }

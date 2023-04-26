@@ -55,7 +55,7 @@ public class VethServiceImpl implements VethService {
             Namespace namespace = new Namespace(namespaceName);
             String cmd = "cat /sys/class/net/%s/address";// 00:e5:5d:d3:7d:01
             cmd = String.format(cmd, vethName);
-            Process process = commandService.exeCmdInNamespace(namespace.getName(), cmd);
+            Process process = commandService.exec(cmd,namespace.getName());
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream();
@@ -90,7 +90,7 @@ public class VethServiceImpl implements VethService {
     @Override
     public boolean checkIsUp(String vethName, String namespaceName) {
         String cmd = "ifconfig " + vethName + " |grep inet6";
-        Process process = commandService.exeCmdWithNewSh(namespaceName, cmd);
+        Process process = commandService.exec(cmd, namespaceName);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream()
@@ -133,9 +133,9 @@ public class VethServiceImpl implements VethService {
             return true;
         } else {
             String cmd = "ip link delete " + vethName + " type macvlan";
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, namespaceName);
-            return true;
+            commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
         }
+        return true;
     }
 
     @Override
@@ -157,7 +157,7 @@ public class VethServiceImpl implements VethService {
         if (exist) {
             Namespace namespace = veth.getNamespace();
             String cmd = "ifconfig " + veth.getInterfaceName() + " down";
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, namespace.getName());
+            commandService.execAndWaitForAndCloseIOSteam(cmd, namespace.getName());
             return true;
         }
         return false;

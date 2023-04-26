@@ -71,7 +71,7 @@ public class ShadowsocksServiceImpl extends AbstractShadowsocksService {
             String cmd = "ssserver -c " + configFileDir + "/shadowsocks-%s.json >/dev/null 2>&1 &";
             cmd = String.format(cmd, id, id);
             String namespaceName = Namespace.DEFAULT_PREFIX + id;
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, true, namespaceName);
+            commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
             return true;
         } else {
             return false;

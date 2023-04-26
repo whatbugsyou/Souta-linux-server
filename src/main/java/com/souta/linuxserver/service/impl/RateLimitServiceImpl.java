@@ -41,7 +41,7 @@ public class RateLimitServiceImpl implements RateLimitService {
         log.info("rate limit:line{}, {}kb/s ", lineId, maxKBPerSec);
         createLimitScriptFile(lineId, maxKBPerSec);
         String cmd = "iptables-restore " + configFileDir + "/" + "limit-line" + lineId + "-" + maxKBPerSec + "kb.conf";
-        Process process = commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_PREFIX + lineId);
+        Process process = commandService.execAndWaitForAndCloseIOSteam(cmd, Namespace.DEFAULT_PREFIX + lineId);
         try {
             process.waitFor();
         } catch (InterruptedException e) {
@@ -58,14 +58,14 @@ public class RateLimitServiceImpl implements RateLimitService {
     @Override
     public void removeAll() {
         String cmd = "ip -all netns exec iptables --flush";
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+        commandService.execAndWaitForAndCloseIOSteam(cmd);
     }
 
     @Override
     public Set<String> getLimitedLineIdSet() {
         HashSet<String> result = new HashSet<>();
         String cmd = "ip -all netns exec iptables -L RATE-LIMIT";
-        Process process = commandService.exeCmdInDefaultNamespace(cmd);
+        Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

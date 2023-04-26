@@ -105,7 +105,7 @@ public class LineController {
         };
         Runnable keepCPUHealth = () -> {
             String cmd = "top -b -n 1 |sed -n '8p'|awk '{print $1,$9,$12}'";
-            Process process = commandService.exeCmdWithNewSh(cmd);
+            Process process = commandService.exec(cmd);
             try (InputStream inputStream = process.getInputStream();
                  OutputStream outputStream = process.getOutputStream();
                  InputStream errorStream = process.getErrorStream();
@@ -122,7 +122,7 @@ public class LineController {
                         String command = matcher.group(3);
                         if (cpu > 100 && command.contains("ss5")) {
                             log.info("CPUHealthMonitor is going to kill pid{}---{}%...", pid, cpu);
-                            commandService.exeCmdInDefaultNamespaceAndCloseIOStream("kill -9 " + pid);
+                            commandService.execAndWaitForAndCloseIOSteam("kill -9 " + pid);
                         }
                     }
                 }

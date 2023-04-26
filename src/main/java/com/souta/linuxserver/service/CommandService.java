@@ -1,35 +1,38 @@
 package com.souta.linuxserver.service;
 
+import com.souta.linuxserver.entity.Namespace;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 public interface CommandService {
 
-    /**
-     * @param namespace --  namespace name
-     * @param cmd       --  bash command
-     * @return Process
-     */
-    Process exeCmdInNamespace(String namespace, String cmd);
+    Process exec(String cmd);
 
+    Process exec(String command, String namespaceName);
 
-    Process exeCmdWithNewSh(String namespace, String cmd);
+    default Process execAndWaitForAndCloseIOSteam(String cmd) {
+        return execAndWaitForAndCloseIOSteam(cmd, Namespace.DEFAULT_NAMESPACE.getName());
+    }
 
-    Process exeCmdWithNewSh(String cmd);
-
-    /**
-     * @param cmd --  bash command
-     * @return Process
-     */
-    Process exeCmdInDefaultNamespace(String cmd);
-
-    Process exeCmdInDefaultNamespaceAndCloseIOStream(String cmd);
-
-
-    Process execCmd(String cmd, boolean isCreateNewSh, String namespaceName);
-
-    Process waitForAndCloseIOSteam(Process process);
-
-    default Process execCmdAndWaitForAndCloseIOSteam(String cmd, boolean isCreateNewSh, String namespaceName) {
-        Process process = execCmd(cmd, isCreateNewSh, namespaceName);
+    default Process execAndWaitForAndCloseIOSteam(String cmd, String namespaceName) {
+        Process process = exec(cmd, namespaceName);
         waitForAndCloseIOSteam(process);
+        return process;
+    }
+
+    default Process waitForAndCloseIOSteam(Process process) {
+        try (InputStream inputStream = process.getInputStream();
+             OutputStream outputStream = process.getOutputStream();
+             InputStream errorStream = process.getErrorStream()
+        ) {
+            process.waitFor();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return process;
     }
 }

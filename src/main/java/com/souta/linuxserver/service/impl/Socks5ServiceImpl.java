@@ -90,7 +90,7 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
         if (createConfigFile(id, ip)) {
             String namespaceName = Namespace.DEFAULT_PREFIX + id;
             String cmd = "sh /root/socks5/socks5-" + id + ".sh";
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, namespaceName);
+            commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
             return true;
         } else {
             return false;
@@ -102,7 +102,7 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
         HashSet<String> result = new HashSet<>();
         String cmd = " pgrep -a ss5|awk '/ss5-[0-9]+\\.pid/ {print $8}'";
         Pattern compile = Pattern.compile(".*-(\\d+).*");
-        Process process = commandService.exeCmdWithNewSh(cmd);
+        Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();

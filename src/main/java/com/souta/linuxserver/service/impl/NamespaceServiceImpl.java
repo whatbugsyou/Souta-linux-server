@@ -27,7 +27,7 @@ public class NamespaceServiceImpl implements NamespaceService {
     public boolean checkExist(String name) {
         if (null == name) return true;
         String cmd = "ls /var/run/netns/ |grep " + name + "$";
-        Process process = commandService.exeCmdWithNewSh(cmd);
+        Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream()
@@ -52,7 +52,7 @@ public class NamespaceServiceImpl implements NamespaceService {
     public List<Namespace> getAllNameSpace() {
         ArrayList<Namespace> namespaces = new ArrayList<>();
         String cmd = "ip netns list";
-        Process process = commandService.exeCmdInDefaultNamespace(cmd);
+        Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -89,7 +89,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         boolean exist = checkExist(name);
         if (!exist) {
             String cmd = "ip netns add " + name;
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_NAMESPACE.getName());
+            commandService.execAndWaitForAndCloseIOSteam(cmd, Namespace.DEFAULT_NAMESPACE.getName());
         }
         return new Namespace(name);
     }
@@ -99,7 +99,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         boolean exist = checkExist(name);
         if (exist) {
             String cmd = "ip netns delete " + name;
-            commandService.execCmdAndWaitForAndCloseIOSteam(cmd, false, Namespace.DEFAULT_NAMESPACE.getName());
+            commandService.execAndWaitForAndCloseIOSteam(cmd, Namespace.DEFAULT_NAMESPACE.getName());
         }
         return true;
     }

@@ -91,7 +91,7 @@ public class HostServiceImpl implements HostService {
             }
             if (!flag) {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
-                commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+                commandService.execAndWaitForAndCloseIOSteam(cmd);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -99,7 +99,7 @@ public class HostServiceImpl implements HostService {
 
         File file = new File(hostRouteFilePath);
         String cmd = "ip route";
-        Process process = commandService.exeCmdInDefaultNamespace(cmd);
+        Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
@@ -116,9 +116,9 @@ public class HostServiceImpl implements HostService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("sh " + hostRouteFilePath);
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule del from all table " + hostRouteTableName);
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("ip rule add from all table " + hostRouteTableName);
+        commandService.execAndWaitForAndCloseIOSteam("sh " + hostRouteFilePath);
+        commandService.execAndWaitForAndCloseIOSteam("ip rule del from all table " + hostRouteTableName);
+        commandService.execAndWaitForAndCloseIOSteam("ip rule add from all table " + hostRouteTableName);
     }
 
     private void initFirewall() {
@@ -134,7 +134,7 @@ public class HostServiceImpl implements HostService {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        commandService.exeCmdInDefaultNamespaceAndCloseIOStream("sh /root/fireWalld.sh");
+        commandService.execAndWaitForAndCloseIOSteam("sh /root/fireWalld.sh");
     }
 
     private void initDNS() {
@@ -153,7 +153,7 @@ public class HostServiceImpl implements HostService {
         Runnable beeper = () -> {
             if (hostConfig.getHost().getId() != null) {
                 String cmd = "ifconfig | grep destination|awk '{print $2}'";
-                Process process = commandService.exeCmdWithNewSh(cmd);
+                Process process = commandService.exec(cmd);
                 try (InputStream inputStream = process.getInputStream();
                      OutputStream outputStream = process.getOutputStream();
                      InputStream errorStream = process.getErrorStream();
