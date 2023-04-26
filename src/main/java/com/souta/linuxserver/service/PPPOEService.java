@@ -22,6 +22,8 @@ public interface PPPOEService {
 
     boolean checkConfigFileExist(String pppoeId);
 
+    boolean createConfigFile(String pppoeId, String adslUser, String adslPassword, String ethernetName);
+
     /**
      * start dialing and checking .Once upon the dial is successful ,return the pppoe with ip. The checking process will last  for 1 minute if dial is not successful ,and then shutdown the dial process.
      *

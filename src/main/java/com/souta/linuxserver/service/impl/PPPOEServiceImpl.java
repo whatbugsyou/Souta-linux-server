@@ -107,8 +107,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         Veth veth = vethService.createVeth(adsl.getEthernetName(), vethName, namespaceName);
         String adslUser = adsl.getAdslUser();
         String adslPassword = adsl.getAdslPassword();
-        createConfigFile(pppoeId, adslUser, adslPassword);
-
+        createConfigFile(pppoeId, adslUser, adslPassword, vethName);
         return new PPPOE(veth, pppoeId, adslUser, adslPassword);
     }
 
@@ -296,8 +295,9 @@ public class PPPOEServiceImpl implements PPPOEService {
         return file.exists();
     }
 
-    public boolean createConfigFile(String pppoeId, String adslUser, String adslPassword) {
-        createMainConfigFile(pppoeId, adslUser);
+    @Override
+    public boolean createConfigFile(String pppoeId, String adslUser, String adslPassword, String ethernetName) {
+        createMainConfigFile(pppoeId, adslUser, ethernetName);
         refreshSecretConfig(adslUser, adslPassword);
         return true;
     }
@@ -356,7 +356,7 @@ public class PPPOEServiceImpl implements PPPOEService {
         }
     }
 
-    private void createMainConfigFile(String pppoeId, String adslUser) {
+    private void createMainConfigFile(String pppoeId, String adslUser, String ethernetName) {
         if (isCreatedpppFile.contains(pppoeId)) {
             return;
         }
@@ -372,6 +372,7 @@ public class PPPOEServiceImpl implements PPPOEService {
             while (((line = tmpbufferedReader.readLine()) != null)) {
                 line = line.replace("{X}", pppoeId);
                 line = line.replace("{USER}", adslUser);
+                line = line.replace("{ETH}", ethernetName);
                 cfgfileBufferedWriter.write(line);
                 cfgfileBufferedWriter.newLine();
             }
