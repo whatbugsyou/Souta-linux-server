@@ -10,6 +10,7 @@ public class Veth {
     private String interfaceName; // virtual ethernet
     private String macAddr;
     private Namespace namespace;
+    private String ipAddr;
 
     public Veth(String physicalEthName, String interfaceName, String macAddr, Namespace namespace) {
         this.physicalEthName = physicalEthName;
