@@ -1,6 +1,7 @@
 package com.souta.linuxserver.service;
 
 import com.souta.linuxserver.entity.Namespace;
+import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 
 import java.util.List;
 
@@ -22,7 +23,7 @@ public interface NamespaceService {
      */
     List<Namespace> getAllNameSpace();
 
-    Namespace getNameSpace(String name);
+    Namespace getNameSpace(String name) throws NamespaceNotExistException;
 
     /**
      * @param name --namespace name

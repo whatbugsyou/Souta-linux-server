@@ -3,6 +3,7 @@ package com.souta.linuxserver.service.impl;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
+import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -76,12 +77,13 @@ public class NamespaceServiceImpl implements NamespaceService {
     }
 
     @Override
-    public Namespace getNameSpace(String name) {
+    public Namespace getNameSpace(String name) throws NamespaceNotExistException {
         boolean exist = checkExist(name);
         if (exist) {
             return new Namespace(name);
+        }else {
+            throw new NamespaceNotExistException(name);
         }
-        return null;
     }
 
     @Override
