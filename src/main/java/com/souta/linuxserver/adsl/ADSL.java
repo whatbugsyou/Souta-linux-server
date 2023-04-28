@@ -1,4 +1,4 @@
-package com.souta.linuxserver.entity;
+package com.souta.linuxserver.adsl;
 
 import lombok.Data;
 

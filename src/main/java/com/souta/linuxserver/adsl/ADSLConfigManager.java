@@ -1,14 +1,11 @@
-package com.souta.linuxserver.service;
+package com.souta.linuxserver.adsl;
 
-import com.souta.linuxserver.entity.ADSL;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,7 +59,51 @@ public class ADSLConfigManager {
         }
     }
 
-    public ADSL getADSL(int index){
+    private static boolean updateFile() {
+        try (FileWriter fileWriter = new FileWriter(adslAccountFilePath)) {
+            for (ADSL data : adslAccountList) {
+                fileWriter.write(data.toString() + "\n");
+            }
+            return true;
+        } catch (IOException e) {
+            log.error("refresh adsl file error:{}", e.getMessage());
+        }
+        return false;
+    }
+
+    public ADSL getADSL(int index) {
         return adslAccountList.get(index);
+    }
+
+    public boolean changeADSLAccount(int index, ADSL adsl) {
+        ADSL origin = adslAccountList.get(index);
+        if (adsl.getEthernetName() == null) {
+            adsl.setEthernetName(origin.getEthernetName());
+        }
+        changeADSLAccount(adsl);
+        adslAccountList.set(index, adsl);
+        return updateFile();
+    }
+
+    public boolean changeADSLAccount(ADSL adsl) {
+        return changeADSLAccount(adsl.getAdslUser(), adsl);
+    }
+
+    public boolean changeADSLAccount(String oldADSLUsername, ADSL adsl) {
+        for (int i = 0; i < adslAccountList.size(); i++) {
+            ADSL origin = adslAccountList.get(i);
+            if (origin.getAdslUser().equals(oldADSLUsername) || origin.getAdslUser().equals(adsl.getAdslUser())) {
+                if (adsl.getEthernetName() == null) {
+                    adsl.setEthernetName(origin.getEthernetName());
+                }
+                adslAccountList.set(i, adsl);
+            }
+        }
+        if (updateFile()) return true;
+        return updateFile();
+    }
+
+    public Iterator<ADSL> getADSLIterrator() {
+        return adslAccountList.iterator();
     }
 }
