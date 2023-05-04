@@ -106,4 +106,8 @@ public class ADSLConfigManager {
     public Iterator<ADSL> getADSLIterrator() {
         return adslAccountList.iterator();
     }
+
+    public int count() {
+        return adslAccountList.size();
+    }
 }
