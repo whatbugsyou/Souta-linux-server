@@ -73,7 +73,7 @@ public class ProxyEnvironmentBuilder {
                 Veth veth = vethService.createVeth(ethernetName, lineBuildConfig.getServerEthName(ethernetName), serverNamespaceName);
                 vethService.upVeth(veth);
                 String listenIp = lineBuildConfig.getListenIp(lineId);
-                commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s dev %s", listenIp, veth.getInterfaceName()), serverNamespaceName);
+                commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, veth.getInterfaceName()), serverNamespaceName);
                 i++;
             } catch (NamespaceNotExistException e) {
                 throw new RuntimeException(e);
@@ -112,7 +112,7 @@ public class ProxyEnvironmentBuilder {
         Veth veth = vethService.createVeth(ethernetName, lineBuildConfig.getServerEthName(ethernetName), serverNamespaceName);
         vethService.upVeth(veth);
         String listenIp = lineBuildConfig.getListenIp(lineId);
-        commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s dev %s", listenIp, veth.getInterfaceName()), serverNamespaceName);
+        commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, veth.getInterfaceName()), serverNamespaceName);
         dataTransferManager.serverTransToPPP(lineId);
         startProxy(lineId);
         return true;

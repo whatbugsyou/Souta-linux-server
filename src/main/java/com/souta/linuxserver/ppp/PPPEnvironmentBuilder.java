@@ -60,7 +60,7 @@ public class PPPEnvironmentBuilder {
                 Veth veth = vethService.createVeth(ethernetName, vethName, namespaceName);
                 vethService.upVeth(veth);
                 String listenIp = lineBuildConfig.getLanIp(lineId);
-                commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s dev %s", listenIp, vethName), namespaceName);
+                commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, vethName), namespaceName);
                 i++;
             } catch (NamespaceNotExistException e) {
                 throw new RuntimeException(e);
@@ -94,7 +94,7 @@ public class PPPEnvironmentBuilder {
         Veth veth = vethService.createVeth(ethernetName, lineBuildConfig.getServerEthName(ethernetName), namespaceName);
         vethService.upVeth(veth);
         String listenIp = lineBuildConfig.getListenIp(lineId);
-        commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s dev %s", listenIp, veth.getInterfaceName()), namespaceName);
+        commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, veth.getInterfaceName()), namespaceName);
         dataTransferManager.PPPTransToServer(lineId);
         return true;
     }
