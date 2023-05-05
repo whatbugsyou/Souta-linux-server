@@ -139,6 +139,10 @@ public class ProxyServiceImpl implements ProxyService {
         InBoundObject shadowsocksInBound = shadowsocksInBoundFactory.getInstance(listenIp, ssPort, method, password, lineBuildConfig.getShadowsocksTag(lineId));
         InBoundObject socks5InBound = socks5InBoundFactory.getInstance(listenIp, socksPort, socksUsername, socksPassword, lineBuildConfig.getSocks5Tag(lineId));
 
+        File file = new File(inboundConfigFilePath);
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
         JSONObject outBound = new JSONObject();
         outBound.put("outBounds", new Object[]{freedomOutBound});
         try (FileWriter fileWriter = new FileWriter(outboundConfigFilePath);
