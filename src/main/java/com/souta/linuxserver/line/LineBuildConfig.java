@@ -63,11 +63,11 @@ public class LineBuildConfig {
 
 
     public String getInboundConfigFilePath(String lineId) {
-        return "/root//v2ray/inbound" + lineId + ".json";
+        return "/root/v2rayConfig/inbound" + lineId + ".json";
     }
 
     public String getOutboundConfigFilePath(String lineId) {
-        return "/root//v2ray/outbound" + lineId + ".json";
+        return "/root/v2rayConfig/outbound" + lineId + ".json";
     }
 
     public String getShadowsocksTag(String lineId) {
