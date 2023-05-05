@@ -27,7 +27,7 @@ public class DialAspect {
     private static final ConcurrentHashMap<String, Condition> redialLimitedConditionMap = new ConcurrentHashMap<>();
     private static final Map<String, Condition> conditionList = new HashMap<>();
 
-    @Pointcut(value = "execution(public String com.souta.linuxserver.service.PPPOEService.dialUp(pppoeId,adslUser,adslPassword,ethernetName,namespaceName))", argNames = "pppoeId,adslUser,adslPassword,ethernetName,namespaceName")
+    @Pointcut(value = "execution(public String com.souta.linuxserver.service.PPPOEService.dialUp(..)) && args(pppoeId,adslUser,adslPassword,ethernetName,namespaceName))")
     public void dialUp(String pppoeId, String adslUser, String adslPassword, String ethernetName, String namespaceName) {
     }
 
