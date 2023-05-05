@@ -42,7 +42,7 @@ public class CommandServiceImpl implements CommandService {
     public Process exec(String command) {
         Process process = null;
         try {
-            if (isSupported(command)) {
+            if (!isSupported(command)) {
                 String[] commandArray = wrappedCommandWithNewSh(command);
                 process = runtime.exec(commandArray);
             } else {
