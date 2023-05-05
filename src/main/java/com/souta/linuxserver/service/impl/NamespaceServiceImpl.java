@@ -26,7 +26,7 @@ public class NamespaceServiceImpl implements NamespaceService {
 
     @Override
     public boolean checkExist(String name) {
-        if (null == name) return true;
+        if (Namespace.DEFAULT_NAMESPACE.getName() == name) return true;
         String cmd = "ls /var/run/netns/ |grep " + name + "$";
         Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
@@ -43,7 +43,7 @@ public class NamespaceServiceImpl implements NamespaceService {
     @Override
     public boolean checkExist(Namespace namespace) {
         if (namespace == null) {
-            return false;
+            throw new NullPointerException();
         } else {
             return checkExist(namespace.getName());
         }
@@ -91,7 +91,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         boolean exist = checkExist(name);
         if (!exist) {
             String cmd = "ip netns add " + name;
-            commandService.execAndWaitForAndCloseIOSteam(cmd, Namespace.DEFAULT_NAMESPACE.getName());
+            commandService.execAndWaitForAndCloseIOSteam(cmd);
         }
         return new Namespace(name);
     }
@@ -101,7 +101,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         boolean exist = checkExist(name);
         if (exist) {
             String cmd = "ip netns delete " + name;
-            commandService.execAndWaitForAndCloseIOSteam(cmd, Namespace.DEFAULT_NAMESPACE.getName());
+            commandService.execAndWaitForAndCloseIOSteam(cmd);
         }
         return true;
     }

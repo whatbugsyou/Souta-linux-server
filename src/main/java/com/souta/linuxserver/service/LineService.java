@@ -1,11 +1,9 @@
 package com.souta.linuxserver.service;
 
-import com.souta.linuxserver.entity.Line;
+import com.souta.linuxserver.line.Line;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.FutureTask;
 
 public interface LineService {
 
@@ -20,32 +18,23 @@ public interface LineService {
      * Although the issue above happens in an extreme low possibility,
      * we still make sure to run stably
      */
-    Set<String> dialingLines = new CopyOnWriteArraySet();
-    /**
-     * seconds of a gap between two dials with the same id.
-     */
-    int lineRedialWait = 2;
 
-    Set<String> deadLineIdSet = new CopyOnWriteArraySet<>();
 
     /**
      * @param lineId
      * @return FutureTask.gets line if success ,otherwise null.
      */
-    FutureTask<Line> createLineWithDefaultListenIP(String lineId);
+    Line createLine(String lineId);
 
     /**
      * @param lineId
-     * @param listenIp
      * @return Line with started socks information,otherwise null.
      */
-    Line getLine(String lineId, String listenIp);
+    Line getLine(String lineId);
 
-    Line getLineWithDefaultListenIP(String lineId);
+    List<Line> getLines(Set<String> lineIdList);
 
-    List<Line> getLinesWithDefaultListenIP(Set<String> lineIdList);
-
-    FutureTask<Line> refreshLineWithDefaultListenIP(String lineId);
+    Line refresh(String lineId);
 
     boolean deleteLine(String lineId);
 
@@ -55,12 +44,5 @@ public interface LineService {
      * @param action  on or off
      * @return true if it is dial up.
      */
-    boolean editProtoInLineWithDefaultListenIP(String lineId, String protoId, String action);
-
-    boolean checkExitsWithDefaultListenIP(String lineId);
-
-    /**
-     * @return a number about the max number of not dial-up line numbers
-     */
-    String generateLineID();
+    boolean editProtoInLine(String lineId, String protoId, String action);
 }

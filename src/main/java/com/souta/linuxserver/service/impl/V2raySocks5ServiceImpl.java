@@ -1,6 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.config.LineConfig;
+import com.souta.linuxserver.proxy.ProxyConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.entity.prototype.SocksPrototype;
@@ -23,11 +23,11 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
 
     private static final String configFileDir = "/root/v2ray";
 
-    private final LineConfig lineConfig;
+    private final ProxyConfig proxyConfig;
 
-    public V2raySocks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, LineConfig lineConfig) {
-        super(namespaceService, pppoeService, commandService, lineConfig.getSocks5Config().getPort());
-        this.lineConfig = lineConfig;
+    public V2raySocks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, ProxyConfig proxyConfig) {
+        super(namespaceService, pppoeService, commandService, proxyConfig.getSocks5Config().getPort());
+        this.proxyConfig = proxyConfig;
     }
 
     @PostConstruct
@@ -36,8 +36,8 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
     }
 
     private void initPrototype() {
-        SocksPrototype socks = new Socks5(lineConfig.getSocks5Config().getUsername(), lineConfig.getSocks5Config().getUsername());
-        socks.setPort(lineConfig.getSocks5Config().getPort().toString());
+        SocksPrototype socks = new Socks5(proxyConfig.getSocks5Config().getUsername(), proxyConfig.getSocks5Config().getUsername());
+        socks.setPort(proxyConfig.getSocks5Config().getPort().toString());
         SocksPrototypeManager.registerType(socks);
     }
 
@@ -67,8 +67,8 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
 
             while (((line = tmpbufferedReader.readLine()) != null)) {
                 line = line.replace("{PORT}", listenPort.toString());
-                line = line.replace("{USERNAME}", lineConfig.getSocks5Config().getUsername());
-                line = line.replace("{PASSWORD}", lineConfig.getSocks5Config().getPassword());
+                line = line.replace("{USERNAME}", proxyConfig.getSocks5Config().getUsername());
+                line = line.replace("{PASSWORD}", proxyConfig.getSocks5Config().getPassword());
                 cfgfileBufferedWriter.write(line);
                 cfgfileBufferedWriter.newLine();
             }

@@ -4,25 +4,32 @@
     "error": "",
     "loglevel": "none"
   },
-  "inbound": {
-    "port": {PORT},
-    "listen": "0.0.0.0",
-    "protocol": "SOCKS",
-    "settings": {
-      "auth": "password",
-      "accounts": [
-        {
-          "user": "{USERNAME}",
-          "pass": "{PASSWORD}"
-        }
-      ],
-      "udp": true,
-      "ip": "0.0.0.0",
-      "userLevel": 0
-    }
+  "api": {
+    "services": [
+      "HandlerService"
+    ],
+    "tag": "api"
   },
-  "outbound": {
-    "protocol": "freedom",
-    "settings": {}
+  "inboundDetour": [
+    {
+      "listen": "127.0.0.1",
+      "port": 8080,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1"
+      },
+      "tag": "api"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "inboundTag": [
+          "api"
+        ],
+        "outboundTag": "api",
+        "type": "field"
+      }
+    ]
   }
 }

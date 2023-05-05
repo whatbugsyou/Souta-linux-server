@@ -1,6 +1,6 @@
 package com.souta.linuxserver.service.abs;
 
-import com.souta.linuxserver.config.LineConfig.Socks5Config;
+import com.souta.linuxserver.proxy.ProxyConfig.Socks5Config;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.entity.prototype.SocksPrototype;
 import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;

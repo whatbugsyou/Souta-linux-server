@@ -91,7 +91,7 @@ public class VethServiceImpl implements VethService {
     public boolean checkExist(String vethName, String namespaceName) throws NamespaceNotExistException {
         Namespace namespace = namespaceService.getNameSpace(namespaceName);
         String cmd = "ls /sys/class/net/|grep " + vethName + "$";
-        Process process = commandService.exec(namespace.getName(), cmd);
+        Process process = commandService.exec(cmd, namespace.getName());
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream()

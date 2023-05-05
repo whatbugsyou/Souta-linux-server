@@ -1,6 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.config.LineConfig;
+import com.souta.linuxserver.proxy.ProxyConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.NamespaceService;
@@ -19,8 +19,8 @@ public class Socks5ServiceImpl extends AbstractSocks5Service {
 
     private static final String configFileDir = "/root/socks5";
 
-    public Socks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, LineConfig lineConfig) {
-        super(namespaceService, pppoeService, commandService, lineConfig.getSocks5Config().getPort(), lineConfig.getSocks5Config());
+    public Socks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, ProxyConfig proxyConfig) {
+        super(namespaceService, pppoeService, commandService, proxyConfig.getSocks5Config().getPort(), proxyConfig.getSocks5Config());
     }
 
     @PostConstruct

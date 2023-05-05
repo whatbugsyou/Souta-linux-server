@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Objects;
 
 @Data
-public class Line {
+public class LineDTO {
 
     private String id;
     private Socks5 socks5;
@@ -13,7 +13,7 @@ public class Line {
     private String adslAccount;
     private String adslPassword;
 
-    public Line(String id, Socks5 socks5, Shadowsocks shadowsocks, String adslAccount, String adslPassword) {
+    public LineDTO(String id, Socks5 socks5, Shadowsocks shadowsocks, String adslAccount, String adslPassword) {
         this.id = id;
         this.socks5 = socks5;
         this.shadowsocks = shadowsocks;
@@ -25,7 +25,7 @@ public class Line {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Line line = (Line) o;
+        LineDTO line = (LineDTO) o;
         return Objects.equals(id, line.id);
     }
 
