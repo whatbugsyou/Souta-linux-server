@@ -54,6 +54,7 @@ public class ProxyEnvironmentBuilder {
         Iterator<ADSL> iterator = lineBuildConfig.getADSLIterator();
         int i = 1;
         while (iterator.hasNext()) {
+            iterator.next();
             String lineId = String.valueOf(i++);
             proxyService.startProxy(lineId);
         }
