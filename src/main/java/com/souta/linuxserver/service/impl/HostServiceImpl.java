@@ -91,7 +91,7 @@ public class HostServiceImpl implements HostService {
             }
             if (!flag) {
                 String cmd = String.format("echo \"%s %s\" >> %s", hostRouteTablePrio, hostRouteTableName, ipRouteTablePath);
-                commandService.exeCmdInDefaultNamespaceAndCloseIOStream(cmd);
+                commandService.exec(cmd);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -99,7 +99,7 @@ public class HostServiceImpl implements HostService {
 
         File file = new File(hostRouteFilePath);
         String cmd = "ip route";
-        Process process = commandService.exeCmdInDefaultNamespace(cmd);
+        Process process = commandService.exec(cmd);
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
              InputStream errorStream = process.getErrorStream();
