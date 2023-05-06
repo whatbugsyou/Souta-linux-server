@@ -63,6 +63,8 @@ public class ProxyEnvironmentBuilder {
     private void buildServerSpace() {
         String serverNamespaceName = lineBuildConfig.getServerNamespaceName();
         namespaceService.createNameSpace(serverNamespaceName);
+        String cmd = "ifconfig lo up";
+        commandService.execAndWaitForAndCloseIOSteam(cmd,serverNamespaceName);
         Iterator<ADSL> iterator = lineBuildConfig.getADSLIterator();
         int i = 1;
         while (iterator.hasNext()) {
