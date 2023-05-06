@@ -9,5 +9,5 @@ public class Socks5Settings extends Settings {
     private String ip;
     private boolean udp;
     private int userLevel;
-    private AccountObject[] accountObject;
+    private AccountObject[] accounts;
 }

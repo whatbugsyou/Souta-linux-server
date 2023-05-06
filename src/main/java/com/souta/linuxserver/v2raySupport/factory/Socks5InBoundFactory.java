@@ -12,7 +12,7 @@ public class Socks5InBoundFactory {
         AccountObject accountObject = new AccountObject(user, pass);
         settings.setAuth("password");
         settings.setUserLevel(0);
-        settings.setAccountObject(new AccountObject[]{accountObject});
+        settings.setAccounts(new AccountObject[]{accountObject});
         settings.setUdp(true);
 
         result.setSettings(settings);
