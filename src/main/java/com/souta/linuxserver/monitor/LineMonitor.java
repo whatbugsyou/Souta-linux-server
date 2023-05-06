@@ -118,7 +118,8 @@ public class LineMonitor {
                 if (addTrue) {
                     basePool.execute(() -> {
                         log.info("LineMonitor is going to create line{}...", lineID);
-                        lineService.createLine(lineID);
+                        Line line = lineService.createLine(lineID);
+                        lineSender.sendLineInfo(line);
                     });
                 }
             }

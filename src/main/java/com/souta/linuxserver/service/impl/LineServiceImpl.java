@@ -1,10 +1,9 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.adsl.ADSL;
 import com.souta.linuxserver.line.Line;
 import com.souta.linuxserver.line.LineBuilder;
-import com.souta.linuxserver.service.*;
-import com.souta.linuxserver.util.LineMax;
+import com.souta.linuxserver.service.LineService;
+import com.souta.linuxserver.service.PPPOEService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.souta.linuxserver.monitor.LineMonitor.deadLineIdSet;
 import static com.souta.linuxserver.monitor.LineMonitor.dialingLines;
 
 @Service
@@ -30,7 +28,6 @@ public class LineServiceImpl implements LineService {
         this.pppoeService = pppoeService;
         this.lineBuilder = lineBuilder;
     }
-
 
 
     @Override

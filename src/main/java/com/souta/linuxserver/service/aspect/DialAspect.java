@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.souta.linuxserver.monitor.LineMonitor.dialingLines;
+
 @Aspect
 @Component
 @Slf4j
@@ -39,28 +41,31 @@ public class DialAspect {
             if (condition != null) {
                 condition.await();
             }
+            Object result = joinPoint.proceed();
+            limitRedialTime(pppoeId);
+            return result;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
             reDialLock.unlock();
+            dialingLines.remove(pppoeId);
         }
-        Object result = joinPoint.proceed();
-        limitRedialTime(pppoeId);
-        return result;
     }
 
     private void limitRedialTime(String id) {
         Condition condition = conditionList.get(id);
         if (condition == null) {
-            conditionList.put(id, reDialLock.newCondition());
+            condition = reDialLock.newCondition();
+            conditionList.put(id, condition);
         }
         redialLimitedConditionMap.put(id, condition);
+        Condition finalCondition = condition;
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
                 reDialLock.lock();
                 try {
-                    condition.signalAll();
+                    finalCondition.signalAll();
                     redialLimitedConditionMap.remove(id);
                 } finally {
                     reDialLock.unlock();

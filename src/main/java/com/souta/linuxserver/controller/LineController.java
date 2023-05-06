@@ -100,34 +100,12 @@ public class LineController {
             resultMap.put("status", "ok");
         }
         refreshPool.execute(() -> {
-            dialFalseTimesMap.remove(lineId);
-            deadLineIdSet.remove(lineId);
             Line line = lineService.refresh(lineId);
-            lineReturnHandle(line);
+            lineSender.sendLineInfo(line);
         });
         return resultMap;
     }
 
-    /**
-     * if line what futureTask gets is not null,it will send the line to java server,otherwise it will record the line ID in redialCheckMap.
-     */
-    private void lineReturnHandle(Line line) {
-        String lineId = line.getLineId();
-        if (line != null) {
-            if (line.getOutIpAddr() != null) {
-                lineSender.sendLineInfo(line);
-                dialFalseTimesMap.remove(lineId);
-                deadLineIdSet.remove(lineId);
-                deadLineToSend.remove(lineId);
-            } else {
-                dialFalseTimesMap.merge(lineId, 1, Integer::sum);
-                if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine) {
-                    deadLineIdSet.add(lineId);
-                    deadLineToSend.add(line);
-                }
-            }
-        }
-    }
 
     @GetMapping
     public HashMap<String, Object> checkLine(String lineId) {

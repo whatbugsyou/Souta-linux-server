@@ -101,9 +101,11 @@ public class LineSender {
     }
 
     public void sendLineInfo(Line line) {
-        ArrayList<Line> list = new ArrayList<>();
-        list.add(line);
-        sendLinesInfo(list);
+        if (line != null && line.getOutIpAddr() != null) {
+            ArrayList<Line> list = new ArrayList<>();
+            list.add(line);
+            sendLinesInfo(list);
+        }
     }
 
     private LineDTO wrap(Line line) {
