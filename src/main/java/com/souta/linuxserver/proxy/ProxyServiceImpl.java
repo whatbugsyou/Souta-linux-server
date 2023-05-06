@@ -48,12 +48,15 @@ public class ProxyServiceImpl implements ProxyService {
     private void startProxy() {
         createConfigFile();
         String namespaceName = lineBuildConfig.getServerNamespaceName();
-        String cmd = "v2ray run -c /root/v2ray/v2ray.json -c /root/v2ray/routing.json >/dev/null 2>&1 &";
+        String cmd = "v2ray run -c /root/v2rayConfig/v2ray.json -c /root/v2rayConfig/routing.json >/dev/null 2>&1 &";
         commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
     }
 
     private void createConfigFile() {
-        File file = new File("/root/v2ray/v2ray.json");
+        File file = new File("/root/v2rayConfig/v2ray.json");
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
         try (FileWriter fileWriter = new FileWriter(file);
              JSONWriter jsonWriter = new JSONWriter(fileWriter);
              InputStream v2rayConfigStream = this.getClass().getResourceAsStream("/static/v2rayConfig.json");
@@ -66,7 +69,7 @@ public class ProxyServiceImpl implements ProxyService {
             e.printStackTrace();
         }
 
-        File file2 = new File("/root/v2ray/routing.json");
+        File file2 = new File("/root/v2rayConfig/routing.json");
         try (FileWriter fileWriter = new FileWriter(file2);
              JSONWriter jsonWriter = new JSONWriter(fileWriter);
         ) {
@@ -79,7 +82,8 @@ public class ProxyServiceImpl implements ProxyService {
                 String lineId = String.valueOf(i);
                 RuleObject ruleObject = new RuleObject();
                 ruleObject.setInboundTag(new String[]{lineBuildConfig.getShadowsocksTag(lineId), lineBuildConfig.getSocks5Tag(lineId)});
-                ruleObject.setOutboundTag(new String[]{lineBuildConfig.getOutBoundTag(lineId)});
+                ruleObject.setOutboundTag(lineBuildConfig.getOutBoundTag(lineId));
+                ruleObjects.add(ruleObject);
                 i++;
             }
             routingObject.setRules(ruleObjects);
@@ -107,14 +111,10 @@ public class ProxyServiceImpl implements ProxyService {
 
     @Override
     public void startProxy(String lineId) {
+        createConfigFile(lineId);
         String namespaceName = lineBuildConfig.getServerNamespaceName();
         String inboundConfigFilePath = lineBuildConfig.getInboundConfigFilePath(lineId);
         String outboundConfigFilePath = lineBuildConfig.getOutboundConfigFilePath(lineId);
-        File file1 = new File(inboundConfigFilePath);
-        File file2 = new File(outboundConfigFilePath);
-        if (!file1.exists() || !file2.exists()) {
-            createConfigFile(lineId);
-        }
         String cmd1 = "v2ray api adi " + inboundConfigFilePath;
         String cmd2 = "v2ray api ado " + outboundConfigFilePath;
         commandService.execAndWaitForAndCloseIOSteam(cmd1, namespaceName);
@@ -139,10 +139,6 @@ public class ProxyServiceImpl implements ProxyService {
         InBoundObject shadowsocksInBound = shadowsocksInBoundFactory.getInstance(listenIp, ssPort, method, password, lineBuildConfig.getShadowsocksTag(lineId));
         InBoundObject socks5InBound = socks5InBoundFactory.getInstance(listenIp, socksPort, socksUsername, socksPassword, lineBuildConfig.getSocks5Tag(lineId));
 
-        File file = new File(inboundConfigFilePath);
-        if (!file.getParentFile().exists()) {
-            file.getParentFile().mkdirs();
-        }
         JSONObject outBound = new JSONObject();
         outBound.put("outBounds", new Object[]{freedomOutBound});
         try (FileWriter fileWriter = new FileWriter(outboundConfigFilePath);
@@ -154,7 +150,7 @@ public class ProxyServiceImpl implements ProxyService {
         }
 
         JSONObject inBound = new JSONObject();
-        outBound.put("inBounds", new Object[]{shadowsocksInBound, socks5InBound});
+        inBound.put("inBounds", new Object[]{shadowsocksInBound, socks5InBound});
         try (FileWriter fileWriter = new FileWriter(inboundConfigFilePath);
              JSONWriter jsonWriter = new JSONWriter(fileWriter)) {
             jsonWriter.writeObject(inBound);
