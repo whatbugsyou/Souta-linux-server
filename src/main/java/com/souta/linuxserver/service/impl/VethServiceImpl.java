@@ -34,7 +34,7 @@ public class VethServiceImpl implements VethService {
                 macAddr = createMacAddr();
                 String cmd = "ip link add link %s address %s %s type macvlan mode bridge";
                 cmd = String.format(cmd, physicalEthName, macAddr, vethName);
-                commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
+                commandService.execAndWaitForAndCloseIOSteam(cmd, Namespace.DEFAULT_NAMESPACE.getName());
             }
             veth = new Veth(physicalEthName, vethName, macAddr, Namespace.DEFAULT_NAMESPACE);
             moveVethToNamespace(veth, namespaceName);
