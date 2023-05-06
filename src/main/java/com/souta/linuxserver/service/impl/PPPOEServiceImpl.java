@@ -50,14 +50,15 @@ public class PPPOEServiceImpl implements PPPOEService {
                 }
                 ip = getIP(pppoeId);
                 long costTimeMillis = System.currentTimeMillis() - beginTimeMillis;
-                if (ip != null || costTimeMillis > 60 * 1000) {
+                if (ip != null) {
+                    break;
+                }else if (costTimeMillis > 60 * 1000){
                     log.warn("ppp{} dialing time reach 60s ,shutdown", pppoeId);
+                    process.destroy();
+                    shutDown(pppoeId);
                     break;
                 }
-            }
-            if (ip == null) {
-                process.destroy();
-                shutDown(pppoeId);
+
             }
             long costTimeMillis = System.currentTimeMillis() - beginTimeMillis;
             log.info("ppp{} has return , cost {}ms ,ip =[{}]", pppoeId, costTimeMillis, ip == null ? "" : ip);
