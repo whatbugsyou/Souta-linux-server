@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class RuleObject {
     private String[] inboundTag;
-    private String[] outboundTag;
+    private String outboundTag;
     private String type = "field";
 }
