@@ -35,18 +35,20 @@ public class DataTransfer {
             cmd = String.format("echo \"%s from%s\" >> /etc/iproute2/rt_tables", tableId, tableId);
             commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
         }
-        cmd = String.format("ip route add default via %s src %s", dstIp, fromIp);
+        cmd = String.format("ip route add default via %s table %s", dstIp, tableId);
         commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
         cmd = String.format("ip rule add from %s table from%s", fromIp, tableId);
         commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
     }
 
     public void dnatPPP0(String dstIp, String namespaceName) {
+        //TODO check exist
         String cmd = String.format("iptables -t nat -A PREROUTING -i ppp0 -j DNAT --to %s", dstIp);
         commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
     }
 
     public void masqueradePPP0(String srcIp, String namespaceName) {
+        //TODO check exist
         commandService.execAndWaitForAndCloseIOSteam("sysctl -w net.ipv4.ip_forward=1", namespaceName);
         String cmd = String.format("iptables -t nat -A POSTROUTING -s %s -o ppp0 -j MASQUERADE", srcIp);
         commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
