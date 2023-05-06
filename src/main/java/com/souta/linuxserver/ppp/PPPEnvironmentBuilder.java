@@ -57,6 +57,7 @@ public class PPPEnvironmentBuilder {
                 String lineId = String.valueOf(i);
                 String namespaceName = lineBuildConfig.getNamespaceName(lineId);
                 String vethName = lineBuildConfig.getVethName(lineId);
+                namespaceService.createNameSpace(namespaceName);
                 Veth veth = vethService.createVeth(ethernetName, vethName, namespaceName);
                 vethService.upVeth(veth);
                 String listenIp = lineBuildConfig.getLanIp(lineId);
