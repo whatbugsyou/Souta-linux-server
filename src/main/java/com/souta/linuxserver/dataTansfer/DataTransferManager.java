@@ -22,11 +22,11 @@ public class DataTransferManager {
     }
 
     public void serverTransToPPP(String lineId) {
-
         String lanIp = lineBuildConfig.getLanIp(lineId);
         String listenIp = lineBuildConfig.getListenIp(lineId);
         String serverNamespaceName = lineBuildConfig.getServerNamespaceName();
-        dataTransfer.nextJump(listenIp, lanIp, serverNamespaceName); // listen -> lan
+        String tableId = String.valueOf(Integer.valueOf(lineId) + 100);
+        dataTransfer.nextJumpRouting(listenIp, lanIp, serverNamespaceName, tableId); // listen -> lan
     }
 
     public void trans(String lineId) {
