@@ -48,7 +48,7 @@ public class ProxyServiceImpl implements ProxyService {
     private void startProxy() {
         createConfigFile();
         String namespaceName = lineBuildConfig.getServerNamespaceName();
-        String cmd = "v2ray run -c /root/v2rayConfig/v2ray.json -c /root/v2rayConfig/routing.json >/dev/null 2>&1 &";
+        String cmd = "v2ray run -d /root/v2rayConfig >/dev/null 2>&1 &";
         commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
     }
 
