@@ -4,7 +4,7 @@ import com.souta.linuxserver.adsl.ADSL;
 import com.souta.linuxserver.dataTansfer.DataTransferManager;
 import com.souta.linuxserver.entity.Veth;
 import com.souta.linuxserver.line.LineBuildConfig;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.VethService;
 import com.souta.linuxserver.service.exception.NamespaceNotExistException;
@@ -16,12 +16,12 @@ import java.util.Iterator;
 @Component
 public class PPPEnvironmentBuilder {
     private final VethService vethService;
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
     private final NamespaceService namespaceService;
     private final DataTransferManager dataTransferManager;
     private final LineBuildConfig lineBuildConfig;
 
-    public PPPEnvironmentBuilder(VethService vethService, CommandService commandService, NamespaceService namespaceService, DataTransferManager dataTransferManager, LineBuildConfig lineBuildConfig) {
+    public PPPEnvironmentBuilder(VethService vethService, NamespaceCommandService commandService, NamespaceService namespaceService, DataTransferManager dataTransferManager, LineBuildConfig lineBuildConfig) {
         this.vethService = vethService;
         this.commandService = commandService;
         this.namespaceService = namespaceService;

@@ -2,11 +2,10 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.PPPOE;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.PPPOEService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.*;
 import java.util.HashSet;
@@ -21,9 +20,9 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final String pppConfigFileDir = "/etc/sysconfig/network-scripts";
     private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+)\\s+dev\\s+(.*).*src\\s+([\\d\\\\.]+).*");
     private static final ConcurrentHashMap<String, PPPOE> PPPOEMap = new ConcurrentHashMap<>();
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
 
-    public PPPOEServiceImpl(CommandService commandService) {
+    public PPPOEServiceImpl(NamespaceCommandService commandService) {
         this.commandService = commandService;
     }
 

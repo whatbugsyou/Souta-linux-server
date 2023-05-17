@@ -1,6 +1,6 @@
 package com.souta.linuxserver.monitor;
 
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,12 +16,12 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CPUHealthMonitor {
 
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
     @Autowired
     @Qualifier("monitorPool")
     private ScheduledExecutorService monitorPool;
 
-    public CPUHealthMonitor(CommandService commandService) {
+    public CPUHealthMonitor(NamespaceCommandService commandService) {
         this.commandService = commandService;
     }
 

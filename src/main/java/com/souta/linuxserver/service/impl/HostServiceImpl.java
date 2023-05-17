@@ -1,14 +1,13 @@
 package com.souta.linuxserver.service.impl;
 
-import cn.hutool.core.text.StrBuilder;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.exception.ResponseNotOkException;
-import com.souta.linuxserver.service.CommandService;
 import com.souta.linuxserver.service.HostService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -29,9 +28,9 @@ public class HostServiceImpl implements HostService {
     private static final String hostRouteTableName = "hostRouteTable";
 
     private final HostConfig hostConfig;
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
 
-    public HostServiceImpl(HostConfig hostConfig, CommandService commandService) {
+    public HostServiceImpl(HostConfig hostConfig, NamespaceCommandService commandService) {
         this.hostConfig = hostConfig;
         this.commandService = commandService;
     }

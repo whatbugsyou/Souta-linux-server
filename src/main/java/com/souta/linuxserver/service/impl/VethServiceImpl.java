@@ -2,7 +2,7 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Veth;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.VethService;
 import com.souta.linuxserver.service.exception.EthernetNotExistException;
@@ -19,7 +19,7 @@ import java.util.Random;
 public class VethServiceImpl implements VethService {
     private static final Logger log = LoggerFactory.getLogger(VethServiceImpl.class);
     @Autowired
-    private CommandService commandService;
+    private NamespaceCommandService commandService;
     @Autowired
     private NamespaceService namespaceService;
 

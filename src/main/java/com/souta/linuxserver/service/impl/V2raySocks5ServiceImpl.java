@@ -1,11 +1,11 @@
 package com.souta.linuxserver.service.impl;
 
-import com.souta.linuxserver.proxy.ProxyConfig;
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.entity.prototype.SocksPrototype;
 import com.souta.linuxserver.entity.prototype.SocksPrototypeManager;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.proxy.ProxyConfig;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.Socks5Service;
@@ -25,7 +25,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
 
     private final ProxyConfig proxyConfig;
 
-    public V2raySocks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, ProxyConfig proxyConfig) {
+    public V2raySocks5ServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, NamespaceCommandService commandService, ProxyConfig proxyConfig) {
         super(namespaceService, pppoeService, commandService, proxyConfig.getSocks5Config().getPort());
         this.proxyConfig = proxyConfig;
     }

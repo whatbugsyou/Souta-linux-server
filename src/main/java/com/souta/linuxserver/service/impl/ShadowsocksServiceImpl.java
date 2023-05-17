@@ -1,9 +1,9 @@
 package com.souta.linuxserver.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.souta.linuxserver.proxy.ProxyConfig;
 import com.souta.linuxserver.entity.Namespace;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.proxy.ProxyConfig;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.abs.AbstractShadowsocksService;
@@ -19,7 +19,7 @@ public class ShadowsocksServiceImpl extends AbstractShadowsocksService {
     private static String configFileDir = "/root/shadowsocks";
 
 
-    public ShadowsocksServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, ProxyConfig proxyConfig) {
+    public ShadowsocksServiceImpl(NamespaceService namespaceService, PPPOEService pppoeService, NamespaceCommandService commandService, ProxyConfig proxyConfig) {
         super(namespaceService, pppoeService, commandService, proxyConfig.getShadowsocksConfig().getPort(), proxyConfig.getShadowsocksConfig());
     }
 

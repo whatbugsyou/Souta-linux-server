@@ -1,6 +1,6 @@
 package com.souta.linuxserver.dataTansfer;
 
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -9,9 +9,9 @@ import java.io.IOException;
 
 @Component
 public class DataTransfer {
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
 
-    public DataTransfer(CommandService commandService) {
+    public DataTransfer(NamespaceCommandService commandService) {
         this.commandService = commandService;
     }
 

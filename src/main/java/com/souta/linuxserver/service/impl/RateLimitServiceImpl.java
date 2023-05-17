@@ -2,8 +2,7 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.config.HostConfig;
 import com.souta.linuxserver.entity.Namespace;
-import com.souta.linuxserver.service.CommandService;
-import com.souta.linuxserver.service.NamespaceService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.RateLimitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,9 +21,9 @@ public class RateLimitServiceImpl implements RateLimitService {
     private final static String TAG_PLACEHOLDER = "{TAG}";
     private final static String configFileDir = "/root/limitScript";
     private final HostConfig hostConfig;
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
 
-    public RateLimitServiceImpl(HostConfig hostConfig, CommandService commandService) {
+    public RateLimitServiceImpl(HostConfig hostConfig, NamespaceCommandService commandService) {
         this.hostConfig = hostConfig;
         this.commandService = commandService;
     }

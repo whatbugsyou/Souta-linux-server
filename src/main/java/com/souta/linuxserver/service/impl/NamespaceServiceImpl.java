@@ -1,7 +1,7 @@
 package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Namespace;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 import org.slf4j.Logger;
@@ -18,9 +18,9 @@ import java.util.regex.Pattern;
 public class NamespaceServiceImpl implements NamespaceService {
     private static final Logger log = LoggerFactory.getLogger(NamespaceServiceImpl.class);
 
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
 
-    public NamespaceServiceImpl(CommandService commandService) {
+    public NamespaceServiceImpl(NamespaceCommandService commandService) {
         this.commandService = commandService;
     }
 
@@ -81,7 +81,7 @@ public class NamespaceServiceImpl implements NamespaceService {
         boolean exist = checkExist(name);
         if (exist) {
             return new Namespace(name);
-        }else {
+        } else {
             throw new NamespaceNotExistException(name);
         }
     }

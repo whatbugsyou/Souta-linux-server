@@ -5,7 +5,7 @@ import com.alibaba.fastjson.JSONReader;
 import com.alibaba.fastjson.JSONWriter;
 import com.souta.linuxserver.adsl.ADSL;
 import com.souta.linuxserver.line.LineBuildConfig;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.v2raySupport.InBoundObject;
 import com.souta.linuxserver.v2raySupport.OutBoundObject;
 import com.souta.linuxserver.v2raySupport.RoutingObject;
@@ -26,17 +26,16 @@ public class ProxyServiceImpl implements ProxyService {
     private final static FreedomOutBoundFactory freedomOutBoundFactory = new FreedomOutBoundFactory();
     private final static ShadowsocksInBoundFactory shadowsocksInBoundFactory = new ShadowsocksInBoundFactory();
     private final static Socks5InBoundFactory socks5InBoundFactory = new Socks5InBoundFactory();
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
     private final ProxyConfig proxyConfig;
     private final LineBuildConfig lineBuildConfig;
 
 
-    public ProxyServiceImpl(CommandService commandService, ProxyConfig proxyConfig, LineBuildConfig lineBuildConfig) {
+    public ProxyServiceImpl(NamespaceCommandService commandService, ProxyConfig proxyConfig, LineBuildConfig lineBuildConfig) {
         this.commandService = commandService;
         this.proxyConfig = proxyConfig;
         this.lineBuildConfig = lineBuildConfig;
     }
-
 
     @PostConstruct
     public void initProxy() {

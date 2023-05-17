@@ -2,7 +2,7 @@ package com.souta.linuxserver.service.abs;
 
 
 import com.souta.linuxserver.entity.abs.Socks;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.SocksService;
@@ -15,16 +15,15 @@ public abstract class AbstractSocksService<T extends Socks> implements SocksServ
 
     protected NamespaceService namespaceService;
     protected PPPOEService pppoeService;
-    protected CommandService commandService;
+    protected NamespaceCommandService commandService;
     protected Integer listenPort;
 
-    public AbstractSocksService(NamespaceService namespaceService, PPPOEService pppoeService, CommandService commandService, Integer listenPort) {
+    public AbstractSocksService(NamespaceService namespaceService, PPPOEService pppoeService, NamespaceCommandService commandService, Integer listenPort) {
         this.namespaceService = namespaceService;
         this.pppoeService = pppoeService;
         this.commandService = commandService;
         this.listenPort = listenPort;
     }
-
 
     @Override
     public final boolean stopSocks(String id) {

@@ -4,7 +4,7 @@ import com.souta.linuxserver.adsl.ADSL;
 import com.souta.linuxserver.dataTansfer.DataTransferManager;
 import com.souta.linuxserver.entity.Veth;
 import com.souta.linuxserver.line.LineBuildConfig;
-import com.souta.linuxserver.service.CommandService;
+import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.NamespaceService;
 import com.souta.linuxserver.service.VethService;
 import com.souta.linuxserver.service.exception.NamespaceNotExistException;
@@ -16,13 +16,13 @@ import java.util.Iterator;
 @Component
 public class ProxyEnvironmentBuilder {
     private final VethService vethService;
-    private final CommandService commandService;
+    private final NamespaceCommandService commandService;
     private final NamespaceService namespaceService;
     private final DataTransferManager dataTransferManager;
     private final LineBuildConfig lineBuildConfig;
     private final ProxyService proxyService;
 
-    public ProxyEnvironmentBuilder(VethService vethService, CommandService commandService, NamespaceService namespaceService, DataTransferManager dataTransferManager, LineBuildConfig lineBuildConfig, ProxyService proxyService) {
+    public ProxyEnvironmentBuilder(VethService vethService, NamespaceCommandService commandService, NamespaceService namespaceService, DataTransferManager dataTransferManager, LineBuildConfig lineBuildConfig, ProxyService proxyService) {
         this.vethService = vethService;
         this.commandService = commandService;
         this.namespaceService = namespaceService;
@@ -64,7 +64,7 @@ public class ProxyEnvironmentBuilder {
         String serverNamespaceName = lineBuildConfig.getServerNamespaceName();
         namespaceService.createNameSpace(serverNamespaceName);
         String cmd = "ifconfig lo up";
-        commandService.execAndWaitForAndCloseIOSteam(cmd,serverNamespaceName);
+        commandService.execAndWaitForAndCloseIOSteam(cmd, serverNamespaceName);
         Iterator<ADSL> iterator = lineBuildConfig.getADSLIterator();
         int i = 1;
         while (iterator.hasNext()) {
