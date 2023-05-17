@@ -7,7 +7,6 @@ import lombok.Data;
 public class ShadowsocksSettings extends Settings {
     private String method;
     private String password;
-    private int userLevel;
     private boolean ota;
     private String network;
 }

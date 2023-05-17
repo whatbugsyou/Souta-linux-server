@@ -7,7 +7,4 @@ import lombok.Data;
 public class FreedomSettings extends Settings {
     private String domainStrategy;
     private String redirect;
-    private int userLevel;
-
-
 }

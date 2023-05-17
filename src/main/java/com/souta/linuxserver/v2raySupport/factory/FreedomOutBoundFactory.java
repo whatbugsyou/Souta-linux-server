@@ -2,8 +2,6 @@ package com.souta.linuxserver.v2raySupport.factory;
 
 import com.souta.linuxserver.v2raySupport.OutBoundObject;
 import com.souta.linuxserver.v2raySupport.freedom.FreedomSettings;
-import org.springframework.stereotype.Component;
-
 
 public class FreedomOutBoundFactory {
     public OutBoundObject getInstance(String sendThrough, String domainStrategy, String tag) {
