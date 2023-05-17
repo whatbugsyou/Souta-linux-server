@@ -9,20 +9,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static com.souta.linuxserver.monitor.LineMonitor.dialingLines;
 
 @Service
 public class LineServiceImpl implements LineService {
     private static final Logger log = LoggerFactory.getLogger(LineServiceImpl.class);
-    private static final ReentrantLock lock = new ReentrantLock();
-    private static boolean onGettingLines;
     private final PPPOEService pppoeService;
     private final LineBuilder lineBuilder;
+    private CountDownLatch countDownLatch;
 
     public LineServiceImpl(PPPOEService pppoeService, LineBuilder lineBuilder) {
         this.pppoeService = pppoeService;
@@ -42,10 +41,9 @@ public class LineServiceImpl implements LineService {
     }
 
     @Override
-    public List<Line> getLines(Set<String> lineIdList) {
-        onGettingLines = true;
+    public synchronized List<Line> getLines(Set<String> lineIdList) {
+        countDownLatch = new CountDownLatch(1);
         List<Line> lines = Collections.synchronizedList(new ArrayList());
-        lock.lock();
         try {
             //sort id (String type)
             TreeSet<Integer> integers = new TreeSet<>();
@@ -71,24 +69,21 @@ public class LineServiceImpl implements LineService {
             executorService.shutdown();
             executorService.awaitTermination(2L, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         } finally {
-            lock.unlock();
+            countDownLatch.countDown();
         }
-        onGettingLines = false;
         return new ArrayList<>(lines);
     }
 
 
     @Override
     public Line refresh(String lineId) {
-        if (onGettingLines) {
-            //lock till getLine thread invoking
-            lock.lock();
+        if (countDownLatch != null) {
             try {
-                // do something
-            } finally {
-                lock.unlock();
+                countDownLatch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
         boolean add = dialingLines.add(lineId);
