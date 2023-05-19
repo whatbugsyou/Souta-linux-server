@@ -8,6 +8,10 @@ public interface CommandService {
 
     Process exec(String cmd);
 
+    default Process execAndWaitForAndCloseIOSteam(String cmd) {
+        return execAndWaitForAndCloseIOSteam(cmd);
+    }
+
     default Process waitForAndCloseIOSteam(Process process) {
         try (InputStream inputStream = process.getInputStream();
              OutputStream outputStream = process.getOutputStream();
