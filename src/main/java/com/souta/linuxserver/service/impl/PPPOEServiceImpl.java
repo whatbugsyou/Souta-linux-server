@@ -2,8 +2,10 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.PPPOE;
+import com.souta.linuxserver.ppp.PPPEnvironmentBuilder;
 import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.PPPOEService;
+import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -21,13 +23,22 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+)\\s+dev\\s+(.*).*src\\s+([\\d\\\\.]+).*");
     private static final ConcurrentHashMap<String, PPPOE> PPPOEMap = new ConcurrentHashMap<>();
     private final NamespaceCommandService commandService;
+    private final PPPEnvironmentBuilder pppEnvironmentBuilder;
 
-    public PPPOEServiceImpl(NamespaceCommandService commandService) {
+    public PPPOEServiceImpl(NamespaceCommandService commandService, PPPEnvironmentBuilder pppEnvironmentBuilder) {
         this.commandService = commandService;
+        this.pppEnvironmentBuilder = pppEnvironmentBuilder;
     }
 
     @Override
     public String dialUp(String pppoeId, String adslUser, String adslPassword, String ethernetName, String namespaceName) {
+        if (!pppEnvironmentBuilder.check(pppoeId)) {
+            try {
+                pppEnvironmentBuilder.build(pppoeId);
+            } catch (NamespaceNotExistException e) {
+                throw new RuntimeException(e);
+            }
+        }
         String ip = getIP(pppoeId);
         if (ip != null) {
             return ip;
@@ -51,7 +62,7 @@ public class PPPOEServiceImpl implements PPPOEService {
                 long costTimeMillis = System.currentTimeMillis() - beginTimeMillis;
                 if (ip != null) {
                     break;
-                }else if (costTimeMillis > 60 * 1000){
+                } else if (costTimeMillis > 60 * 1000) {
                     log.warn("ppp{} dialing time reach 60s ,shutdown", pppoeId);
                     process.destroy();
                     shutDown(pppoeId);
@@ -156,13 +167,6 @@ public class PPPOEServiceImpl implements PPPOEService {
         return null;
     }
 
-    @Override
-    public boolean checkConfigFileExist(String pppoeId) {
-        File file = new File(pppConfigFileDir, "ifcfg-ppp" + pppoeId);
-        return file.exists();
-    }
-
-    @Override
     public boolean createConfigFile(String pppoeId, String adslUser, String adslPassword, String ethernetName) {
         PPPOE pppoe = getPPPOE(pppoeId);
         if (pppoe == null || !pppoe.getAdslUser().equals(adslUser) || !pppoe.getAdslPassword().equals(adslPassword) || !pppoe.getEthName().equals(ethernetName)) {

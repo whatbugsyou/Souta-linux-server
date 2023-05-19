@@ -89,14 +89,16 @@ public class PPPEnvironmentBuilder {
 
 
     public boolean build(String lineId) throws NamespaceNotExistException {
-        ADSL adsl = lineBuildConfig.getADSL(lineId);
-        String ethernetName = adsl.getEthernetName();
-        String namespaceName = lineBuildConfig.getNamespaceName(lineId);
-        Veth veth = vethService.createVeth(ethernetName, lineBuildConfig.getServerEthName(ethernetName), namespaceName);
-        vethService.upVeth(veth);
-        String listenIp = lineBuildConfig.getListenIp(lineId);
-        commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, veth.getInterfaceName()), namespaceName);
-        dataTransferManager.PPPTransToServer(lineId);
+        if (!check(lineId)) {
+            ADSL adsl = lineBuildConfig.getADSL(lineId);
+            String ethernetName = adsl.getEthernetName();
+            String namespaceName = lineBuildConfig.getNamespaceName(lineId);
+            Veth veth = vethService.createVeth(ethernetName, lineBuildConfig.getServerEthName(ethernetName), namespaceName);
+            vethService.upVeth(veth);
+            String listenIp = lineBuildConfig.getListenIp(lineId);
+            commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, veth.getInterfaceName()), namespaceName);
+            dataTransferManager.PPPTransToServer(lineId);
+        }
         return true;
     }
 

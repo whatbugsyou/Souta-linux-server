@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONWriter;
 import com.souta.linuxserver.adsl.ADSL;
 import com.souta.linuxserver.line.LineBuildConfig;
 import com.souta.linuxserver.service.NamespaceCommandService;
+import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 import com.souta.linuxserver.v2raySupport.InBoundObject;
 import com.souta.linuxserver.v2raySupport.OutBoundObject;
 import com.souta.linuxserver.v2raySupport.RoutingObject;
@@ -29,12 +30,14 @@ public class ProxyServiceImpl implements ProxyService {
     private final NamespaceCommandService commandService;
     private final ProxyConfig proxyConfig;
     private final LineBuildConfig lineBuildConfig;
+    private final ProxyEnvironmentBuilder proxyEnvironmentBuilder;
 
 
-    public ProxyServiceImpl(NamespaceCommandService commandService, ProxyConfig proxyConfig, LineBuildConfig lineBuildConfig) {
+    public ProxyServiceImpl(NamespaceCommandService commandService, ProxyConfig proxyConfig, LineBuildConfig lineBuildConfig, ProxyEnvironmentBuilder proxyEnvironmentBuilder) {
         this.commandService = commandService;
         this.proxyConfig = proxyConfig;
         this.lineBuildConfig = lineBuildConfig;
+        this.proxyEnvironmentBuilder = proxyEnvironmentBuilder;
     }
 
     @PostConstruct
@@ -45,13 +48,13 @@ public class ProxyServiceImpl implements ProxyService {
     }
 
     private void startProxy() {
-        createConfigFile();
+        createMainConfigFile();
         String namespaceName = lineBuildConfig.getServerNamespaceName();
-        String cmd = "v2ray run -d /root/v2rayConfig >/dev/null 2>&1 &";
+        String cmd = "v2ray run -c /root/v2rayConfig/v2ray.json -c /root/v2rayConfig/routing.json >/dev/null 2>&1 &";
         commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
     }
 
-    private void createConfigFile() {
+    private void createMainConfigFile() {
         File file = new File("/root/v2rayConfig/v2ray.json");
         if (!file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
@@ -110,6 +113,14 @@ public class ProxyServiceImpl implements ProxyService {
 
     @Override
     public void startProxy(String lineId) {
+        boolean proxyE = proxyEnvironmentBuilder.check(lineId);
+        if (!proxyE) {
+            try {
+                proxyEnvironmentBuilder.build(lineId);
+            } catch (NamespaceNotExistException e) {
+                throw new RuntimeException(e);
+            }
+        }
         createConfigFile(lineId);
         String namespaceName = lineBuildConfig.getServerNamespaceName();
         String inboundConfigFilePath = lineBuildConfig.getInboundConfigFilePath(lineId);

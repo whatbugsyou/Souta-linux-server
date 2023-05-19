@@ -7,11 +7,6 @@ import java.util.HashSet;
 
 public interface PPPOEService {
 
-
-    boolean checkConfigFileExist(String pppoeId);
-
-    boolean createConfigFile(String pppoeId, String adslUser, String adslPassword, String ethernetName);
-
     PPPOE getPPPOE(String pppoeId);
 
     boolean shutDown(String pppoeId);
