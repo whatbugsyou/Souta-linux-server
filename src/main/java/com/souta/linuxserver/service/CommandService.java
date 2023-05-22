@@ -9,7 +9,9 @@ public interface CommandService {
     Process exec(String cmd);
 
     default Process execAndWaitForAndCloseIOSteam(String cmd) {
-        return execAndWaitForAndCloseIOSteam(cmd);
+        Process process = exec(cmd);
+        waitForAndCloseIOSteam(process);
+        return process;
     }
 
     default Process waitForAndCloseIOSteam(Process process) {
