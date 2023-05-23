@@ -20,12 +20,14 @@ public class LineFactory {
 
     }
 
-    public Line getLine(String lineId) {
+    public Line createLine(String lineId) {
         Line line = new Line();
         line.setLineId(lineId);
         line.setNamespaceName(lineBuildConfig.getNamespaceName(lineId));
         line.setVethName(lineBuildConfig.getVethName(lineId));
         line.setAdsl(lineBuildConfig.getADSL(lineId));
+        line.setProxyListenIp(lineBuildConfig.getListenIp(lineId));
+        line.setProxyNamespaceName(lineBuildConfig.getServerNamespaceName());
         Shadowsocks shadowsocks = new Shadowsocks(shadowsocksConfig.getPassword(), shadowsocksConfig.getMethod());
         shadowsocks.setPort(shadowsocks.getPort());
         Socks5 socks5 = new Socks5(socks5Config.getUsername(), socks5Config.getPassword());

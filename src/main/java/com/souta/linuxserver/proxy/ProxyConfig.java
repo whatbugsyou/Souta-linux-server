@@ -26,6 +26,26 @@ public class ProxyConfig {
 
     }
 
+    public String getInboundConfigFilePath(String lineId) {
+        return "/root/v2rayConfig/inbound" + lineId + ".json";
+    }
+
+    public String getOutboundConfigFilePath(String lineId) {
+        return "/root/v2rayConfig/outbound" + lineId + ".json";
+    }
+
+    public String getShadowsocksTag(String lineId) {
+        return "ss" + lineId;
+    }
+
+    public String getSocks5Tag(String lineId) {
+        return "socks5" + lineId;
+    }
+
+    public String getOutBoundTag(String lineId) {
+        return "out" + lineId;
+    }
+
     @Data
     public static class Socks5Config {
 

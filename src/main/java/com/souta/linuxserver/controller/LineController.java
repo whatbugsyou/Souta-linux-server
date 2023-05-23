@@ -8,10 +8,7 @@ import com.souta.linuxserver.line.Line;
 import com.souta.linuxserver.line.LineSender;
 import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
-import com.souta.linuxserver.service.ShadowsocksService;
-import com.souta.linuxserver.service.Socks5Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
@@ -22,16 +19,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 
-import static com.souta.linuxserver.monitor.LineMonitor.*;
-import static com.souta.linuxserver.service.impl.LineServiceImpl.DEFAULT_LISTEN_IP;
+import static com.souta.linuxserver.monitor.LineMonitor.deadLineIdSet;
 
 @RestController
 @RequestMapping("/v1.0/line/notify")
+@Slf4j
 public class LineController {
-    private static final Logger log = LoggerFactory.getLogger(LineController.class);
     private final PPPOEService pppoeService;
-    private final ShadowsocksService shadowsocksService;
-    private final Socks5Service socks5Service;
     private final LineService lineService;
     private final HostConfig hostConfig;
     private final LineSender lineSender;
@@ -44,15 +38,12 @@ public class LineController {
     @Qualifier("basePool")
     private ExecutorService basePool;
 
-    public LineController(PPPOEService pppoeService, ShadowsocksService shadowsocksService, @Qualifier("v2raySocks5ServiceImpl") Socks5Service socks5Service, LineService lineService, HostConfig hostConfig, LineSender lineSender) {
+    public LineController(PPPOEService pppoeService, LineService lineService, HostConfig hostConfig, LineSender lineSender) {
         this.pppoeService = pppoeService;
-        this.shadowsocksService = shadowsocksService;
-        this.socks5Service = socks5Service;
         this.lineService = lineService;
         this.hostConfig = hostConfig;
         this.lineSender = lineSender;
     }
-
 
     @PostConstruct
     public void init() {
@@ -106,38 +97,10 @@ public class LineController {
         return resultMap;
     }
 
-
-    @GetMapping
-    public HashMap<String, Object> checkLine(String lineId) {
-        log.info("check Line {}", lineId);
-        HashMap<String, Object> resultMap = new HashMap<>();
-        boolean exist = pppoeService.isDialUp(lineId);
-        if (!exist) {
-            resultMap.put("status", "not exist");
-            resultMap.put("data", null);
-        } else {
-            resultMap.put("status", "ok");
-            HashMap<Object, Object> data = new HashMap<>();
-            boolean start = socks5Service.isStart(lineId, DEFAULT_LISTEN_IP);
-            if (start) {
-                data.put("socks5", "on");
-            } else {
-                data.put("socks5", "off");
-            }
-            boolean start1 = shadowsocksService.isStart(lineId, DEFAULT_LISTEN_IP);
-            if (start1) {
-                data.put("shadowsocks", "on");
-            } else {
-                data.put("shadowsocks", "off");
-            }
-            resultMap.put("data", data);
-        }
-        return resultMap;
-    }
-
     @DeleteMapping()
     public HashMap<String, Object> deleteLine(String lineId) {
         log.info("delete line {}, and do not dialing automatically", lineId);
+        // TODO code level change
         deadLineIdSet.add(lineId);
         HashMap<String, Object> resultMap = new HashMap<>();
         basePool.execute(() -> lineService.deleteLine(lineId));

@@ -3,10 +3,7 @@ package com.souta.linuxserver.proxy;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONReader;
 import com.alibaba.fastjson.JSONWriter;
-import com.souta.linuxserver.adsl.ADSL;
-import com.souta.linuxserver.line.LineBuildConfig;
 import com.souta.linuxserver.service.NamespaceCommandService;
-import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 import com.souta.linuxserver.v2raySupport.InBoundObject;
 import com.souta.linuxserver.v2raySupport.OutBoundObject;
 import com.souta.linuxserver.v2raySupport.RoutingObject;
@@ -16,10 +13,8 @@ import com.souta.linuxserver.v2raySupport.factory.ShadowsocksInBoundFactory;
 import com.souta.linuxserver.v2raySupport.factory.Socks5InBoundFactory;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 @Service
 public class ProxyServiceImpl implements ProxyService {
@@ -27,31 +22,21 @@ public class ProxyServiceImpl implements ProxyService {
     private final static FreedomOutBoundFactory freedomOutBoundFactory = new FreedomOutBoundFactory();
     private final static ShadowsocksInBoundFactory shadowsocksInBoundFactory = new ShadowsocksInBoundFactory();
     private final static Socks5InBoundFactory socks5InBoundFactory = new Socks5InBoundFactory();
+    private static final int MAX_PROXY_ID = 200;
     private final NamespaceCommandService commandService;
     private final ProxyConfig proxyConfig;
-    private final LineBuildConfig lineBuildConfig;
-    private final ProxyEnvironmentBuilder proxyEnvironmentBuilder;
 
-
-    public ProxyServiceImpl(NamespaceCommandService commandService, ProxyConfig proxyConfig, LineBuildConfig lineBuildConfig, ProxyEnvironmentBuilder proxyEnvironmentBuilder) {
+    public ProxyServiceImpl(NamespaceCommandService commandService, ProxyConfig proxyConfig) {
         this.commandService = commandService;
         this.proxyConfig = proxyConfig;
-        this.lineBuildConfig = lineBuildConfig;
-        this.proxyEnvironmentBuilder = proxyEnvironmentBuilder;
     }
 
-    @PostConstruct
-    public void initProxy() {
+    private synchronized void startMainProxy(String namespaceName) {
         if (!isProxyStart()) {
-            startProxy();
+            createMainConfigFile();
+            String cmd = "v2ray run -c /root/v2rayConfig/v2ray.json -c /root/v2rayConfig/routing.json >/dev/null 2>&1 &";
+            commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
         }
-    }
-
-    private void startProxy() {
-        createMainConfigFile();
-        String namespaceName = lineBuildConfig.getServerNamespaceName();
-        String cmd = "v2ray run -c /root/v2rayConfig/v2ray.json -c /root/v2rayConfig/routing.json >/dev/null 2>&1 &";
-        commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
     }
 
     private void createMainConfigFile() {
@@ -77,16 +62,12 @@ public class ProxyServiceImpl implements ProxyService {
         ) {
             RoutingObject routingObject = new RoutingObject();
             ArrayList<RuleObject> ruleObjects = new ArrayList<>();
-            Iterator<ADSL> iterator = lineBuildConfig.getADSLIterator();
-            int i = 1;
-            while (iterator.hasNext()) {
-                ADSL adsl = iterator.next();
+            for (int i = 0; i < MAX_PROXY_ID; i++) {
                 String lineId = String.valueOf(i);
                 RuleObject ruleObject = new RuleObject();
-                ruleObject.setInboundTag(new String[]{lineBuildConfig.getShadowsocksTag(lineId), lineBuildConfig.getSocks5Tag(lineId)});
-                ruleObject.setOutboundTag(lineBuildConfig.getOutBoundTag(lineId));
+                ruleObject.setInboundTag(new String[]{proxyConfig.getShadowsocksTag(lineId), proxyConfig.getSocks5Tag(lineId)});
+                ruleObject.setOutboundTag(proxyConfig.getOutBoundTag(lineId));
                 ruleObjects.add(ruleObject);
-                i++;
             }
             routingObject.setRules(ruleObjects);
             JSONObject jsonObject = new JSONObject();
@@ -112,42 +93,34 @@ public class ProxyServiceImpl implements ProxyService {
     }
 
     @Override
-    public void startProxy(String lineId) {
-        boolean proxyE = proxyEnvironmentBuilder.check(lineId);
-        if (!proxyE) {
-            try {
-                proxyEnvironmentBuilder.build(lineId);
-            } catch (NamespaceNotExistException e) {
-                throw new RuntimeException(e);
-            }
+    public void startProxy(String proxyId, String listenIp, String namespaceName) {
+        if (!isProxyStart()) {
+            startMainProxy(namespaceName);
         }
-        createConfigFile(lineId);
-        String namespaceName = lineBuildConfig.getServerNamespaceName();
-        String inboundConfigFilePath = lineBuildConfig.getInboundConfigFilePath(lineId);
-        String outboundConfigFilePath = lineBuildConfig.getOutboundConfigFilePath(lineId);
+        createConfigFile(proxyId, listenIp);
+        String inboundConfigFilePath = proxyConfig.getInboundConfigFilePath(proxyId);
+        String outboundConfigFilePath = proxyConfig.getOutboundConfigFilePath(proxyId);
         String cmd1 = "v2ray api adi " + inboundConfigFilePath;
         String cmd2 = "v2ray api ado " + outboundConfigFilePath;
         commandService.execAndWaitForAndCloseIOSteam(cmd1, namespaceName);
         commandService.execAndWaitForAndCloseIOSteam(cmd2, namespaceName);
     }
 
-    private void createConfigFile(String lineId) {
-        String inboundConfigFilePath = lineBuildConfig.getInboundConfigFilePath(lineId);
-        String outboundConfigFilePath = lineBuildConfig.getOutboundConfigFilePath(lineId);
+    private void createConfigFile(String proxyId, String listenIp) {
+        String inboundConfigFilePath = proxyConfig.getInboundConfigFilePath(proxyId);
+        String outboundConfigFilePath = proxyConfig.getOutboundConfigFilePath(proxyId);
 
-        String listenIp = lineBuildConfig.getListenIp(lineId);
+        Integer ssPort = proxyConfig.getShadowsocksConfig().getPort();
+        String password = proxyConfig.getShadowsocksConfig().getPassword();
+        String method = proxyConfig.getShadowsocksConfig().getMethod();
 
-        Integer ssPort = lineBuildConfig.getProxyConfig().getShadowsocksConfig().getPort();
-        String password = lineBuildConfig.getProxyConfig().getShadowsocksConfig().getPassword();
-        String method = lineBuildConfig.getProxyConfig().getShadowsocksConfig().getMethod();
+        String socksPassword = proxyConfig.getSocks5Config().getPassword();
+        String socksUsername = proxyConfig.getSocks5Config().getUsername();
+        int socksPort = proxyConfig.getSocks5Config().getPort();
 
-        String socksPassword = lineBuildConfig.getProxyConfig().getSocks5Config().getPassword();
-        String socksUsername = lineBuildConfig.getProxyConfig().getSocks5Config().getUsername();
-        int socksPort = lineBuildConfig.getProxyConfig().getSocks5Config().getPort();
-
-        OutBoundObject freedomOutBound = freedomOutBoundFactory.getInstance(listenIp, "UseIP", lineBuildConfig.getOutBoundTag(lineId));
-        InBoundObject shadowsocksInBound = shadowsocksInBoundFactory.getInstance(listenIp, ssPort, method, password, lineBuildConfig.getShadowsocksTag(lineId));
-        InBoundObject socks5InBound = socks5InBoundFactory.getInstance(listenIp, socksPort, socksUsername, socksPassword, lineBuildConfig.getSocks5Tag(lineId));
+        OutBoundObject freedomOutBound = freedomOutBoundFactory.getInstance(listenIp, "UseIP", proxyConfig.getOutBoundTag(proxyId));
+        InBoundObject shadowsocksInBound = shadowsocksInBoundFactory.getInstance(listenIp, ssPort, method, password, proxyConfig.getShadowsocksTag(proxyId));
+        InBoundObject socks5InBound = socks5InBoundFactory.getInstance(listenIp, socksPort, socksUsername, socksPassword, proxyConfig.getSocks5Tag(proxyId));
 
         JSONObject outBound = new JSONObject();
         outBound.put("outBounds", new Object[]{freedomOutBound});
@@ -168,13 +141,11 @@ public class ProxyServiceImpl implements ProxyService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
 
+
     @Override
-    public boolean isProxyStart(String lineId) {
-        String listenIp = lineBuildConfig.getListenIp(lineId);
-        String namespaceName = lineBuildConfig.getServerNamespaceName();
+    public boolean isProxyStart(String listenIp, String namespaceName) {
         int listenPort1 = proxyConfig.getShadowsocksConfig().getPort();
         int listenPort2 = proxyConfig.getShadowsocksConfig().getPort();
         return isListen(listenIp, namespaceName, listenPort1) && isListen(listenIp, namespaceName, listenPort2);

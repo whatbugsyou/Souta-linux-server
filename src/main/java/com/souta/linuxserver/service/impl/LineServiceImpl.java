@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +29,12 @@ public class LineServiceImpl implements LineService {
         this.lineBuilder = lineBuilder;
     }
 
+
+    @PostConstruct
+    public void init() {
+        HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
+        lineIdSet.parallelStream().forEach(this::createLine);
+    }
 
     @Override
     public Line createLine(String lineId) {
@@ -57,9 +64,9 @@ public class LineServiceImpl implements LineService {
                 executorService.submit(() -> {
                     String lineId = id.toString();
                     Line line = lineBuilder.getLine(lineId);
-                    if (line == null || line.getOutIpAddr() == null) {
+                    if (line == null || line.getOutIpAddr() == null || !line.isProxyOn()) {
                         log.warn("Line {} is NOT OK", lineId);
-                        //TODO  notion the changes
+                        deleteLine(lineId);
                     } else {
                         log.info("Line {} is OK", lineId);
                         lines.add(line);

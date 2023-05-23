@@ -15,6 +15,10 @@ public class Line {
     private ADSL adsl;
     private String outIpAddr;
     private List<Socks> proxyServers;
+    private String proxyNamespaceName;
+    private String proxyListenIp;
+    private boolean proxyOn;
+
 
     @Override
     public boolean equals(Object o) {

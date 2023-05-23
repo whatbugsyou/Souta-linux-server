@@ -1,9 +1,8 @@
 package com.souta.linuxserver.proxy;
 
 public interface ProxyService {
+    void startProxy(String proxyId, String listenIp, String namespaceName);
 
-    void startProxy(String lineId);
-
-    boolean isProxyStart(String lineId);
+    boolean isProxyStart(String listenIp, String namespaceName);
 
 }

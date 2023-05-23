@@ -7,18 +7,6 @@ import java.util.Set;
 
 public interface LineService {
 
-    String DEFAULT_LISTEN_IP = "0.0.0.0";
-    /**
-     * Using thread safe set to record the dialingLines
-     * can avoid recording the same Line repeatedly
-     * and the Line will exist in this set forever ,
-     * which makes the line out of full dial monitoring
-     * when the line is shutdown by the ISP.
-     * <p>
-     * Although the issue above happens in an extreme low possibility,
-     * we still make sure to run stably
-     */
-
 
     /**
      * @param lineId

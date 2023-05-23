@@ -2,10 +2,8 @@ package com.souta.linuxserver.service.impl;
 
 import com.souta.linuxserver.entity.Namespace;
 import com.souta.linuxserver.entity.PPPOE;
-import com.souta.linuxserver.ppp.PPPEnvironmentBuilder;
 import com.souta.linuxserver.service.NamespaceCommandService;
 import com.souta.linuxserver.service.PPPOEService;
-import com.souta.linuxserver.service.exception.NamespaceNotExistException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -23,22 +21,13 @@ public class PPPOEServiceImpl implements PPPOEService {
     private static final Pattern iproutePattern = Pattern.compile("([\\d\\\\.]+)\\s+dev\\s+(.*).*src\\s+([\\d\\\\.]+).*");
     private static final ConcurrentHashMap<String, PPPOE> PPPOEMap = new ConcurrentHashMap<>();
     private final NamespaceCommandService commandService;
-    private final PPPEnvironmentBuilder pppEnvironmentBuilder;
 
-    public PPPOEServiceImpl(NamespaceCommandService commandService, PPPEnvironmentBuilder pppEnvironmentBuilder) {
+    public PPPOEServiceImpl(NamespaceCommandService commandService) {
         this.commandService = commandService;
-        this.pppEnvironmentBuilder = pppEnvironmentBuilder;
     }
 
     @Override
     public String dialUp(String pppoeId, String adslUser, String adslPassword, String ethernetName, String namespaceName) {
-        if (!pppEnvironmentBuilder.check(pppoeId)) {
-            try {
-                pppEnvironmentBuilder.build(pppoeId);
-            } catch (NamespaceNotExistException e) {
-                throw new RuntimeException(e);
-            }
-        }
         String ip = getIP(pppoeId);
         if (ip != null) {
             return ip;
