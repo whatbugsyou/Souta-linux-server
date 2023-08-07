@@ -1,7 +1,6 @@
-package com.souta.linuxserver.proxy;
+package com.souta.linuxserver.line.environment;
 
 import com.souta.linuxserver.adsl.ADSL;
-import com.souta.linuxserver.dataTansfer.DataTransferManager;
 import com.souta.linuxserver.entity.Veth;
 import com.souta.linuxserver.line.LineBuildConfig;
 import com.souta.linuxserver.service.NamespaceCommandService;
@@ -17,14 +16,14 @@ public class ProxyEnvironmentBuilder {
     private final VethService vethService;
     private final NamespaceCommandService commandService;
     private final NamespaceService namespaceService;
-    private final DataTransferManager dataTransferManager;
+    private final LineDataTransferManager lineDataTransferManager;
     private final LineBuildConfig lineBuildConfig;
 
-    public ProxyEnvironmentBuilder(VethService vethService, NamespaceCommandService commandService, NamespaceService namespaceService, DataTransferManager dataTransferManager, LineBuildConfig lineBuildConfig) {
+    public ProxyEnvironmentBuilder(VethService vethService, NamespaceCommandService commandService, NamespaceService namespaceService, LineDataTransferManager lineDataTransferManager, LineBuildConfig lineBuildConfig) {
         this.vethService = vethService;
         this.commandService = commandService;
         this.namespaceService = namespaceService;
-        this.dataTransferManager = dataTransferManager;
+        this.lineDataTransferManager = lineDataTransferManager;
         this.lineBuildConfig = lineBuildConfig;
     }
 
@@ -56,8 +55,8 @@ public class ProxyEnvironmentBuilder {
                 flag = false;
             }
         }
-        //check local ip
-        //check dataTrans
+        //TODO check local ip
+        //TODO check dataTrans
         return flag;
     }
 
@@ -71,7 +70,7 @@ public class ProxyEnvironmentBuilder {
         vethService.upVeth(veth);
         String listenIp = lineBuildConfig.getListenIp(lineId);
         commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, veth.getInterfaceName()), serverNamespaceName);
-        dataTransferManager.serverTransToPPP(lineId);
+        lineDataTransferManager.serverTransToPPP(lineId);
         return true;
     }
 }

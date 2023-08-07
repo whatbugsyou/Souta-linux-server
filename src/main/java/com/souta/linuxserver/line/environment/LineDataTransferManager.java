@@ -1,14 +1,15 @@
-package com.souta.linuxserver.dataTansfer;
+package com.souta.linuxserver.line.environment;
 
+import com.souta.linuxserver.dataTansfer.DataTransfer;
 import com.souta.linuxserver.line.LineBuildConfig;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DataTransferManager {
+public class LineDataTransferManager {
     private final DataTransfer dataTransfer;
     private final LineBuildConfig lineBuildConfig;
 
-    public DataTransferManager(DataTransfer dataTransfer, LineBuildConfig lineBuildConfig) {
+    public LineDataTransferManager(DataTransfer dataTransfer, LineBuildConfig lineBuildConfig) {
         this.dataTransfer = dataTransfer;
         this.lineBuildConfig = lineBuildConfig;
     }
@@ -22,7 +23,7 @@ public class DataTransferManager {
     }
 
     public void serverTransToPPP(String lineId) {
-        String lanIp = lineBuildConfig.getLanIp(lineId);
+        String lanIp = lineBuildConfig.getVethLan(lineId);
         String listenIp = lineBuildConfig.getListenIp(lineId);
         String serverNamespaceName = lineBuildConfig.getServerNamespaceName();
         String tableId = String.valueOf(Integer.valueOf(lineId) + 100);

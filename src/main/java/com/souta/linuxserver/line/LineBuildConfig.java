@@ -13,7 +13,7 @@ import java.util.Iterator;
 public class LineBuildConfig {
     private static final String serverNamespaceName = "serverSpace";
     private static final String serverLan = "192.168.id.2";
-    private static final String localLan = "192.168.id.1";
+    private static final String vethLan = "192.168.id.1";
     private static final String serverEth = "server-link";
     private final ADSLConfigManager adslConfigManager;
     private final ProxyConfig proxyConfig;
@@ -40,8 +40,8 @@ public class LineBuildConfig {
         return serverLan.replace("id", lineId);
     }
 
-    public String getLanIp(String lineId) {
-        return localLan.replace("id", lineId);
+    public String getVethLan(String lineId) {
+        return vethLan.replace("id", lineId);
     }
 
     public String getServerEthName(String physicalEthName) {

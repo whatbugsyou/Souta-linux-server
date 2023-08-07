@@ -1,7 +1,6 @@
-package com.souta.linuxserver.ppp;
+package com.souta.linuxserver.line.environment;
 
 import com.souta.linuxserver.adsl.ADSL;
-import com.souta.linuxserver.dataTansfer.DataTransferManager;
 import com.souta.linuxserver.entity.Veth;
 import com.souta.linuxserver.line.LineBuildConfig;
 import com.souta.linuxserver.service.NamespaceCommandService;
@@ -18,14 +17,14 @@ public class PPPEnvironmentBuilder {
     private final VethService vethService;
     private final NamespaceCommandService commandService;
     private final NamespaceService namespaceService;
-    private final DataTransferManager dataTransferManager;
+    private final LineDataTransferManager lineDataTransferManager;
     private final LineBuildConfig lineBuildConfig;
 
-    public PPPEnvironmentBuilder(VethService vethService, NamespaceCommandService commandService, NamespaceService namespaceService, DataTransferManager dataTransferManager, LineBuildConfig lineBuildConfig) {
+    public PPPEnvironmentBuilder(VethService vethService, NamespaceCommandService commandService, NamespaceService namespaceService, LineDataTransferManager lineDataTransferManager, LineBuildConfig lineBuildConfig) {
         this.vethService = vethService;
         this.commandService = commandService;
         this.namespaceService = namespaceService;
-        this.dataTransferManager = dataTransferManager;
+        this.lineDataTransferManager = lineDataTransferManager;
         this.lineBuildConfig = lineBuildConfig;
     }
 
@@ -42,7 +41,7 @@ public class PPPEnvironmentBuilder {
         while (iterator.hasNext()) {
             ADSL adsl = iterator.next();
             String lineId = String.valueOf(i);
-            dataTransferManager.PPPTransToServer(lineId);
+            lineDataTransferManager.PPPTransToServer(lineId);
             i++;
         }
     }
@@ -60,7 +59,7 @@ public class PPPEnvironmentBuilder {
                 namespaceService.createNameSpace(namespaceName);
                 Veth veth = vethService.createVeth(ethernetName, vethName, namespaceName);
                 vethService.upVeth(veth);
-                String listenIp = lineBuildConfig.getLanIp(lineId);
+                String listenIp = lineBuildConfig.getVethLan(lineId);
                 commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, vethName), namespaceName);
                 i++;
             } catch (NamespaceNotExistException e) {
@@ -82,23 +81,21 @@ public class PPPEnvironmentBuilder {
         } catch (NamespaceNotExistException e) {
             return false;
         }
-        //check local ip
-        //check dataTrans
+        //TODO check local ip
+        //TODO check dataTrans
         return true;
     }
 
 
     public boolean build(String lineId) throws NamespaceNotExistException {
-        if (!check(lineId)) {
-            ADSL adsl = lineBuildConfig.getADSL(lineId);
-            String ethernetName = adsl.getEthernetName();
-            String namespaceName = lineBuildConfig.getNamespaceName(lineId);
-            Veth veth = vethService.createVeth(ethernetName, lineBuildConfig.getServerEthName(ethernetName), namespaceName);
-            vethService.upVeth(veth);
-            String listenIp = lineBuildConfig.getListenIp(lineId);
-            commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", listenIp, veth.getInterfaceName()), namespaceName);
-            dataTransferManager.PPPTransToServer(lineId);
-        }
+        ADSL adsl = lineBuildConfig.getADSL(lineId);
+        String ethernetName = adsl.getEthernetName();
+        String namespaceName = lineBuildConfig.getNamespaceName(lineId);
+        Veth veth = vethService.createVeth(ethernetName, lineBuildConfig.getVethName(lineId), namespaceName);
+        vethService.upVeth(veth);
+        String vethLan = lineBuildConfig.getVethLan(lineId);
+        commandService.execAndWaitForAndCloseIOSteam(String.format("ip addr add %s/24 dev %s", vethLan, veth.getInterfaceName()), namespaceName);
+        lineDataTransferManager.PPPTransToServer(lineId);
         return true;
     }
 
