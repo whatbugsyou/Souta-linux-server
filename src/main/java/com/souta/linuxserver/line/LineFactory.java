@@ -29,9 +29,9 @@ public class LineFactory {
         line.setProxyListenIp(lineBuildConfig.getListenIp(lineId));
         line.setProxyNamespaceName(lineBuildConfig.getServerNamespaceName());
         Shadowsocks shadowsocks = new Shadowsocks(shadowsocksConfig.getPassword(), shadowsocksConfig.getMethod());
-        shadowsocks.setPort(shadowsocks.getPort());
+        shadowsocks.setPort(shadowsocksConfig.getPort().toString());
         Socks5 socks5 = new Socks5(socks5Config.getUsername(), socks5Config.getPassword());
-        socks5.setPort(socks5.getPort());
+        socks5.setPort(socks5Config.getPort().toString());
         line.setProxyServers(Arrays.asList(shadowsocks, socks5));
         return line;
     }
