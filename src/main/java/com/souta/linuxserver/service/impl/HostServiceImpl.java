@@ -158,6 +158,7 @@ public class HostServiceImpl implements HostService {
                 Executors.newSingleThreadScheduledExecutor();
         Runnable beeper = () -> {
             if (hostConfig.getHost().getId() != null) {
+
                 String cmd = "ifconfig | grep destination|awk '{print $2}'";
                 Process process = commandService.exec(cmd);
                 try (InputStream inputStream = process.getInputStream();
@@ -179,7 +180,9 @@ public class HostServiceImpl implements HostService {
                             }
                         }
                     } else {
-                        log.error("HOST IP is not found");
+                        log.error("HOST IP is not found, start dialing ppp0");
+                        String dialcmd = "ifup ppp0";
+                        commandService.execAndWaitForAndCloseIOSteam(dialcmd);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
