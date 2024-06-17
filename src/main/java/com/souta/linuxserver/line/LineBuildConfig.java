@@ -14,7 +14,7 @@ public class LineBuildConfig {
     private static final String serverNamespaceName = "serverSpace";
     private static final String serverLan = "192.168.id.2";
     private static final String vethLan = "192.168.id.1";
-    private static final String serverEth = "server-link";
+    private static final String serverEth = "S-{linkEth}";
     private final ADSLConfigManager adslConfigManager;
     private final ProxyConfig proxyConfig;
 
@@ -45,7 +45,7 @@ public class LineBuildConfig {
     }
 
     public String getServerEthName(String physicalEthName) {
-        return serverEth.replace("link", physicalEthName);
+        return serverEth.replace("{linkEth}", physicalEthName);
 
     }
 
