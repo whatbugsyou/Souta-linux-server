@@ -22,6 +22,8 @@ public interface LineService {
 
     List<Line> getLines(Set<String> lineIdList);
 
+    List<Line> getAvailableLines();
+
     Line refresh(String lineId);
 
     boolean deleteLine(String lineId);

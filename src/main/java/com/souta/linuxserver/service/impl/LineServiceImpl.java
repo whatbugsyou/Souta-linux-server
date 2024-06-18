@@ -1,5 +1,6 @@
 package com.souta.linuxserver.service.impl;
 
+import com.souta.linuxserver.adsl.ADSLConfigManager;
 import com.souta.linuxserver.line.Line;
 import com.souta.linuxserver.line.LineBuilder;
 import com.souta.linuxserver.service.LineService;
@@ -24,9 +25,12 @@ public class LineServiceImpl implements LineService {
     private final LineBuilder lineBuilder;
     private CountDownLatch countDownLatch;
 
-    public LineServiceImpl(PPPOEService pppoeService, LineBuilder lineBuilder) {
+    private final ADSLConfigManager adslConfigManager;
+
+    public LineServiceImpl(PPPOEService pppoeService, LineBuilder lineBuilder, ADSLConfigManager adslConfigManager) {
         this.pppoeService = pppoeService;
         this.lineBuilder = lineBuilder;
+        this.adslConfigManager = adslConfigManager;
     }
 
 
@@ -66,7 +70,6 @@ public class LineServiceImpl implements LineService {
                     Line line = lineBuilder.getLine(lineId);
                     if (line == null || line.getOutIpAddr() == null || !line.isProxyOn()) {
                         log.warn("Line {} is NOT OK", lineId);
-                        deleteLine(lineId);
                     } else {
                         log.info("Line {} is OK", lineId);
                         lines.add(line);
@@ -81,6 +84,12 @@ public class LineServiceImpl implements LineService {
             countDownLatch.countDown();
         }
         return new ArrayList<>(lines);
+    }
+
+    @Override
+    public List<Line> getAvailableLines() {
+        HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
+        return getLines(dialuppedIdSet);
     }
 
 

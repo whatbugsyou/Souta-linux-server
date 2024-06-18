@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 
 import static com.souta.linuxserver.monitor.LineMonitor.deadLineIdSet;
@@ -60,8 +59,7 @@ public class LineController {
      */
     public void checkAndSendAllLinesInfo() {
         log.info("check all line....");
-        HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-        ArrayList<Line> lines = (ArrayList<Line>) lineService.getLines(lineIdSet);
+        ArrayList<Line> lines = (ArrayList<Line>) lineService.getAvailableLines();
         log.info("total {} lines is ok", lines.size());
         lineSender.sendLinesInfo(lines);
     }
