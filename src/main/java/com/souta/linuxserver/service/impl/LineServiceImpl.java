@@ -70,6 +70,7 @@ public class LineServiceImpl implements LineService {
                     Line line = lineBuilder.getLine(lineId);
                     if (line == null || line.getOutIpAddr() == null || !line.isProxyOn()) {
                         log.warn("Line {} is NOT OK", lineId);
+                        deleteLine(lineId);
                     } else {
                         log.info("Line {} is OK", lineId);
                         lines.add(line);

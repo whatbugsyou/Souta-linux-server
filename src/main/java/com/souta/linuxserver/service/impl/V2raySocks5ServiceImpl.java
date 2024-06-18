@@ -36,7 +36,7 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
     }
 
     private void initPrototype() {
-        SocksPrototype socks = new Socks5(proxyConfig.getSocks5Config().getUsername(), proxyConfig.getSocks5Config().getUsername());
+        SocksPrototype socks = new Socks5(proxyConfig.getSocks5Config().getUsername(), proxyConfig.getSocks5Config().getPassword());
         socks.setPort(proxyConfig.getSocks5Config().getPort().toString());
         SocksPrototypeManager.registerType(socks);
     }
@@ -67,8 +67,8 @@ public class V2raySocks5ServiceImpl extends AbstractSocksService<Socks5> impleme
 
             while (((line = tmpbufferedReader.readLine()) != null)) {
                 line = line.replace("{PORT}", listenPort.toString());
-                line = line.replace("{USERNAME}", proxyConfig.getSocks5Config().getUsername());
-                line = line.replace("{PASSWORD}", proxyConfig.getSocks5Config().getPassword());
+                line = line.replace("{USERNAME}", proxyConfig.getSocks5Config(id).getPassword());
+                line = line.replace("{PASSWORD}", proxyConfig.getSocks5Config(id).getPassword());
                 cfgfileBufferedWriter.write(line);
                 cfgfileBufferedWriter.newLine();
             }

@@ -1,5 +1,6 @@
 package com.souta.linuxserver.line;
 
+
 import com.souta.linuxserver.entity.Shadowsocks;
 import com.souta.linuxserver.entity.Socks5;
 import com.souta.linuxserver.proxy.ProxyConfig;
@@ -10,15 +11,13 @@ import java.util.Arrays;
 @Component
 public class LineFactory {
     private final LineBuildConfig lineBuildConfig;
-    private ProxyConfig.ShadowsocksConfig shadowsocksConfig;
-    private ProxyConfig.Socks5Config socks5Config;
+    private ProxyConfig proxyConfig;
 
-    public LineFactory(LineBuildConfig lineBuildConfig) {
+    public LineFactory(LineBuildConfig lineBuildConfig, ProxyConfig proxyConfig) {
         this.lineBuildConfig = lineBuildConfig;
-        shadowsocksConfig = lineBuildConfig.getProxyConfig().getShadowsocksConfig();
-        socks5Config = lineBuildConfig.getProxyConfig().getSocks5Config();
-
+        this.proxyConfig = proxyConfig;
     }
+
 
     public Line createLine(String lineId) {
         Line line = new Line();
@@ -28,6 +27,10 @@ public class LineFactory {
         line.setAdsl(lineBuildConfig.getADSL(lineId));
         line.setProxyListenIp(lineBuildConfig.getListenIp(lineId));
         line.setProxyNamespaceName(lineBuildConfig.getServerNamespaceName());
+
+        ProxyConfig.ShadowsocksConfig shadowsocksConfig= proxyConfig.getShadowsocksConfig(lineId);
+        ProxyConfig.Socks5Config socks5Config= proxyConfig.getSocks5Config(lineId);
+
         Shadowsocks shadowsocks = new Shadowsocks(shadowsocksConfig.getPassword(), shadowsocksConfig.getMethod());
         shadowsocks.setPort(shadowsocksConfig.getPort().toString());
         Socks5 socks5 = new Socks5(socks5Config.getUsername(), socks5Config.getPassword());

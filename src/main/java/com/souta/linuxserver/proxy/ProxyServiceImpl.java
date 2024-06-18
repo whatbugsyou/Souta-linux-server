@@ -110,12 +110,12 @@ public class ProxyServiceImpl implements ProxyService {
         String inboundConfigFilePath = proxyConfig.getInboundConfigFilePath(proxyId);
         String outboundConfigFilePath = proxyConfig.getOutboundConfigFilePath(proxyId);
 
-        Integer ssPort = proxyConfig.getShadowsocksConfig().getPort();
-        String password = proxyConfig.getShadowsocksConfig().getPassword();
-        String method = proxyConfig.getShadowsocksConfig().getMethod();
+        Integer ssPort = proxyConfig.getShadowsocksConfig(proxyId).getPort();
+        String password =  proxyConfig.getShadowsocksConfig(proxyId).getPassword();
+        String method =  proxyConfig.getShadowsocksConfig(proxyId).getMethod();
 
-        String socksPassword = proxyConfig.getSocks5Config().getPassword();
-        String socksUsername = proxyConfig.getSocks5Config().getUsername();
+        String socksPassword = proxyConfig.getSocks5Config(proxyId).getPassword();
+        String socksUsername = proxyConfig.getSocks5Config(proxyId).getUsername();
         int socksPort = proxyConfig.getSocks5Config().getPort();
 
         OutBoundObject freedomOutBound = freedomOutBoundFactory.getInstance(listenIp, "UseIP", proxyConfig.getOutBoundTag(proxyId));
