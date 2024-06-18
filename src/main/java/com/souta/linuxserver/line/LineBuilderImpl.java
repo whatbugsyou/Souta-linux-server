@@ -42,8 +42,11 @@ public class LineBuilderImpl implements LineBuilder {
 
     private void startProxy(Line line) {
         if (!line.isProxyOn()) {
-            proxyService.startProxy(line.getLineId(), line.getProxyListenIp(), line.getProxyNamespaceName());
             boolean proxyStart = proxyService.isProxyStart(line.getProxyListenIp(), line.getProxyNamespaceName());
+            if (!proxyStart) {
+                proxyService.startProxy(line.getLineId(), line.getProxyListenIp(), line.getProxyNamespaceName());
+                proxyStart = proxyService.isProxyStart(line.getProxyListenIp(), line.getProxyNamespaceName());
+            }
             line.setProxyOn(proxyStart);
         }
     }
