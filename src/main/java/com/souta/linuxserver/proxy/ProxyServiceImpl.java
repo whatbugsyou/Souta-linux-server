@@ -151,6 +151,16 @@ public class ProxyServiceImpl implements ProxyService {
         return isListen(listenIp, namespaceName, listenPort1) && isListen(listenIp, namespaceName, listenPort2);
     }
 
+    @Override
+    public void stopProxy(String proxyId, String namespaceName) {
+        String inboundConfigFilePath = proxyConfig.getInboundConfigFilePath(proxyId);
+        String outboundConfigFilePath = proxyConfig.getOutboundConfigFilePath(proxyId);
+        String cmd1 = "v2ray api rmi " + inboundConfigFilePath;
+        String cmd2 = "v2ray api rmo " + outboundConfigFilePath;
+        commandService.execAndWaitForAndCloseIOSteam(cmd1, namespaceName);
+        commandService.execAndWaitForAndCloseIOSteam(cmd2, namespaceName);
+    }
+
     private boolean isListen(String listenIp, String namespaceName, int listenPort) {
         String cmd = "netstat -lnt |grep " + listenIp + ":" + listenPort;
         Process process = commandService.exec(cmd, namespaceName);

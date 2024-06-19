@@ -3,6 +3,7 @@ package com.souta.linuxserver.service.impl;
 import com.souta.linuxserver.adsl.ADSLConfigManager;
 import com.souta.linuxserver.line.Line;
 import com.souta.linuxserver.line.LineBuilder;
+import com.souta.linuxserver.proxy.ProxyService;
 import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
 import org.slf4j.Logger;
@@ -25,11 +26,14 @@ public class LineServiceImpl implements LineService {
     private final LineBuilder lineBuilder;
     private CountDownLatch countDownLatch;
 
+    private ProxyService proxyService;
+
     private final ADSLConfigManager adslConfigManager;
 
-    public LineServiceImpl(PPPOEService pppoeService, LineBuilder lineBuilder, ADSLConfigManager adslConfigManager) {
+    public LineServiceImpl(PPPOEService pppoeService, LineBuilder lineBuilder, ProxyService proxyService, ADSLConfigManager adslConfigManager) {
         this.pppoeService = pppoeService;
         this.lineBuilder = lineBuilder;
+        this.proxyService = proxyService;
         this.adslConfigManager = adslConfigManager;
     }
 
@@ -107,6 +111,7 @@ public class LineServiceImpl implements LineService {
         if (!add) {
             return null;
         }
+        proxyService.stopProxy(lineId, getLine(lineId).getProxyNamespaceName());
         pppoeService.shutDown(lineId);
         return createLine(lineId);
     }
@@ -114,10 +119,8 @@ public class LineServiceImpl implements LineService {
     @Override
     public boolean deleteLine(String lineId) {
         dialingLines.remove(lineId);
+        proxyService.stopProxy(lineId, getLine(lineId).getProxyNamespaceName());
         pppoeService.shutDown(lineId);
-//        socks5Service.stopSocks(lineId);
-//        shadowsocksService.stopSocks(lineId);
-//        namespaceService.deleteNameSpace(Namespace.DEFAULT_PREFIX + lineId);
         return true;
     }
 

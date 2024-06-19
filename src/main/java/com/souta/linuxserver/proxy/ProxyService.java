@@ -5,4 +5,5 @@ public interface ProxyService {
 
     boolean isProxyStart(String listenIp, String namespaceName);
 
+    void stopProxy(String proxyId, String namespaceName);
 }
