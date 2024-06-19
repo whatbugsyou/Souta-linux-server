@@ -13,6 +13,7 @@ import com.souta.linuxserver.v2raySupport.factory.ShadowsocksInBoundFactory;
 import com.souta.linuxserver.v2raySupport.factory.Socks5InBoundFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.ArrayList;
 
@@ -26,16 +27,24 @@ public class ProxyServiceImpl implements ProxyService {
     private final NamespaceCommandService commandService;
     private final ProxyConfig proxyConfig;
 
+    private boolean isMainProxyStart = false;
+
     public ProxyServiceImpl(NamespaceCommandService commandService, ProxyConfig proxyConfig) {
         this.commandService = commandService;
         this.proxyConfig = proxyConfig;
     }
 
+    @PostConstruct
+    private void init(){
+        isMainProxyStart = isProxyStart();
+    }
+
     private synchronized void startMainProxy(String namespaceName) {
-        if (!isProxyStart()) {
+        if (!isMainProxyStart) {
             createMainConfigFile();
             String cmd = "v2ray run -c /root/v2rayConfig/v2ray.json -c /root/v2rayConfig/routing.json >/dev/null 2>&1 &";
             commandService.execAndWaitForAndCloseIOSteam(cmd, namespaceName);
+            isMainProxyStart = true;
         }
     }
 
@@ -94,7 +103,7 @@ public class ProxyServiceImpl implements ProxyService {
 
     @Override
     public void startProxy(String proxyId, String listenIp, String namespaceName) {
-        if (!isProxyStart()) {
+        if (!isMainProxyStart) {
             startMainProxy(namespaceName);
         }
         createConfigFile(proxyId, listenIp);

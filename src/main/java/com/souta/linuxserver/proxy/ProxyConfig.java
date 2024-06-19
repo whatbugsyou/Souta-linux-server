@@ -47,6 +47,15 @@ public class ProxyConfig {
 
     @PostConstruct
     public void init() {
+//        boot_time=$(sysctl -n kern.boottime | awk '{print $3}')
+//            # 随机密码文件路径
+//                file_path="/root/v2rayConfig/auth.txt"
+//        if [ -f "$file_path" ]; then
+//                file_mtime=$(stat -c %Y "$file_path")
+//        if [ "$file_mtime" -lt "$boot_time" ]; then
+//        echo "文件 $file_path 的修改时间早于系统启动时间，将被删除。"
+//        rm "$file_path"
+//        fi
         File file = new File(RANDOM_AUTH_FILE_PATH);
         if (file.exists()) {
             loadRandomAuthFile();
