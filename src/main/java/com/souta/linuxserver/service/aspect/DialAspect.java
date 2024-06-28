@@ -41,15 +41,14 @@ public class DialAspect {
             if (condition != null) {
                 condition.await();
             }
-            Object result = joinPoint.proceed();
-            limitRedialTime(pppoeId);
-            return result;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
             reDialLock.unlock();
-            dialingLines.remove(pppoeId);
         }
+        Object result = joinPoint.proceed();
+        limitRedialTime(pppoeId);
+        return result;
     }
 
     private void limitRedialTime(String id) {

@@ -119,6 +119,7 @@ public class LineMonitor {
                     basePool.execute(() -> {
                         log.info("LineMonitor is going to create line{}...", lineID);
                         Line line = lineService.createLine(lineID);
+                        dialingLines.remove(lineID);
                         lineSender.sendLineInfo(line);
                     });
                 }
