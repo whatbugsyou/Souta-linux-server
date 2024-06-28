@@ -87,7 +87,7 @@ public class LineSender {
                     if (status != 200) {
                         throw new ResponseNotOkException("error in sending dead line info to the java server,API(POST) :  /v1.0/deadLine");
                     }
-                    deadLineToSend.remove(line.getLineId());
+                    deadLineToSend.remove(line);
                 } catch (Exception e) {
                     log.error(e.getMessage());
                 }
