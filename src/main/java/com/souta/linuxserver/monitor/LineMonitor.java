@@ -7,7 +7,6 @@ import com.souta.linuxserver.line.LineSender;
 import com.souta.linuxserver.service.LineService;
 import com.souta.linuxserver.service.PPPOEService;
 import com.souta.linuxserver.service.RateLimitService;
-import com.souta.linuxserver.util.LineMax;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,7 +22,7 @@ import java.util.concurrent.*;
 @Slf4j
 public class LineMonitor {
 
-    public static final Set<String> dialingLines = new CopyOnWriteArraySet();
+    public static final Set<String> creatingLines = new CopyOnWriteArraySet();
     public static final Set<String> deadLineIdSet = new CopyOnWriteArraySet<>();
     public static final Set<Line> errorSendLines = new HashSet<>();
     public static final Set<Line> deadLineToSend = new HashSet<>();
@@ -61,25 +60,21 @@ public class LineMonitor {
         this.adslConfigManager = adslConfigManager;
     }
 
-
-    /**
-     * @return a number about the max number of not dial-up line numbers
-     */
-    public String generateLineID() {
-        LineMax lineMax = new LineMax();
-        HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
+    public Set<String> getPreparedLineIdSet() {
         Set<String> excludeSet;
+        HashSet<String> dialuppedIdSet = pppoeService.getDialuppedIdSet();
         excludeSet = dialuppedIdSet;
-        excludeSet.addAll(dialingLines);
+        excludeSet.addAll(creatingLines);
         excludeSet.addAll(deadLineIdSet);
         int count = adslConfigManager.count();
-        if (excludeSet.size() < count) {
-            for (String id : excludeSet) {
-                lineMax.add(Integer.parseInt(id));
+        Set<String> result = new HashSet<>();
+        for (int i = 0; i < count; i++) {
+            String lineId = String.valueOf(i+1);
+            if (!excludeSet.contains(lineId)){
+                result.add(lineId);
             }
-            return String.valueOf(lineMax.getMax());
         }
-        return null;
+        return result;
     }
 
     /**
@@ -110,24 +105,20 @@ public class LineMonitor {
                 notLimitedIdSet.forEach(rateLimitService::limit);
             }
         };
-        // TODO batched create
+
         Runnable checkFullDial = () -> {
-            String lineID = generateLineID();
-            if (lineID != null) {
-                boolean addTrue = dialingLines.add(lineID);
-                if (addTrue) {
-                    basePool.execute(() -> {
-                        log.info("LineMonitor is going to create line{}...", lineID);
-                        Line line = lineService.createLine(lineID);
-                        dialingLines.remove(lineID);
-                        lineSender.sendLineInfo(line);
-                    });
-                }
+            Set<String> preparedLineIdSet = getPreparedLineIdSet();
+            if (!preparedLineIdSet.isEmpty()) {
+                preparedLineIdSet.forEach(lineID -> basePool.execute(() -> {
+                    log.info("LineMonitor is going to create line{}...", lineID);
+                    Line line = lineService.createLine(lineID);
+                    lineSender.sendLineInfo(line);
+                }));
             }
         };
         log.info("monitorLines starting...");
         monitorPool.scheduleAtFixedRate(checkErrorSendLines, 0, 30, TimeUnit.SECONDS);
-        monitorPool.scheduleAtFixedRate(checkFullDial, 0, 10, TimeUnit.MILLISECONDS);
+        monitorPool.scheduleAtFixedRate(checkFullDial, 0, 5, TimeUnit.SECONDS);
         monitorPool.scheduleAtFixedRate(checkDeadLine, 0, 30, TimeUnit.SECONDS);
         monitorPool.scheduleAtFixedRate(checkRateLimit, 0, 60, TimeUnit.SECONDS);
     }

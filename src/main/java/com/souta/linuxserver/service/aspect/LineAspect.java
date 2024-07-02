@@ -22,22 +22,30 @@ public class LineAspect {
 
     @Around(value = "create(lineId)", argNames = "joinPoint,lineId")
     public Object aroundCreate(ProceedingJoinPoint joinPoint, String lineId) throws Throwable {
-        Line line = (Line) joinPoint.proceed();
-        if (line == null) {
-            return line;
-        }
-        if (line.getOutIpAddr() != null) {
-            dialFalseTimesMap.remove(lineId);
-            deadLineIdSet.remove(lineId);
-            deadLineToSend.remove(line);
-        } else {
-            dialFalseTimesMap.merge(lineId, 1, Integer::sum);
-            if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine) {
-                deadLineIdSet.add(lineId);
-                deadLineToSend.add(line);
+        boolean addTrue = creatingLines.add(lineId);
+        if (addTrue) {
+            try {
+                Line line = (Line) joinPoint.proceed();
+                if (line == null) {
+                    return line;
+                }
+                if (line.getOutIpAddr() != null) {
+                    dialFalseTimesMap.remove(lineId);
+                    deadLineIdSet.remove(lineId);
+                    deadLineToSend.remove(line);
+                } else {
+                    dialFalseTimesMap.merge(lineId, 1, Integer::sum);
+                    if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine) {
+                        deadLineIdSet.add(lineId);
+                        deadLineToSend.add(line);
+                    }
+                }
+                return line;
+            }finally {
+                creatingLines.remove(lineId);
             }
         }
-        return line;
+        return null;
     }
 
     @Pointcut(value = "execution( public * com.souta.linuxserver.service.LineService.refresh(..)) && args(lineId))")
@@ -48,21 +56,6 @@ public class LineAspect {
     public Object aroundRefresh(ProceedingJoinPoint joinPoint, String lineId) throws Throwable {
         dialFalseTimesMap.remove(lineId);
         deadLineIdSet.remove(lineId);
-        Line line = (Line) joinPoint.proceed();
-        if (line == null) {
-            return line;
-        }
-        if (line.getOutIpAddr() != null) {
-            dialFalseTimesMap.remove(lineId);
-            deadLineIdSet.remove(lineId);
-            deadLineToSend.remove(line);
-        } else {
-            dialFalseTimesMap.merge(lineId, 1, Integer::sum);
-            if (dialFalseTimesMap.get(lineId) == checkingTimesOfDefineDeadLine) {
-                deadLineIdSet.add(lineId);
-                deadLineToSend.add(line);
-            }
-        }
-        return line;
+        return joinPoint.proceed();
     }
 }

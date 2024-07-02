@@ -17,8 +17,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.souta.linuxserver.monitor.LineMonitor.dialingLines;
-
 @Aspect
 @Component
 @Slf4j

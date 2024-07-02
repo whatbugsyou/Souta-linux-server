@@ -10,14 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static com.souta.linuxserver.monitor.LineMonitor.dialingLines;
+import static com.souta.linuxserver.monitor.LineMonitor.creatingLines;
 
 @Service
 public class LineServiceImpl implements LineService {
@@ -35,13 +34,6 @@ public class LineServiceImpl implements LineService {
         this.lineBuilder = lineBuilder;
         this.proxyService = proxyService;
         this.adslConfigManager = adslConfigManager;
-    }
-
-
-    @PostConstruct
-    public void init() {
-        HashSet<String> lineIdSet = pppoeService.getDialuppedIdSet();
-        lineIdSet.parallelStream().forEach(this::createLine);
     }
 
     @Override
@@ -107,10 +99,6 @@ public class LineServiceImpl implements LineService {
                 throw new RuntimeException(e);
             }
         }
-        boolean add = dialingLines.add(lineId);
-        if (!add) {
-            return null;
-        }
         proxyService.stopProxy(lineId, getLine(lineId).getProxyNamespaceName());
         pppoeService.shutDown(lineId);
         return createLine(lineId);
@@ -118,7 +106,7 @@ public class LineServiceImpl implements LineService {
 
     @Override
     public boolean deleteLine(String lineId) {
-        dialingLines.remove(lineId);
+        creatingLines.remove(lineId);
         proxyService.stopProxy(lineId, getLine(lineId).getProxyNamespaceName());
         pppoeService.shutDown(lineId);
         return true;
