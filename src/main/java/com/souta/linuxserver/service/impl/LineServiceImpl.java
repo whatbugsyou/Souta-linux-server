@@ -101,7 +101,7 @@ public class LineServiceImpl implements LineService {
         }
         proxyService.stopProxy(lineId, getLine(lineId).getProxyNamespaceName());
         pppoeService.shutDown(lineId);
-        return createLine(lineId);
+        return createLine(lineId); // note: no aspect weaved
     }
 
     @Override

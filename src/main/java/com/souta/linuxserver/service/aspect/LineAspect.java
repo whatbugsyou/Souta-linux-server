@@ -56,6 +56,6 @@ public class LineAspect {
     public Object aroundRefresh(ProceedingJoinPoint joinPoint, String lineId) throws Throwable {
         dialFalseTimesMap.remove(lineId);
         deadLineIdSet.remove(lineId);
-        return joinPoint.proceed();
+        return aroundCreate(joinPoint,lineId); // createLine() is called in refresh()
     }
 }
